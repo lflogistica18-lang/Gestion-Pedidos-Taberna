@@ -9,22 +9,22 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Infrastructure
 
-- [ ] **INFRA-01**: Supabase project initialized with PostgreSQL database and Realtime enabled
-- [ ] **INFRA-02**: Database schema deployed with 4 tables: products, orders, order_items (price snapshot), order_status_log
-- [ ] **INFRA-03**: RLS policies configured and tested with Supabase Realtime on hosted environment
-- [ ] **INFRA-04**: Vite + React + TypeScript project scaffolded with Tailwind v4 and shadcn/ui
-- [ ] **INFRA-05**: PWA manifest and service worker configured, installable on Android Chrome and iOS Safari
-- [ ] **INFRA-06**: React Router routes defined: /pos, /kds, /products, /reports
-- [ ] **INFRA-07**: NavBar with route switching (device-based role, no auth in v1)
-- [ ] **INFRA-08**: 48dp minimum touch target standard established in shared components
+- [x] **INFRA-01**: Supabase project initialized with PostgreSQL database and Realtime enabled (schema `sgp` en proyecto compartido)
+- [x] **INFRA-02**: Database schema deployed with 4 tables: products, orders, order_items (price snapshot), order_status_log
+- [x] **INFRA-03**: RLS policies configured and tested with Supabase Realtime on hosted environment
+- [x] **INFRA-04**: Vite + React + TypeScript project scaffolded with Tailwind v4 and shadcn/ui
+- [x] **INFRA-05**: PWA manifest and service worker configured, installable on Android Chrome and iOS Safari
+- [x] **INFRA-06**: React Router routes defined: /pos, /kds, /products, /reports
+- [x] **INFRA-07**: NavBar with route switching (device-based role, no auth in v1)
+- [x] **INFRA-08**: 48dp minimum touch target standard established in shared components
 
 ### Products
 
-- [ ] **PROD-01**: User can create a product with name, category (comida/bebida/postre) and price
-- [ ] **PROD-02**: User can edit an existing product's name, category and price
-- [ ] **PROD-03**: User can deactivate a product (soft delete) without affecting existing orders
-- [ ] **PROD-04**: User can view all products organized by category
-- [ ] **PROD-05**: User can reactivate a previously deactivated product
+- [x] **PROD-01**: Create product with name, category (food/drink/dessert), and price
+- [x] **PROD-02**: Edit existing product details
+- [x] **PROD-03**: Deactivate product (soft delete, not permanently remove)
+- [x] **PROD-04**: View product list organized by category
+- [x] **PROD-05**: Reactivate deactivated producteviously deactivated product
 
 ### POS (Caja)
 
@@ -104,19 +104,19 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INFRA-01 | 1 | Pending |
-| INFRA-02 | 1 | Pending |
-| INFRA-03 | 1 | Pending |
-| INFRA-04 | 1 | Pending |
-| INFRA-05 | 1 | Pending |
-| INFRA-06 | 1 | Pending |
-| INFRA-07 | 1 | Pending |
-| INFRA-08 | 1 | Pending |
-| PROD-01 | 2 | Pending |
-| PROD-02 | 2 | Pending |
-| PROD-03 | 2 | Pending |
-| PROD-04 | 2 | Pending |
-| PROD-05 | 2 | Pending |
+| INFRA-01 | 1 | ✅ Done |
+| INFRA-02 | 1 | ✅ Done |
+| INFRA-03 | 1 | ✅ Done |
+| INFRA-04 | 1 | ✅ Done |
+| INFRA-05 | 1 | ✅ Done |
+| INFRA-06 | 1 | ✅ Done |
+| INFRA-07 | 1 | ✅ Done |
+| INFRA-08 | 1 | ✅ Done |
+| PROD-01 | 2 | ✅ Done |
+| PROD-02 | 2 | ✅ Done |
+| PROD-03 | 2 | ✅ Done |
+| PROD-04 | 2 | ✅ Done |
+| PROD-05 | 2 | ✅ Done |
 | POS-01 | 3 | Pending |
 | POS-02 | 3 | Pending |
 | POS-03 | 3 | Pending |

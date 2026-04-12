@@ -1,0 +1,18 @@
+INSERT INTO sgp.products (name, category, price) VALUES
+  ('Hamburguesa Clásica', 'comida', 3500),
+  ('Hamburguesa Completa', 'comida', 4200),
+  ('Milanesa Napolitana', 'comida', 4800),
+  ('Papas Fritas', 'comida', 2000),
+  ('Empanadas (x3)', 'comida', 2400),
+  ('Pizza Muzzarella', 'comida', 5500),
+  ('Lomito Completo', 'comida', 5000),
+  ('Tostado J&Q', 'comida', 2800),
+  ('Coca-Cola 500ml', 'bebida', 1500),
+  ('Agua Mineral 500ml', 'bebida', 1000),
+  ('Cerveza Artesanal', 'bebida', 2500),
+  ('Fernet con Coca', 'bebida', 3000),
+  ('Café con Leche', 'bebida', 1800),
+  ('Jugo de Naranja', 'bebida', 1600),
+  ('Flan Casero', 'postre', 2200),
+  ('Brownie con Helado', 'postre', 2800),
+  ('Ensalada de Frutas', 'postre', 2000);

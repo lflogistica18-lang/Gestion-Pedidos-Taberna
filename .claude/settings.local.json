@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(///wsl.localhost/Ubuntu/home/lucas/PROYECTOS/AUTOMATIZACIONES/**)",
+      "Read(///wsl.localhost/Ubuntu/mnt/**)",
+      "Bash(node \".agent/get-shit-done/bin/gsd-tools.cjs\" init new-project)",
+      "Bash(mkdir -p .planning)",
+      "Bash(node \".agent/get-shit-done/bin/gsd-tools.cjs\" commit \"docs: initialize project\" --files .planning/PROJECT.md)",
+      "Bash(node \".agent/get-shit-done/bin/gsd-tools.cjs\" config-new-project '{\"\"mode\"\":\"\"yolo\"\",\"\"granularity\"\":\"\"standard\"\",\"\"parallelization\"\":true,\"\"commit_docs\"\":true,\"\"model_profile\"\":\"\"balanced\"\",\"\"workflow\"\":{\"\"research\"\":true,\"\"plan_check\"\":true,\"\"verifier\"\":true,\"\"nyquist_validation\"\":true}}')",
+      "Bash(node \".agent/get-shit-done/bin/gsd-tools.cjs\" commit \"chore: add project config\" --files .planning/config.json)",
+      "Bash(mkdir -p .planning/research)",
+      "Bash(node \".agent/get-shit-done/bin/gsd-tools.cjs\" agent-skills gsd-project-researcher)",
+      "Bash(node \".agent/get-shit-done/bin/gsd-tools.cjs\" agent-skills gsd-research-synthesizer)",
+      "Bash(node \".agent/get-shit-done/bin/gsd-tools.cjs\" agent-skills gsd-roadmapper)",
+      "Bash(node \".agent/get-shit-done/bin/gsd-tools.cjs\" commit \"docs: complete project research \\(stack, features, architecture, pitfalls, summary\\)\" --files .planning/research/STACK.md .planning/research/FEATURES.md .planning/research/ARCHITECTURE.md .planning/research/PITFALLS.md .planning/research/SUMMARY.md)",
+      "Bash(node \".agent/get-shit-done/bin/gsd-tools.cjs\" commit \"docs: define v1 requirements \\(37 requirements\\)\" --files .planning/REQUIREMENTS.md)",
+      "Bash(node \".agent/get-shit-done/bin/gsd-tools.cjs\" generate-claude-md --output CLAUDE.md)",
+      "Bash(node \".agent/get-shit-done/bin/gsd-tools.cjs\" commit \"docs: create roadmap \\(5 phases\\)\" --files .planning/ROADMAP.md .planning/STATE.md .planning/REQUIREMENTS.md CLAUDE.md)"
+    ]
+  }
+}
