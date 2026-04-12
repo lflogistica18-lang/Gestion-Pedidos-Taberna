@@ -8,6 +8,8 @@ interface CreateOrderParams {
   orderType: OrderType
   paymentMethod: PaymentMethod
   notes: string
+  customerName: string
+  deliveryAddress: string
   total: number
 }
 
@@ -26,6 +28,8 @@ export function useCreateOrder(): UseCreateOrderResult {
     orderType,
     paymentMethod,
     notes,
+    customerName,
+    deliveryAddress,
     total,
   }: CreateOrderParams): Promise<string | null> => {
     if (items.length === 0) {
@@ -43,6 +47,8 @@ export function useCreateOrder(): UseCreateOrderResult {
         type: orderType,
         payment_method: paymentMethod,
         notes: notes || null,
+        customer_name: customerName || null,
+        delivery_address: orderType === 'delivery' ? (deliveryAddress || null) : null,
         total,
         status: 'pendiente',
       })

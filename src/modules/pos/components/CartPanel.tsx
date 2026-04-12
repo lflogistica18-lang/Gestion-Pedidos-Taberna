@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useCartStore } from '../store/useCartStore'
 import { CartItemRow } from './CartItemRow'
 import type { OrderType, PaymentMethod } from '@/types/database.types'
@@ -22,24 +21,24 @@ interface CartPanelProps {
   onClose: () => void
 }
 
-export function CartPanel({
-  open,
-  submitting,
-  error,
-  onConfirm,
-  onClose,
-}: CartPanelProps) {
+export function CartPanel({ open, submitting, error, onConfirm, onClose }: CartPanelProps) {
   const items = useCartStore((s) => s.items)
   const orderType = useCartStore((s) => s.orderType)
   const paymentMethod = useCartStore((s) => s.paymentMethod)
   const notes = useCartStore((s) => s.notes)
+  const customerName = useCartStore((s) => s.customerName)
+  const deliveryAddress = useCartStore((s) => s.deliveryAddress)
   const getTotal = useCartStore((s) => s.getTotal)
   const clearCart = useCartStore((s) => s.clearCart)
   const setOrderType = useCartStore((s) => s.setOrderType)
   const setPaymentMethod = useCartStore((s) => s.setPaymentMethod)
   const setNotes = useCartStore((s) => s.setNotes)
+  const setCustomerName = useCartStore((s) => s.setCustomerName)
+  const setDeliveryAddress = useCartStore((s) => s.setDeliveryAddress)
 
   if (!open) return null
+
+  const isDelivery = orderType === 'delivery'
 
   return (
     <div
@@ -94,6 +93,38 @@ export function CartPanel({
             </div>
           </div>
 
+          {/* Nombre del cliente */}
+          <div className="cart-section">
+            <p className="cart-section__label">
+              Nombre del cliente {isDelivery && <span className="cart-section__required">*</span>}
+            </p>
+            <input
+              type="text"
+              className="cart-input"
+              placeholder="Ej: Juan García"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              autoComplete="off"
+            />
+          </div>
+
+          {/* Dirección de entrega — solo si es delivery */}
+          {isDelivery && (
+            <div className="cart-section">
+              <p className="cart-section__label">
+                Dirección de entrega <span className="cart-section__required">*</span>
+              </p>
+              <input
+                type="text"
+                className="cart-input"
+                placeholder="Ej: Av. Corrientes 1234, 3° B"
+                value={deliveryAddress}
+                onChange={(e) => setDeliveryAddress(e.target.value)}
+                autoComplete="street-address"
+              />
+            </div>
+          )}
+
           {/* Método de pago — POS-04 */}
           <div className="cart-section">
             <p className="cart-section__label">Método de pago</p>
@@ -110,12 +141,12 @@ export function CartPanel({
             </div>
           </div>
 
-          {/* Notas opcionales */}
+          {/* Observaciones */}
           <div className="cart-section">
-            <p className="cart-section__label">Notas (opcional)</p>
+            <p className="cart-section__label">Observaciones (opcional)</p>
             <textarea
               className="cart-notes"
-              placeholder="Ej: sin cebolla, mesa 5..."
+              placeholder={isDelivery ? 'Ej: sin cebollas, timbre roto...' : 'Ej: sin cebollas, mesa 5...'}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
@@ -123,7 +154,7 @@ export function CartPanel({
           </div>
         </div>
 
-        {/* Footer con total y confirmar — POS-07 */}
+        {/* Footer — POS-07 */}
         <div className="cart-panel__footer">
           {error && <p className="cart-panel__error">⚠️ {error}</p>}
           <div className="cart-panel__total">

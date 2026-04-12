@@ -43,7 +43,10 @@ export function useProducts({ activeOnly }: UseProductsOptions = {}): UseProduct
   }, [activeOnly])
 
   useEffect(() => {
-    fetch()
+    const loadData = async () => {
+      await fetch()
+    }
+    loadData()
   }, [fetch])
 
   return { products, loading, error, refetch: fetch }

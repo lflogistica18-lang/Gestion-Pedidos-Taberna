@@ -14,6 +14,8 @@ interface CartStore {
   orderType: OrderType
   paymentMethod: PaymentMethod
   notes: string
+  customerName: string
+  deliveryAddress: string
 
   // Acciones de carrito
   addItem: (product: Product) => void
@@ -25,6 +27,8 @@ interface CartStore {
   setOrderType: (type: OrderType) => void
   setPaymentMethod: (method: PaymentMethod) => void
   setNotes: (notes: string) => void
+  setCustomerName: (name: string) => void
+  setDeliveryAddress: (address: string) => void
 
   // Computed
   getTotal: () => number
@@ -36,7 +40,8 @@ export const useCartStore = create<CartStore>((set, get) => ({
   orderType: 'local',
   paymentMethod: 'efectivo',
   notes: '',
-
+  customerName: '',
+  deliveryAddress: '',
   addItem: (product) => {
     set((state) => {
       const existing = state.items.find((i) => i.productId === product.id)
@@ -80,11 +85,13 @@ export const useCartStore = create<CartStore>((set, get) => ({
     })
   },
 
-  clearCart: () => set({ items: [], notes: '' }),
+  clearCart: () => set({ items: [], notes: '', customerName: '', deliveryAddress: '' }),
 
   setOrderType: (orderType) => set({ orderType }),
   setPaymentMethod: (paymentMethod) => set({ paymentMethod }),
   setNotes: (notes) => set({ notes }),
+  setCustomerName: (customerName) => set({ customerName }),
+  setDeliveryAddress: (deliveryAddress) => set({ deliveryAddress }),
 
   getTotal: () =>
     get().items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0),

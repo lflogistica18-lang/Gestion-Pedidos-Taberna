@@ -2,52 +2,48 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/shared/lib/supabase'
 import type { Order, OrderItem } from '@/types/database.types'
 
-export interface OrderWithItems extends Order {
+export interface KdsOrder extends Order {
   order_items: OrderItem[]
 }
 
-const ACTIVE_STATUSES = ['pendiente', 'en_preparacion', 'listo'] as const
+const KDS_STATUSES = ['pendiente', 'en_preparacion'] as const
 
-export function useActiveOrders() {
-  const [orders, setOrders] = useState<OrderWithItems[]>([])
+export function useKdsOrders() {
+  const [orders, setOrders] = useState<KdsOrder[]>([])
   const [loading, setLoading] = useState(true)
 
   const fetch = useCallback(async () => {
     const { data, error } = await supabase
       .from('orders')
       .select('*, order_items(*)')
-      .in('status', ACTIVE_STATUSES)
+      .in('status', KDS_STATUSES)
       .order('created_at', { ascending: true })
 
     if (!error && data) {
-      setOrders(data as OrderWithItems[])
+      setOrders(data as KdsOrder[])
     }
     setLoading(false)
   }, [])
 
   useEffect(() => {
+    // Definimos función interna para evitar warning de ESLint react-hooks
     const loadData = async () => {
       await fetch()
     }
     loadData()
 
-    // Nombre único por montaje para evitar conflicto con React StrictMode
-    // (StrictMode monta/desmonta dos veces en dev, el canal del primer montaje
-    // puede no estar completamente removido cuando el segundo intenta suscribirse)
-    const channelName = `active-orders-${Math.random().toString(36).substr(2, 9)}`
+    const channelName = `kds-orders-${Math.random().toString(36).substr(2, 9)}`
     const channel = supabase
       .channel(channelName)
       .on(
         'postgres_changes',
         { event: '*', schema: 'sgp', table: 'orders' },
-        () => fetch()
+        () => loadData()
       )
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
   }, [fetch])
 
-  const activeCount = orders.length
-
-  return { orders, loading, activeCount, refetch: fetch }
+  return { orders, loading, refetch: fetch }
 }

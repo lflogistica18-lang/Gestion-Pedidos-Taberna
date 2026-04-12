@@ -11,9 +11,10 @@ interface ActiveOrderCardProps {
   order: OrderWithItems
   updating: boolean
   onDeliver: (orderId: string) => void
+  onDelete: (orderId: string) => void
 }
 
-export function ActiveOrderCard({ order, updating, onDeliver }: ActiveOrderCardProps) {
+export function ActiveOrderCard({ order, updating, onDeliver, onDelete }: ActiveOrderCardProps) {
   const config = STATUS_CONFIG[order.status as keyof typeof STATUS_CONFIG]
   const isReady = order.status === 'listo'
 
@@ -61,7 +62,22 @@ export function ActiveOrderCard({ order, updating, onDeliver }: ActiveOrderCardP
           ${order.total.toLocaleString('es-AR')} · {order.payment_method}
         </span>
 
-        {/* Solo cajero puede marcar entregado cuando está listo */}
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            className="btn btn--danger-outline"
+            onClick={() => {
+              if (window.confirm('¿Estás seguro de eliminar este pedido?')) {
+                onDelete(order.id)
+              }
+            }}
+            disabled={updating}
+            title="Eliminar pedido"
+            style={{ padding: '0 12px', fontSize: '1.2rem', borderColor: '#fecaca', color: '#ef4444', background: 'transparent' }}
+          >
+            🗑️
+          </button>
+          
+          {/* Solo cajero puede marcar entregado cuando está listo */}
         {isReady && (
           <button
             className="btn btn--success-solid active-order-card__deliver-btn"
@@ -71,6 +87,7 @@ export function ActiveOrderCard({ order, updating, onDeliver }: ActiveOrderCardP
             {updating ? '...' : '✅ Entregar'}
           </button>
         )}
+        </div>
       </div>
     </div>
   )

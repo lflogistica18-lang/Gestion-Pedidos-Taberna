@@ -29,6 +29,8 @@ export default function PosPage() {
   const orderType = useCartStore((s) => s.orderType)
   const paymentMethod = useCartStore((s) => s.paymentMethod)
   const notes = useCartStore((s) => s.notes)
+  const customerName = useCartStore((s) => s.customerName)
+  const deliveryAddress = useCartStore((s) => s.deliveryAddress)
   const getTotal = useCartStore((s) => s.getTotal)
   const getItemCount = useCartStore((s) => s.getItemCount)
   const clearCart = useCartStore((s) => s.clearCart)
@@ -41,6 +43,8 @@ export default function PosPage() {
       orderType,
       paymentMethod,
       notes,
+      customerName,
+      deliveryAddress,
       total: getTotal(),
     })
 

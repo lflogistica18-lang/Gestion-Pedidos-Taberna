@@ -21,6 +21,8 @@ export interface Order {
   payment_method: PaymentMethod
   total: number
   notes: string | null
+  customer_name: string | null
+  delivery_address: string | null
   created_at: string
   updated_at: string
 }

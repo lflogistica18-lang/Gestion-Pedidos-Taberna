@@ -11,13 +11,16 @@ const STATUS_ORDER = ['listo', 'en_preparacion', 'pendiente'] as const
 
 export function ActiveOrdersPanel({ open, onClose }: ActiveOrdersPanelProps) {
   const { orders, loading } = useActiveOrders()
-  const { updatingId, updateStatus } = useUpdateOrderStatus()
+  const { updatingId, updateStatus, deleteOrder } = useUpdateOrderStatus()
 
   if (!open) return null
 
   const handleDeliver = async (orderId: string) => {
     await updateStatus(orderId, 'entregado')
-    // El Realtime refrescará la lista automáticamente
+  }
+
+  const handleDelete = async (orderId: string) => {
+    await deleteOrder(orderId)
   }
 
   // Agrupar por status en el orden correcto
@@ -74,6 +77,7 @@ export function ActiveOrdersPanel({ open, onClose }: ActiveOrdersPanelProps) {
                       order={order}
                       updating={updatingId === order.id}
                       onDeliver={handleDeliver}
+                      onDelete={handleDelete}
                     />
                   ))}
                 </section>

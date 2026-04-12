@@ -15,5 +15,15 @@ export function useUpdateOrderStatus() {
     return !error
   }
 
-  return { updatingId, updateStatus }
+  const deleteOrder = async (orderId: string): Promise<boolean> => {
+    setUpdatingId(orderId)
+    const { error } = await supabase
+      .from('orders')
+      .delete()
+      .eq('id', orderId)
+    setUpdatingId(null)
+    return !error
+  }
+
+  return { updatingId, updateStatus, deleteOrder }
 }
