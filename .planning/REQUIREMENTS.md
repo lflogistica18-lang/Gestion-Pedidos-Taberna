@@ -104,48 +104,48 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INFRA-01 | — | Pending |
-| INFRA-02 | — | Pending |
-| INFRA-03 | — | Pending |
-| INFRA-04 | — | Pending |
-| INFRA-05 | — | Pending |
-| INFRA-06 | — | Pending |
-| INFRA-07 | — | Pending |
-| INFRA-08 | — | Pending |
-| PROD-01 | — | Pending |
-| PROD-02 | — | Pending |
-| PROD-03 | — | Pending |
-| PROD-04 | — | Pending |
-| PROD-05 | — | Pending |
-| POS-01 | — | Pending |
-| POS-02 | — | Pending |
-| POS-03 | — | Pending |
-| POS-04 | — | Pending |
-| POS-05 | — | Pending |
-| POS-06 | — | Pending |
-| POS-07 | — | Pending |
-| POS-08 | — | Pending |
-| KDS-01 | — | Pending |
-| KDS-02 | — | Pending |
-| KDS-03 | — | Pending |
-| KDS-04 | — | Pending |
-| KDS-05 | — | Pending |
-| KDS-06 | — | Pending |
-| KDS-07 | — | Pending |
-| KDS-08 | — | Pending |
-| ORD-01 | — | Pending |
-| ORD-02 | — | Pending |
-| ORD-03 | — | Pending |
-| REP-01 | — | Pending |
-| REP-02 | — | Pending |
-| REP-03 | — | Pending |
-| REP-04 | — | Pending |
-| REP-05 | — | Pending |
+| INFRA-01 | 1 | Pending |
+| INFRA-02 | 1 | Pending |
+| INFRA-03 | 1 | Pending |
+| INFRA-04 | 1 | Pending |
+| INFRA-05 | 1 | Pending |
+| INFRA-06 | 1 | Pending |
+| INFRA-07 | 1 | Pending |
+| INFRA-08 | 1 | Pending |
+| PROD-01 | 2 | Pending |
+| PROD-02 | 2 | Pending |
+| PROD-03 | 2 | Pending |
+| PROD-04 | 2 | Pending |
+| PROD-05 | 2 | Pending |
+| POS-01 | 3 | Pending |
+| POS-02 | 3 | Pending |
+| POS-03 | 3 | Pending |
+| POS-04 | 3 | Pending |
+| POS-05 | 3 | Pending |
+| POS-06 | 3 | Pending |
+| POS-07 | 3 | Pending |
+| POS-08 | 3 | Pending |
+| KDS-01 | 4 | Pending |
+| KDS-02 | 4 | Pending |
+| KDS-03 | 4 | Pending |
+| KDS-04 | 4 | Pending |
+| KDS-05 | 4 | Pending |
+| KDS-06 | 4 | Pending |
+| KDS-07 | 4 | Pending |
+| KDS-08 | 4 | Pending |
+| ORD-01 | 3 | Pending |
+| ORD-02 | 3 | Pending |
+| ORD-03 | 3 | Pending |
+| REP-01 | 5 | Pending |
+| REP-02 | 5 | Pending |
+| REP-03 | 5 | Pending |
+| REP-04 | 5 | Pending |
+| REP-05 | 5 | Pending |
 
 **Coverage:**
 - v1 requirements: 37 total
-- Mapped to phases: 0 (pending roadmap creation)
-- Unmapped: 37 ⚠️
+- Mapped to phases: 37
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-04-12*
