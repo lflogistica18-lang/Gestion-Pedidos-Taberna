@@ -5,11 +5,9 @@ import type { Product, ProductCategory } from '@/types/database.types'
 
 export const productSchema = z.object({
   name: z.string().min(1, 'El nombre es requerido').max(80, 'Máximo 80 caracteres'),
-  category: z.enum(['comida', 'bebida', 'postre'], {
-    errorMap: () => ({ message: 'Seleccioná una categoría' }),
-  }),
+  category: z.enum(['comida', 'bebida', 'postre']),
   price: z
-    .number({ invalid_type_error: 'El precio debe ser un número' })
+    .number()
     .min(0, 'El precio no puede ser negativo')
     .max(999999, 'Precio demasiado alto'),
 })
