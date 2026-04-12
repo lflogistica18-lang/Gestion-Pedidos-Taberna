@@ -3,6 +3,8 @@ import { supabase } from '@/shared/lib/supabase'
 
 export interface DailyStats {
   totalRevenue: number
+  totalRevenueCash: number
+  totalRevenueTransfer: number
   totalOrders: number
   deliveryCount: number
   localCount: number
@@ -35,6 +37,8 @@ export function useDashboardStats(date: Date = new Date()) {
       }
 
       let totalRevenue = 0
+      let totalRevenueCash = 0
+      let totalRevenueTransfer = 0
       let deliveryCount = 0
       let localCount = 0
       let totalPrepTimeMs = 0
@@ -43,7 +47,14 @@ export function useDashboardStats(date: Date = new Date()) {
       const productsMap: Record<string, { qty: number; revenue: number }> = {}
 
       for (const order of orders) {
-        totalRevenue += Number(order.total) || 0
+        const orderTotal = Number(order.total) || 0
+        totalRevenue += orderTotal
+        
+        if (order.payment_method === 'efectivo') {
+          totalRevenueCash += orderTotal
+        } else {
+          totalRevenueTransfer += orderTotal
+        }
         
         if (order.type === 'delivery') deliveryCount++
         else localCount++
@@ -70,6 +81,8 @@ export function useDashboardStats(date: Date = new Date()) {
 
       setStats({
         totalRevenue,
+        totalRevenueCash,
+        totalRevenueTransfer,
         totalOrders: orders.length,
         deliveryCount,
         localCount,

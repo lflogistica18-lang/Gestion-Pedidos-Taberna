@@ -31,6 +31,10 @@ export default function ReportsPage() {
           <span className="stat-card__icon">💰</span>
           <h3 className="stat-card__title">Ingresos Brutos</h3>
           <span className="stat-card__value">${stats.totalRevenue.toLocaleString('es-AR')}</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '0.9rem', color: '#6b7280' }}>
+            <span>Efectivo: <b>${stats.totalRevenueCash.toLocaleString('es-AR')}</b></span>
+            <span>Transf/Déb: <b>${stats.totalRevenueTransfer.toLocaleString('es-AR')}</b></span>
+          </div>
         </div>
 
         <div className="stat-card">
