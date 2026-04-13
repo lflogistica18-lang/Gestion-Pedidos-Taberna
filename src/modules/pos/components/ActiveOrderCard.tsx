@@ -1,4 +1,7 @@
 import type { OrderWithItems } from '../hooks/useActiveOrders'
+import { useRef } from 'react'
+import { useReactToPrint } from 'react-to-print'
+import { Receipt } from './Receipt'
 
 const STATUS_CONFIG = {
   pendiente: { label: 'Pendiente', color: 'status--pending', emoji: '🕐' },
@@ -23,8 +26,19 @@ export function ActiveOrderCard({ order, updating, onDeliver, onDelete }: Active
     (Date.now() - new Date(order.created_at).getTime()) / 60000
   )
 
+  const printRef = useRef<HTMLDivElement>(null)
+  
+  const handlePrint = useReactToPrint({
+    contentRef: () => printRef.current,
+    documentTitle: `Ticket_Pedido_${order.order_number}`
+  })
+
   return (
     <div className={`active-order-card ${isReady ? 'active-order-card--ready' : ''}`}>
+      {/* Componente de Impresión Oculto */}
+      <div style={{ display: 'none' }}>
+        <Receipt ref={printRef} order={order} />
+      </div>
       {/* Header */}
       <div className="active-order-card__header">
         <div className="active-order-card__meta">
@@ -73,8 +87,17 @@ export function ActiveOrderCard({ order, updating, onDeliver, onDelete }: Active
             disabled={updating}
             title="Eliminar pedido"
             style={{ padding: '0 12px', fontSize: '1.2rem', borderColor: '#fecaca', color: '#ef4444', background: 'transparent' }}
-          >
             🗑️
+          </button>
+
+          <button
+            className="btn btn--secondary"
+            onClick={() => handlePrint()}
+            disabled={updating}
+            title="Imprimir ticket"
+            style={{ padding: '0 12px', fontSize: '1.2rem', color: '#4b5563', background: 'transparent', borderColor: '#d1d5db' }}
+          >
+            🖨️
           </button>
           
           {/* Solo cajero puede marcar entregado cuando está listo */}
