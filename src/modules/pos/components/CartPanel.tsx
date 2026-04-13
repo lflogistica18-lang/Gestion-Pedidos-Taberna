@@ -5,12 +5,12 @@ import type { OrderType, PaymentMethod } from '@/types/database.types'
 const ORDER_TYPES: { value: OrderType; label: string; emoji: string }[] = [
   { value: 'local', label: 'Local', emoji: '🍽️' },
   { value: 'delivery', label: 'Delivery', emoji: '🛵' },
+  { value: 'directo', label: 'Directa', emoji: '🏪' },
 ]
 
 const PAYMENT_METHODS: { value: PaymentMethod; label: string; emoji: string }[] = [
   { value: 'efectivo', label: 'Efectivo', emoji: '💵' },
-  { value: 'debito', label: 'Débito', emoji: '💳' },
-  { value: 'transferencia', label: 'Transfer', emoji: '📲' },
+  { value: 'transferencia', label: 'Déb / Transfer', emoji: '💳' },
 ]
 
 interface CartPanelProps {

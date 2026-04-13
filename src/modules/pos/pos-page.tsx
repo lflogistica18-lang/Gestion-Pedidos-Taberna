@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useProducts } from '@/modules/products/hooks/useProducts'
+import { useCategories } from '@/modules/products/hooks/useCategories'
 import { useCartStore } from './store/useCartStore'
 import { useCreateOrder } from './hooks/useCreateOrder'
 import { useActiveOrders } from './hooks/useActiveOrders'
@@ -7,23 +8,23 @@ import { ProductGrid } from './components/ProductGrid'
 import { CartPanel } from './components/CartPanel'
 import { ActiveOrdersPanel } from './components/ActiveOrdersPanel'
 
-type Category = 'comida' | 'bebida' | 'postre'
-
-const CATEGORIES: { value: Category; label: string; emoji: string }[] = [
-  { value: 'comida', label: 'Comida', emoji: '🍔' },
-  { value: 'bebida', label: 'Bebida', emoji: '🥤' },
-  { value: 'postre', label: 'Postre', emoji: '🍰' },
-]
-
 export default function PosPage() {
-  const [activeCategory, setActiveCategory] = useState<Category>('comida')
+  const [activeCategory, setActiveCategory] = useState<string>('')
   const [cartOpen, setCartOpen] = useState(false)
   const [ordersOpen, setOrdersOpen] = useState(false)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
 
+  const { categories } = useCategories()
   const { products, loading } = useProducts({ activeOnly: true })
   const { submitting, error, createOrder } = useCreateOrder()
   const { activeCount } = useActiveOrders()
+
+  // Seleccionar la primera categoría cuando cargan
+  useEffect(() => {
+    if (categories.length > 0 && !activeCategory) {
+      setActiveCategory(categories[0].name)
+    }
+  }, [categories, activeCategory])
 
   const items = useCartStore((s) => s.items)
   const orderType = useCartStore((s) => s.orderType)
@@ -85,15 +86,15 @@ export default function PosPage() {
 
       {/* Category tabs */}
       <div className="pos-tabs" role="tablist">
-        {CATEGORIES.map(({ value, label, emoji }) => (
+        {categories.map(({ name }) => (
           <button
-            key={value}
+            key={name}
             role="tab"
-            aria-selected={activeCategory === value}
-            className={`pos-tab ${activeCategory === value ? 'pos-tab--active' : ''}`}
-            onClick={() => setActiveCategory(value)}
+            aria-selected={activeCategory === name}
+            className={`pos-tab ${activeCategory === name ? 'pos-tab--active' : ''}`}
+            onClick={() => setActiveCategory(name)}
           >
-            {emoji} {label}
+            {name}
           </button>
         ))}
       </div>

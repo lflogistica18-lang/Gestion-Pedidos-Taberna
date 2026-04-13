@@ -1,11 +1,5 @@
 import type { Product } from '@/types/database.types'
 
-const CATEGORY_CONFIG = {
-  comida: { label: 'Comida', emoji: '🍔', color: 'orange' },
-  bebida: { label: 'Bebida', emoji: '🥤', color: 'blue' },
-  postre: { label: 'Postre', emoji: '🍰', color: 'pink' },
-} as const
-
 interface ProductCardProps {
   product: Product
   onEdit: (product: Product) => void
@@ -14,13 +8,10 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, onEdit, onToggle, toggling }: ProductCardProps) {
-  const config = CATEGORY_CONFIG[product.category]
-
   return (
     <div className={`product-card ${!product.active ? 'product-card--inactive' : ''}`}>
       <div className="product-card__info">
         <div className="product-card__header">
-          <span className="product-card__emoji">{config.emoji}</span>
           <span className="product-card__name">{product.name}</span>
         </div>
         <div className="product-card__price">

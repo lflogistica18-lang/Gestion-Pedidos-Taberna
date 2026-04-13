@@ -1,7 +1,7 @@
-export type ProductCategory = 'comida' | 'bebida' | 'postre'
+export type ProductCategory = string
 export type OrderStatus = 'pendiente' | 'en_preparacion' | 'listo' | 'entregado'
-export type OrderType = 'local' | 'delivery'
-export type PaymentMethod = 'efectivo' | 'debito' | 'transferencia'
+export type OrderType = 'local' | 'delivery' | 'directo'
+export type PaymentMethod = 'efectivo' | 'transferencia'
 
 export interface Product {
   id: string

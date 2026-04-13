@@ -50,7 +50,7 @@ export function useCreateOrder(): UseCreateOrderResult {
         customer_name: customerName || null,
         delivery_address: orderType === 'delivery' ? (deliveryAddress || null) : null,
         total,
-        status: 'pendiente',
+        status: orderType === 'directo' ? 'entregado' : 'pendiente',
       })
       .select('id, order_number')
       .single()

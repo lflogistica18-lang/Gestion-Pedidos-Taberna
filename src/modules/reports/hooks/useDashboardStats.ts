@@ -12,17 +12,17 @@ export interface DailyStats {
   topProducts: { name: string; qty: number; revenue: number }[]
 }
 
-export function useDashboardStats(date: Date = new Date()) {
+export function useDashboardStats(dateFrom: Date = new Date(), dateTo: Date = new Date()) {
   const [stats, setStats] = useState<DailyStats | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchStats = async () => {
       setLoading(true)
-      const startOfDay = new Date(date)
+      const startOfDay = new Date(dateFrom)
       startOfDay.setHours(0, 0, 0, 0)
-      
-      const endOfDay = new Date(date)
+
+      const endOfDay = new Date(dateTo)
       endOfDay.setHours(23, 59, 59, 999)
 
       const { data: orders } = await supabase
@@ -97,7 +97,7 @@ export function useDashboardStats(date: Date = new Date()) {
 
     fetchStats()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [date.toISOString().split('T')[0]])
+  }, [dateFrom.toISOString().split('T')[0], dateTo.toISOString().split('T')[0]])
 
   return { stats, loading }
 }

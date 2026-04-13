@@ -29,7 +29,7 @@ export function ActiveOrderCard({ order, updating, onDeliver, onDelete }: Active
   const printRef = useRef<HTMLDivElement>(null)
   
   const handlePrint = useReactToPrint({
-    contentRef: () => printRef.current,
+    contentRef: printRef,
     documentTitle: `Ticket_Pedido_${order.order_number}`
   })
 

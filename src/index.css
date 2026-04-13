@@ -809,6 +809,36 @@ body { background-color: #f9fafb; color: #111827; min-height: 100dvh; }
   background: #eff6ff; color: #2563eb; padding: 4px 12px; border-radius: 8px; font-weight: 700;
 }
 
+/* ─── REPORTS DATE FILTER ───────────────────── */
+.reports-date-filter {
+  padding: 0 24px 16px;
+}
+.reports-date-filter__row {
+  display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;
+}
+.reports-date-filter__label {
+  display: flex; flex-direction: column; gap: 4px;
+  font-size: 0.8rem; font-weight: 600; color: #6b7280; text-transform: uppercase;
+}
+.reports-date-filter__input {
+  padding: 8px 12px; border: 1.5px solid #e5e7eb; border-radius: 10px;
+  font-size: 0.95rem; background: white; color: #111827;
+  min-width: 140px;
+}
+.reports-date-filter__input:focus {
+  outline: none; border-color: #2563eb;
+}
+
+/* ─── PRODUCTS NEW CATEGORY ───────────────────── */
+.products-page__new-cat {
+  display: flex; gap: 8px; align-items: center;
+  padding: 0 16px 12px;
+  flex-wrap: wrap;
+}
+.products-page__new-cat .cart-input {
+  flex: 1; min-width: 200px;
+}
+
 /* ─── KDS (Kitchen Display System) ───────────────────── */
 .kds-page {
   display: flex; flex-direction: column; height: 100%;

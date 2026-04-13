@@ -2,13 +2,8 @@ import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { productSchema, type ProductFormData } from '../hooks/useUpsertProduct'
+import { useCategories } from '../hooks/useCategories'
 import type { Product } from '@/types/database.types'
-
-const CATEGORIES = [
-  { value: 'comida', label: 'Comida', emoji: '🍔' },
-  { value: 'bebida', label: 'Bebida', emoji: '🥤' },
-  { value: 'postre', label: 'Postre', emoji: '🍰' },
-] as const
 
 interface ProductFormProps {
   product?: Product | null  // null = crear, product = editar
@@ -18,6 +13,9 @@ interface ProductFormProps {
 }
 
 export function ProductForm({ product, saving, onSubmit, onCancel }: ProductFormProps) {
+  const { categories } = useCategories()
+  const defaultCategory = product?.category ?? categories[0]?.name ?? 'comida'
+
   const {
     register,
     handleSubmit,
@@ -27,7 +25,7 @@ export function ProductForm({ product, saving, onSubmit, onCancel }: ProductForm
     resolver: zodResolver(productSchema),
     defaultValues: product
       ? { name: product.name, category: product.category, price: product.price }
-      : { name: '', category: 'comida', price: 0 },
+      : { name: '', category: defaultCategory, price: 0 },
   })
 
   // Cuando cambia el producto (abrir modal de edición distinto), resetear el form
@@ -35,9 +33,9 @@ export function ProductForm({ product, saving, onSubmit, onCancel }: ProductForm
     reset(
       product
         ? { name: product.name, category: product.category, price: product.price }
-        : { name: '', category: 'comida', price: 0 }
+        : { name: '', category: categories[0]?.name ?? 'comida', price: 0 }
     )
-  }, [product, reset])
+  }, [product, reset, categories])
 
   return (
     <form className="product-form" onSubmit={handleSubmit(onSubmit)} noValidate>
@@ -63,17 +61,16 @@ export function ProductForm({ product, saving, onSubmit, onCancel }: ProductForm
       <div className="product-form__field">
         <label className="product-form__label">Categoría</label>
         <div className="product-form__category-group">
-          {CATEGORIES.map(({ value, label, emoji }) => (
-            <label key={value} className="product-form__category-option">
+          {categories.map(({ name }) => (
+            <label key={name} className="product-form__category-option">
               <input
                 type="radio"
-                value={value}
+                value={name}
                 className="product-form__radio"
                 {...register('category')}
               />
               <span className="product-form__category-btn">
-                <span>{emoji}</span>
-                <span>{label}</span>
+                <span>{name}</span>
               </span>
             </label>
           ))}
