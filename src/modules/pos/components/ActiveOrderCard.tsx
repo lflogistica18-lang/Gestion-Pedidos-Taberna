@@ -87,6 +87,7 @@ export function ActiveOrderCard({ order, updating, onDeliver, onDelete }: Active
             disabled={updating}
             title="Eliminar pedido"
             style={{ padding: '0 12px', fontSize: '1.2rem', borderColor: '#fecaca', color: '#ef4444', background: 'transparent' }}
+          >
             🗑️
           </button>
 
