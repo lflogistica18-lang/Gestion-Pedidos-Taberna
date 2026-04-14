@@ -66,9 +66,16 @@ export function ActiveOrdersPanel({ open, onClose }: ActiveOrdersPanelProps) {
             </div>
           ) : (
             <div className="active-orders-list">
+              {grouped['listo'] && (
+                <div className="active-orders-ready-banner">
+                  <span>🔔</span>
+                  <span>Listos para entregar</span>
+                  <span className="active-orders-ready-banner__count">{grouped['listo'].length}</span>
+                </div>
+              )}
               {STATUS_ORDER.filter((s) => grouped[s]).map((status) => (
                 <section key={status}>
-                  <h3 className="active-orders-section-title">
+                  <h3 className={`active-orders-section-title${status === 'listo' ? ' active-orders-section-title--ready' : ''}`}>
                     {STATUS_LABELS[status]}
                   </h3>
                   {grouped[status].map((order) => (
