@@ -105,30 +105,45 @@ export function CrudManager<T extends EntidadBase>({
   if (error) return <EstadoError mensaje={error} onReintentar={onRecargar} />
 
   return (
-    <div className="p-4 md:p-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
-        <h1 className="text-xl font-bold">{titulo}</h1>
-        {!hideCrear && (
-          <button
-            onClick={abrirCrear}
-            className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 min-h-[44px]"
-          >
-            + Nuevo
-          </button>
-        )}
-      </div>
+    <div className="p-4 md:p-6 max-w-7xl mx-auto w-full">
+      {/* Container Principal */}
+      <div className="bg-white/90 backdrop-blur-2xl rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-gray-100 overflow-hidden">
+        
+        {/* Header Premium */}
+        <div className="p-6 md:p-8 bg-gradient-to-r from-gray-50/50 to-white border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <h1 className="text-2xl font-black text-gray-900 tracking-tight bg-clip-text">
+            {titulo}
+          </h1>
+          
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            {/* Buscador Integrado */}
+            <div className="relative flex-1 sm:min-w-[260px]">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                placeholder="Buscar..."
+                value={busqueda}
+                onChange={e => setBusqueda(e.target.value)}
+                className="block w-full pl-10 pr-3 py-2.5 border-none ring-1 ring-gray-200 rounded-xl leading-5 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm"
+              />
+            </div>
 
-      {/* Buscador */}
-      <input
-        type="text"
-        placeholder="Buscar..."
-        value={busqueda}
-        onChange={e => setBusqueda(e.target.value)}
-        className="w-full px-3 py-2 border rounded-lg mb-4 text-[16px]"
-      />
+            {!hideCrear && (
+              <button
+                onClick={abrirCrear}
+                className="flex items-center justify-center px-5 py-2.5 bg-gradient-to-tr from-blue-600 to-blue-500 text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:-translate-y-0.5 transition-all w-auto whitespace-nowrap"
+              >
+                + Nuevo
+              </button>
+            )}
+          </div>
+        </div>
 
-      {/* Lista vacia */}
+        {/* Lista vacia */}
       {datosFiltrados.length === 0 && !cargando && (
         <EstadoVacio
           mensaje={busqueda ? 'No se encontraron resultados' : `No hay ${titulo.toLowerCase()} todavia`}
@@ -136,78 +151,93 @@ export function CrudManager<T extends EntidadBase>({
         />
       )}
 
-      {/* Tabla desktop */}
-      {datosFiltrados.length > 0 && (
-        <table className="hidden md:table w-full border-collapse">
-          <thead>
-            <tr className="border-b bg-gray-50">
-              {campos.map(campo => (
-                <th key={campo.nombre} className="text-left p-3 text-sm font-medium text-gray-600">
-                  {campo.etiqueta}
-                </th>
-              ))}
-              <th className="text-right p-3 text-sm font-medium text-gray-600">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {datosFiltrados.map(item => (
-              <tr key={item.id} className="border-b hover:bg-gray-50">
-                {campos.map(campo => (
-                  <td key={campo.nombre} className="p-3 text-sm">
-                    {String((item as Record<string, unknown>)[campo.nombre] ?? '-')}
-                  </td>
+        {/* Tabla desktop premium */}
+        {datosFiltrados.length > 0 && (
+          <div className="hidden md:block overflow-x-auto w-full pb-8">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-gray-50/80 border-b border-gray-100">
+                  {campos.map(campo => (
+                    <th key={campo.nombre} className="text-left py-4 px-6 text-[13px] font-bold text-gray-500 uppercase tracking-wider">
+                      {campo.etiqueta}
+                    </th>
+                  ))}
+                  <th className="text-right py-4 px-6 text-[13px] font-bold text-gray-500 uppercase tracking-wider">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {datosFiltrados.map(item => (
+                  <tr key={item.id} className="hover:bg-blue-50/30 transition-colors group">
+                    {campos.map(campo => {
+                      const strVal = String((item as Record<string, unknown>)[campo.nombre] ?? '-');
+                      const esPrecio = campo.tipo === 'numero' && (campo.nombre.toLowerCase().includes('precio') || campo.nombre.toLowerCase().includes('price') || campo.nombre.toLowerCase().includes('total'));
+                      return (
+                        <td key={campo.nombre} className="py-4 px-6 text-sm text-gray-700">
+                          {esPrecio ? <span className="font-bold text-gray-900">${Number(strVal).toLocaleString('es-AR')}</span> : strVal}
+                        </td>
+                      )
+                    })}
+                    <td className="py-4 px-6 text-right">
+                      <div className="flex justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => abrirEditar(item)}
+                          className="px-3 py-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg text-sm font-semibold transition-colors"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => confirmarDesactivar(item.id)}
+                          className="px-3 py-1.5 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg text-sm font-semibold transition-colors"
+                        >
+                          Apagar
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
                 ))}
-                <td className="p-3 text-right space-x-2">
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Cards mobile */}
+        {datosFiltrados.length > 0 && (
+          <div className="md:hidden flex flex-col gap-3 p-4 bg-gray-50/50">
+            {datosFiltrados.map(item => (
+              <div key={item.id} className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+                <div className="space-y-3">
+                  {campos.map(campo => {
+                    const strVal = String((item as Record<string, unknown>)[campo.nombre] ?? '-');
+                    const esPrecio = campo.tipo === 'numero' && (campo.nombre.toLowerCase().includes('precio') || campo.nombre.toLowerCase().includes('price') || campo.nombre.toLowerCase().includes('total'));
+                    return (
+                      <div key={campo.nombre} className="flex justify-between items-center">
+                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{campo.etiqueta}</span>
+                        <span className={`text-sm ${esPrecio ? 'font-bold text-gray-900 bg-gray-50 px-2.5 py-1 rounded-lg' : 'font-medium text-gray-700'}`}>
+                          {esPrecio ? `$${Number(strVal).toLocaleString('es-AR')}` : strVal}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+                <div className="flex gap-2 mt-5 pt-4 border-t border-gray-50">
                   <button
                     onClick={() => abrirEditar(item)}
-                    className="text-blue-600 hover:underline text-sm"
+                    className="flex-1 px-4 py-2.5 text-blue-700 bg-blue-50 font-bold rounded-xl text-sm transition-active active:scale-95"
                   >
                     Editar
                   </button>
                   <button
                     onClick={() => confirmarDesactivar(item.id)}
-                    className="text-red-600 hover:underline text-sm"
+                    className="flex-1 px-4 py-2.5 text-rose-700 bg-rose-50 font-bold rounded-xl text-sm transition-active active:scale-95"
                   >
-                    Desactivar
+                    Apagar
                   </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-
-      {/* Cards mobile */}
-      {datosFiltrados.length > 0 && (
-        <div className="md:hidden space-y-3">
-          {datosFiltrados.map(item => (
-            <div key={item.id} className="border rounded-lg p-4 bg-white shadow-sm">
-              {campos.map(campo => (
-                <div key={campo.nombre} className="flex justify-between py-1">
-                  <span className="text-sm text-gray-500">{campo.etiqueta}</span>
-                  <span className="text-sm font-medium">
-                    {String((item as Record<string, unknown>)[campo.nombre] ?? '-')}
-                  </span>
                 </div>
-              ))}
-              <div className="flex gap-2 mt-3 pt-3 border-t">
-                <button
-                  onClick={() => abrirEditar(item)}
-                  className="flex-1 px-3 py-2 text-blue-600 border border-blue-600 rounded-lg text-sm min-h-[44px]"
-                >
-                  Editar
-                </button>
-                <button
-                  onClick={() => confirmarDesactivar(item.id)}
-                  className="flex-1 px-3 py-2 text-red-600 border border-red-600 rounded-lg text-sm min-h-[44px]"
-                >
-                  Desactivar
-                </button>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Modal formulario */}
       {modalAbierto && (

@@ -88,37 +88,38 @@ export default function ProductsPage() {
 
   return (
     <div className="flex flex-col container mx-auto">
-      {/* Herramientas extra (Categorías y Tabs) */}
-      <div className="bg-white p-4 rounded-lg shadow-sm border m-4 mb-0">
-        <div className="flex flex-wrap gap-4 items-center">
-          <div className="flex gap-2">
+      {/* Cabecera y herramientas (Premium) */}
+      <div className="bg-white/80 backdrop-blur-xl p-5 md:p-6 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100/50 m-4 mb-2">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          
+          <div className="flex bg-gray-100/80 p-1.5 rounded-xl gap-1">
             <button 
               onClick={() => setTab('activos')} 
-              className={`px-4 py-2 rounded-md text-sm border ${tab === 'activos' ? 'bg-blue-600 text-white' : 'text-gray-700 bg-gray-50'}`}
+              className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 ${tab === 'activos' ? 'bg-white text-blue-600 shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'}`}
             >
-              Activos
+              🚀 Activos
             </button>
             <button 
               onClick={() => setTab('inactivos')} 
-              className={`px-4 py-2 rounded-md text-sm border ${tab === 'inactivos' ? 'bg-blue-600 text-white' : 'text-gray-700 bg-gray-50'}`}
+              className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 ${tab === 'inactivos' ? 'bg-white text-blue-600 shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'}`}
             >
-              Inactivos
+              💤 Inactivos
             </button>
           </div>
           
           <button
-            className="ml-auto text-blue-600 hover:text-blue-800 text-sm font-medium"
+            className="flex items-center gap-2 px-4 py-2 text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 rounded-xl text-sm font-bold transition-all"
             onClick={() => setNewCatOpen((v) => !v)}
           >
-            + Nueva Categoría
+            <span>+</span> Nueva Categoría
           </button>
         </div>
 
         {newCatOpen && (
-          <div className="flex gap-2 items-center bg-gray-50 p-3 rounded-md border border-gray-200 mt-4">
+          <div className="flex gap-3 items-center bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 mt-5 animate-[fadeIn_0.3s_ease-out]">
             <input
               type="text"
-              className="px-3 py-2 border rounded-md flex-1 text-sm bg-white"
+              className="px-4 py-2.5 border-none ring-1 ring-indigo-200 focus:ring-2 focus:ring-indigo-500 rounded-xl flex-1 text-sm bg-white shadow-sm outline-none transition-all"
               placeholder="Nombre de categoría (ej: Bebidas)"
               value={newCatName}
               onChange={(e) => setNewCatName(e.target.value)}
@@ -126,14 +127,14 @@ export default function ProductsPage() {
               autoFocus
             />
             <button
-              className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700 disabled:opacity-50"
+              className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-indigo-700 transition-colors shadow-md shadow-indigo-200 disabled:opacity-50"
               onClick={handleCreateCategory}
               disabled={savingCat || !newCatName.trim()}
             >
-              {savingCat ? '...' : 'Guardar'}
+              {savingCat ? 'Guardando...' : 'Guardar'}
             </button>
             <button
-              className="text-gray-600 px-3 py-2 text-sm hover:underline"
+              className="text-gray-500 px-3 py-2.5 text-sm font-medium hover:text-gray-800 transition-colors"
               onClick={() => { setNewCatOpen(false); setNewCatName('') }}
             >
               Cancelar
