@@ -87,61 +87,94 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="flex flex-col container mx-auto">
-      {/* Cabecera y herramientas (Premium) */}
-      <div className="bg-white/80 backdrop-blur-xl p-5 md:p-6 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100/50 m-4 mb-2">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          
-          <div className="flex bg-gray-100/80 p-1.5 rounded-xl gap-1">
-            <button 
-              onClick={() => setTab('activos')} 
-              className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 ${tab === 'activos' ? 'bg-white text-blue-600 shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'}`}
-            >
-              🚀 Activos
-            </button>
-            <button 
-              onClick={() => setTab('inactivos')} 
-              className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 ${tab === 'inactivos' ? 'bg-white text-blue-600 shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'}`}
-            >
-              💤 Inactivos
-            </button>
-          </div>
-          
+    <div>
+      {/* Barra de tabs integrada en el pos-header */}
+      <div className="pos-header" style={{ position: 'sticky', top: 0, zIndex: 10, gap: '12px', flexWrap: 'wrap' }}>
+        {/* Tabs Activos / Inactivos */}
+        <div style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.15)', borderRadius: '10px', padding: '4px' }}>
           <button
-            className="flex items-center gap-2 px-4 py-2 text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 rounded-xl text-sm font-bold transition-all"
-            onClick={() => setNewCatOpen((v) => !v)}
+            onClick={() => setTab('activos')}
+            style={{
+              padding: '6px 18px',
+              borderRadius: '8px',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: 700,
+              fontSize: '0.875rem',
+              transition: 'all 200ms',
+              background: tab === 'activos' ? 'white' : 'transparent',
+              color: tab === 'activos' ? '#f9a825' : 'rgba(255,255,255,0.85)',
+              boxShadow: tab === 'activos' ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
+            }}
           >
-            <span>+</span> Nueva Categoría
+            ✅ Activos
+          </button>
+          <button
+            onClick={() => setTab('inactivos')}
+            style={{
+              padding: '6px 18px',
+              borderRadius: '8px',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: 700,
+              fontSize: '0.875rem',
+              transition: 'all 200ms',
+              background: tab === 'inactivos' ? 'white' : 'transparent',
+              color: tab === 'inactivos' ? '#f9a825' : 'rgba(255,255,255,0.85)',
+              boxShadow: tab === 'inactivos' ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
+            }}
+          >
+            💤 Inactivos
           </button>
         </div>
 
-        {newCatOpen && (
-          <div className="flex gap-3 items-center bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 mt-5 animate-[fadeIn_0.3s_ease-out]">
-            <input
-              type="text"
-              className="px-4 py-2.5 border-none ring-1 ring-indigo-200 focus:ring-2 focus:ring-indigo-500 rounded-xl flex-1 text-sm bg-white shadow-sm outline-none transition-all"
-              placeholder="Nombre de categoría (ej: Bebidas)"
-              value={newCatName}
-              onChange={(e) => setNewCatName(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleCreateCategory() }}
-              autoFocus
-            />
-            <button
-              className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-indigo-700 transition-colors shadow-md shadow-indigo-200 disabled:opacity-50"
-              onClick={handleCreateCategory}
-              disabled={savingCat || !newCatName.trim()}
-            >
-              {savingCat ? 'Guardando...' : 'Guardar'}
-            </button>
-            <button
-              className="text-gray-500 px-3 py-2.5 text-sm font-medium hover:text-gray-800 transition-colors"
-              onClick={() => { setNewCatOpen(false); setNewCatName('') }}
-            >
-              Cancelar
-            </button>
-          </div>
-        )}
+        {/* Accion Nueva Categoria */}
+        <button
+          onClick={() => setNewCatOpen(v => !v)}
+          style={{
+            padding: '7px 16px',
+            background: 'rgba(255,255,255,0.2)',
+            border: '1.5px solid rgba(255,255,255,0.4)',
+            borderRadius: '10px',
+            color: 'white',
+            fontWeight: 700,
+            fontSize: '0.8rem',
+            cursor: 'pointer',
+            transition: 'background 150ms',
+          }}
+        >
+          + Nueva Categoría
+        </button>
       </div>
+
+      {/* Panel nueva categoría */}
+      {newCatOpen && (
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', padding: '12px 16px', background: '#fffbf0', borderBottom: '1px solid #f0e0a0' }}>
+          <input
+            type="text"
+            placeholder="Nombre de categoría (ej: Bebidas)"
+            value={newCatName}
+            onChange={e => setNewCatName(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') handleCreateCategory() }}
+            autoFocus
+            className="product-form__input"
+            style={{ flex: 1, maxWidth: '320px' }}
+          />
+          <button
+            onClick={handleCreateCategory}
+            disabled={savingCat || !newCatName.trim()}
+            className="btn btn--primary btn--sm"
+          >
+            {savingCat ? 'Guardando...' : 'Guardar'}
+          </button>
+          <button
+            onClick={() => { setNewCatOpen(false); setNewCatName('') }}
+            className="btn btn--secondary btn--sm"
+          >
+            Cancelar
+          </button>
+        </div>
+      )}
 
       <CrudManager<Product>
         titulo={tab === 'activos' ? 'Productos Activos' : 'Productos Inactivos'}
@@ -157,4 +190,3 @@ export default function ProductsPage() {
     </div>
   )
 }
-

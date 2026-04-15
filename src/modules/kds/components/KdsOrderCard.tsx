@@ -1,13 +1,14 @@
-import { useUpdateOrderStatus } from '@/modules/pos/hooks/useUpdateOrderStatus'
+import { useState } from 'react'
+import { supabase } from '@/shared/lib/supabase'
 import type { KdsOrder } from '../hooks/useKdsOrders'
 
 interface KdsOrderCardProps {
   order: KdsOrder
+  onUpdated: () => void
 }
 
-export function KdsOrderCard({ order }: KdsOrderCardProps) {
-  const { updatingId, updateStatus } = useUpdateOrderStatus()
-  const updating = updatingId === order.id
+export function KdsOrderCard({ order, onUpdated }: KdsOrderCardProps) {
+  const [updating, setUpdating] = useState(false)
 
   const minutesAgo = Math.floor(
     (Date.now() - new Date(order.created_at).getTime()) / 60000
@@ -16,8 +17,20 @@ export function KdsOrderCard({ order }: KdsOrderCardProps) {
   const isPending = order.status === 'pendiente'
 
   const handleNext = async () => {
-    const nextStatus = isPending ? 'en_preparacion' : 'listo'
-    await updateStatus(order.id, nextStatus)
+    if (updating) return
+    setUpdating(true)
+    try {
+      const nextStatus = isPending ? 'en_preparacion' : 'listo'
+      await supabase
+        .from('orders')
+        .update({ status: nextStatus })
+        .eq('id', order.id)
+      onUpdated()
+    } catch (e: any) {
+      console.error(e)
+    } finally {
+      setUpdating(false)
+    }
   }
 
   return (
@@ -30,7 +43,8 @@ export function KdsOrderCard({ order }: KdsOrderCardProps) {
       </div>
       
       <div className="kds-card__type">
-        {order.type === 'local' ? '🍽️ Local' : '🛵 Delivery'}
+        {order.type === 'local' ? '🍽️ Local' : order.type === 'delivery' ? '🛵 Delivery' : '⚡ Directo'}
+        {order.customer_name && <span style={{ marginLeft: '6px', fontSize: '0.8rem', opacity: 0.8 }}>— {order.customer_name}</span>}
       </div>
 
       <ul className="kds-card__items">
@@ -48,12 +62,13 @@ export function KdsOrderCard({ order }: KdsOrderCardProps) {
         </div>
       )}
 
-      <button 
+      <button
         className={`btn kds-card__btn ${isPending ? 'kds-card__btn--start' : 'kds-card__btn--finish'}`}
         onClick={handleNext}
         disabled={updating}
+        style={{ cursor: updating ? 'not-allowed' : 'pointer', opacity: updating ? 0.7 : 1 }}
       >
-        {updating ? '...' : isPending ? '👨‍🍳 Empezar a cocinar' : '✅ ¡Listo para entregar!'}
+        {updating ? '⏳ Actualizando...' : isPending ? '👨‍🍳 Empezar a cocinar' : '✅ ¡Listo para entregar!'}
       </button>
     </div>
   )

@@ -3,7 +3,7 @@ import { KdsOrderCard } from './components/KdsOrderCard'
 import { EstadoCargando } from '@/shared/components/comunes/EstadoCargando'
 
 export default function KdsPage() {
-  const { orders, loading } = useKdsOrders()
+  const { orders, loading, refetch } = useKdsOrders()
 
   const pending = orders.filter(o => o.status === 'pendiente')
   const cooking = orders.filter(o => o.status === 'en_preparacion')
@@ -29,7 +29,7 @@ export default function KdsPage() {
             </h2>
             <div className="kds-column__list">
               {pending.map(order => (
-                <KdsOrderCard key={order.id} order={order} />
+                <KdsOrderCard key={order.id} order={order} onUpdated={refetch} />
               ))}
               {pending.length === 0 && (
                 <div className="kds-empty">
@@ -47,7 +47,7 @@ export default function KdsPage() {
             </h2>
             <div className="kds-column__list kds-column__list--cooking">
               {cooking.map(order => (
-                <KdsOrderCard key={order.id} order={order} />
+                <KdsOrderCard key={order.id} order={order} onUpdated={refetch} />
               ))}
               {cooking.length === 0 && (
                 <div className="kds-empty">

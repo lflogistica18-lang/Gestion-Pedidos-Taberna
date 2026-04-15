@@ -101,17 +101,6 @@ export default function ReportsPage() {
               <span className="stat-card__value">{stats.totalOrders}</span>
             </div>
 
-            <div className="stat-card stat-card--orange">
-              <span className="stat-card__icon">🧮</span>
-              <h3 className="stat-card__title">Unidades Vendidas</h3>
-              <span className="stat-card__value">{stats.totalUnits}</span>
-              {stats.totalOrders > 0 && (
-                <span style={{ fontSize: '0.85rem', color: '#6b7280' }}>
-                  ~{(stats.totalUnits / stats.totalOrders).toFixed(1)} por pedido
-                </span>
-              )}
-            </div>
-
             <div className="stat-card stat-card--purple">
               <span className="stat-card__icon">🛵</span>
               <h3 className="stat-card__title">Delivery vs Local</h3>
