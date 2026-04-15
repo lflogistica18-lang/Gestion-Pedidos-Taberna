@@ -34,18 +34,23 @@ export function useUpsertProduct(): UseUpsertProductResult {
       price: data.price,
     }
 
-    const { data: result, error: err } = id
-      ? await supabase.from('products').update(payload).eq('id', id).select().single()
-      : await supabase.from('products').insert({ ...payload, active: true }).select().single()
+    try {
+      const { data: result, error: err } = id
+        ? await supabase.from('products').update(payload).eq('id', id).select().single()
+        : await supabase.from('products').insert({ ...payload, active: true }).select().single()
 
-    setSaving(false)
+      if (err) {
+        setError(err.message)
+        return null
+      }
 
-    if (err) {
-      setError(err.message)
+      return result
+    } catch (e: any) {
+      setError(e.message || 'Error de conexión')
       return null
+    } finally {
+      setSaving(false)
     }
-
-    return result
   }
 
   return { saving, error, upsert }
@@ -61,9 +66,15 @@ export function useToggleProduct(): UseToggleProductResult {
 
   const toggle = async (id: string, active: boolean): Promise<boolean> => {
     setToggling(true)
-    const { error } = await supabase.from('products').update({ active }).eq('id', id)
-    setToggling(false)
-    return !error
+    try {
+      const { error } = await supabase.from('products').update({ active }).eq('id', id)
+      return !error
+    } catch (e: any) {
+      console.error(e)
+      return false
+    } finally {
+      setToggling(false)
+    }
   }
 
   return { toggling, toggle }

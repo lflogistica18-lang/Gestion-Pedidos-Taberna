@@ -7,22 +7,34 @@ export function useUpdateOrderStatus() {
 
   const updateStatus = async (orderId: string, newStatus: OrderStatus): Promise<boolean> => {
     setUpdatingId(orderId)
-    const { error } = await supabase
-      .from('orders')
-      .update({ status: newStatus })
-      .eq('id', orderId)
-    setUpdatingId(null)
-    return !error
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ status: newStatus })
+        .eq('id', orderId)
+      return !error
+    } catch(e: any) {
+      console.error(e)
+      return false
+    } finally {
+      setUpdatingId(null)
+    }
   }
 
   const deleteOrder = async (orderId: string): Promise<boolean> => {
     setUpdatingId(orderId)
-    const { error } = await supabase
-      .from('orders')
-      .delete()
-      .eq('id', orderId)
-    setUpdatingId(null)
-    return !error
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', orderId)
+      return !error
+    } catch(e: any) {
+      console.error(e)
+      return false
+    } finally {
+      setUpdatingId(null)
+    }
   }
 
   return { updatingId, updateStatus, deleteOrder }

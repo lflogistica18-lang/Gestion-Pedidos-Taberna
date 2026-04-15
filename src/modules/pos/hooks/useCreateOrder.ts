@@ -40,48 +40,52 @@ export function useCreateOrder(): UseCreateOrderResult {
     setSubmitting(true)
     setError(null)
 
-    // 1. Crear el pedido
-    const { data: order, error: orderErr } = await supabase
-      .from('orders')
-      .insert({
-        type: orderType,
-        payment_method: paymentMethod,
-        notes: notes || null,
-        customer_name: customerName || null,
-        delivery_address: orderType === 'delivery' ? (deliveryAddress || null) : null,
-        total,
-        status: orderType === 'directo' ? 'entregado' : 'pendiente',
-      })
-      .select('id, order_number')
-      .single()
+    try {
+      // 1. Crear el pedido
+      const { data: order, error: orderErr } = await supabase
+        .from('orders')
+        .insert({
+          type: orderType,
+          payment_method: paymentMethod,
+          notes: notes || null,
+          customer_name: customerName || null,
+          delivery_address: orderType === 'delivery' ? (deliveryAddress || null) : null,
+          total,
+          status: orderType === 'directo' ? 'entregado' : 'pendiente',
+        })
+        .select('id, order_number')
+        .single()
 
-    if (orderErr || !order) {
-      setError(orderErr?.message ?? 'Error al crear el pedido')
-      setSubmitting(false)
+      if (orderErr || !order) {
+        setError(orderErr?.message ?? 'Error al crear el pedido')
+        return null
+      }
+
+      // 2. Insertar los ítems con snapshot de nombre y precio
+      const orderItems = items.map((item) => ({
+        order_id: order.id,
+        product_id: item.productId,
+        product_name: item.productName,   // snapshot
+        unit_price: item.unitPrice,        // snapshot
+        quantity: item.quantity,
+      }))
+
+      const { error: itemsErr } = await supabase
+        .from('order_items')
+        .insert(orderItems)
+
+      if (itemsErr) {
+        setError(itemsErr.message)
+        return null
+      }
+
+      return String(order.order_number)
+    } catch (e: any) {
+      setError(e.message || 'Excepción al crear el pedido')
       return null
-    }
-
-    // 2. Insertar los ítems con snapshot de nombre y precio
-    const orderItems = items.map((item) => ({
-      order_id: order.id,
-      product_id: item.productId,
-      product_name: item.productName,   // snapshot
-      unit_price: item.unitPrice,        // snapshot
-      quantity: item.quantity,
-    }))
-
-    const { error: itemsErr } = await supabase
-      .from('order_items')
-      .insert(orderItems)
-
-    if (itemsErr) {
-      setError(itemsErr.message)
+    } finally {
       setSubmitting(false)
-      return null
     }
-
-    setSubmitting(false)
-    return String(order.order_number)
   }
 
   return { submitting, error, createOrder }

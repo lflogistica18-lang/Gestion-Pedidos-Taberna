@@ -2,18 +2,14 @@ import { useState } from 'react'
 import { useProducts } from './hooks/useProducts'
 import { useUpsertProduct, useToggleProduct } from './hooks/useUpsertProduct'
 import { useCategories } from './hooks/useCategories'
-import { ProductCard } from './components/ProductCard'
-import { ProductModal } from './components/ProductModal'
+import { CrudManager } from '@/shared/components/comunes/CrudManager'
+import type { CampoSchema } from '@/shared/types/base'
 import type { Product } from '@/types/database.types'
-import type { ProductFormData } from './hooks/useUpsertProduct'
 
 type Tab = 'activos' | 'inactivos'
 
 export default function ProductsPage() {
   const [tab, setTab] = useState<Tab>('activos')
-  const [modalOpen, setModalOpen] = useState(false)
-  const [editProduct, setEditProduct] = useState<Product | null>(null)
-  const [togglingId, setTogglingId] = useState<string | null>(null)
   const [newCatOpen, setNewCatOpen] = useState(false)
   const [newCatName, setNewCatName] = useState('')
   const [savingCat, setSavingCat] = useState(false)
@@ -21,45 +17,62 @@ export default function ProductsPage() {
   const { products, loading, error, refetch } = useProducts({
     activeOnly: tab === 'activos',
   })
-  const { saving, upsert } = useUpsertProduct()
+  const { upsert } = useUpsertProduct()
   const { toggle } = useToggleProduct()
   const { categories, createCategory } = useCategories()
 
-  // Agrupar por categoría (según el orden de la tabla)
-  const grouped = categories.reduce<Record<string, Product[]>>((acc, cat) => {
-    const items = products.filter((p) => p.category === cat.name)
-    if (items.length > 0) acc[cat.name] = items
-    return acc
-  }, {})
+  const campos: CampoSchema[] = [
+    { nombre: 'name', etiqueta: 'Nombre', tipo: 'texto', obligatorio: true },
+    { 
+      nombre: 'category', 
+      etiqueta: 'Categoría', 
+      tipo: 'select', 
+      obligatorio: true, 
+      opciones: categories.map(c => c.name) 
+    },
+    { nombre: 'price', etiqueta: 'Precio', tipo: 'numero', obligatorio: true }
+  ]
 
-  const handleOpenCreate = () => {
-    setEditProduct(null)
-    setModalOpen(true)
-  }
-
-  const handleOpenEdit = (product: Product) => {
-    setEditProduct(product)
-    setModalOpen(true)
-  }
-
-  const handleCloseModal = () => {
-    setModalOpen(false)
-    setEditProduct(null)
-  }
-
-  const handleSubmit = async (data: ProductFormData) => {
-    const result = await upsert(data, editProduct?.id)
-    if (result) {
-      handleCloseModal()
+  const handleCrear = async (datos: Partial<Product>) => {
+    try {
+      const result = await upsert({
+        name: datos.name || '',
+        category: datos.category || '',
+        price: Number(datos.price) || 0
+      })
+      if (!result) return { error: 'Error al crear producto' }
       refetch()
+      return { error: null }
+    } catch(e: any) {
+      return { error: e.message }
     }
   }
 
-  const handleToggle = async (product: Product) => {
-    setTogglingId(product.id)
-    const ok = await toggle(product.id, !product.active)
-    if (ok) refetch()
-    setTogglingId(null)
+  const handleEditar = async (id: string, datos: Partial<Product>) => {
+    try {
+      const result = await upsert({
+        name: datos.name || '',
+        category: datos.category || '',
+        price: Number(datos.price) || 0
+      }, id)
+      if (!result) return { error: 'Error al actualizar producto' }
+      refetch()
+      return { error: null }
+    } catch(e: any) {
+      return { error: e.message }
+    }
+  }
+
+  const handleDesactivar = async (id: string) => {
+    try {
+      const isActivating = tab === 'inactivos'
+      const ok = await toggle(id, isActivating)
+      if (!ok) return { error: 'Error al modificar estado' }
+      refetch()
+      return { error: null }
+    } catch(e: any) {
+      return { error: e.message }
+    }
   }
 
   const handleCreateCategory = async () => {
@@ -74,139 +87,73 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="products-page">
-      {/* Header */}
-      <header className="products-page__header">
-        <h1 className="products-page__title">Productos</h1>
-        <div style={{ display: 'flex', gap: '8px' }}>
+    <div className="flex flex-col container mx-auto">
+      {/* Herramientas extra (Categorías y Tabs) */}
+      <div className="bg-white p-4 rounded-lg shadow-sm border m-4 mb-0">
+        <div className="flex flex-wrap gap-4 items-center">
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setTab('activos')} 
+              className={`px-4 py-2 rounded-md text-sm border ${tab === 'activos' ? 'bg-blue-600 text-white' : 'text-gray-700 bg-gray-50'}`}
+            >
+              Activos
+            </button>
+            <button 
+              onClick={() => setTab('inactivos')} 
+              className={`px-4 py-2 rounded-md text-sm border ${tab === 'inactivos' ? 'bg-blue-600 text-white' : 'text-gray-700 bg-gray-50'}`}
+            >
+              Inactivos
+            </button>
+          </div>
+          
           <button
-            className="btn btn--secondary"
+            className="ml-auto text-blue-600 hover:text-blue-800 text-sm font-medium"
             onClick={() => setNewCatOpen((v) => !v)}
           >
-            🏷️ Cat.
-          </button>
-          <button
-            id="btn-nuevo-producto"
-            className="btn btn--primary"
-            onClick={handleOpenCreate}
-          >
-            ➕ Nuevo
+            + Nueva Categoría
           </button>
         </div>
-      </header>
 
-      {/* Nueva categoría inline */}
-      {newCatOpen && (
-        <div className="products-page__new-cat">
-          <input
-            type="text"
-            className="cart-input"
-            placeholder="Nombre de categoría (ej: Empanadas)"
-            value={newCatName}
-            onChange={(e) => setNewCatName(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') handleCreateCategory() }}
-            autoFocus
-          />
-          <button
-            className="btn btn--primary"
-            onClick={handleCreateCategory}
-            disabled={savingCat || !newCatName.trim()}
-          >
-            {savingCat ? '...' : 'Crear'}
-          </button>
-          <button
-            className="btn btn--secondary"
-            onClick={() => { setNewCatOpen(false); setNewCatName('') }}
-          >
-            Cancelar
-          </button>
-        </div>
-      )}
-
-      {/* Tabs PROD-04 */}
-      <div className="products-page__tabs" role="tablist">
-        <button
-          role="tab"
-          aria-selected={tab === 'activos'}
-          className={`products-page__tab ${tab === 'activos' ? 'products-page__tab--active' : ''}`}
-          onClick={() => setTab('activos')}
-        >
-          Activos ({tab === 'activos' ? products.length : '...'})
-        </button>
-        <button
-          role="tab"
-          aria-selected={tab === 'inactivos'}
-          className={`products-page__tab ${tab === 'inactivos' ? 'products-page__tab--active' : ''}`}
-          onClick={() => setTab('inactivos')}
-        >
-          Desactivados ({tab === 'inactivos' ? products.length : '...'})
-        </button>
+        {newCatOpen && (
+          <div className="flex gap-2 items-center bg-gray-50 p-3 rounded-md border border-gray-200 mt-4">
+            <input
+              type="text"
+              className="px-3 py-2 border rounded-md flex-1 text-sm bg-white"
+              placeholder="Nombre de categoría (ej: Bebidas)"
+              value={newCatName}
+              onChange={(e) => setNewCatName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleCreateCategory() }}
+              autoFocus
+            />
+            <button
+              className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700 disabled:opacity-50"
+              onClick={handleCreateCategory}
+              disabled={savingCat || !newCatName.trim()}
+            >
+              {savingCat ? '...' : 'Guardar'}
+            </button>
+            <button
+              className="text-gray-600 px-3 py-2 text-sm hover:underline"
+              onClick={() => { setNewCatOpen(false); setNewCatName('') }}
+            >
+              Cancelar
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Content */}
-      {loading ? (
-        <div className="products-page__loading">
-          <div className="spinner" aria-label="Cargando" />
-          <p>Cargando productos...</p>
-        </div>
-      ) : error ? (
-        <div className="products-page__error">
-          <span>⚠️</span>
-          <p>Error al cargar: {error}</p>
-          <button className="btn btn--secondary" onClick={refetch}>
-            Reintentar
-          </button>
-        </div>
-      ) : Object.keys(grouped).length === 0 ? (
-        <div className="products-page__empty">
-          <span className="products-page__empty-icon">
-            {tab === 'activos' ? '📦' : '🗄️'}
-          </span>
-          <p>
-            {tab === 'activos'
-              ? 'No hay productos activos. ¡Creá el primero!'
-              : 'No hay productos desactivados.'}
-          </p>
-          {tab === 'activos' && (
-            <button className="btn btn--primary" onClick={handleOpenCreate}>
-              Crear producto
-            </button>
-          )}
-        </div>
-      ) : (
-        <div className="products-page__list">
-          {categories.filter((cat) => grouped[cat.name]).map((cat) => (
-            <section key={cat.name} className="products-page__category">
-              <h2 className="products-page__category-title">
-                {cat.name}
-                <span className="products-page__category-count">
-                  {grouped[cat.name].length}
-                </span>
-              </h2>
-              <div className="products-page__cards">
-                {grouped[cat.name].map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    onEdit={handleOpenEdit}
-                    onToggle={handleToggle}
-                    toggling={togglingId === product.id}
-                  />
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
-      )}
-
-      {/* Modal */}
-      <ProductModal
-        open={modalOpen}
-        product={editProduct}
-        saving={saving}
-        onSubmit={handleSubmit}
-        onClose={handleCloseModal}
+      <CrudManager<Product>
+        titulo={tab === 'activos' ? 'Productos Activos' : 'Productos Inactivos'}
+        datos={products}
+        campos={campos}
+        cargando={loading}
+        error={error}
+        onCrear={handleCrear}
+        onEditar={handleEditar}
+        onDesactivar={handleDesactivar}
+        onRecargar={refetch}
       />
     </div>
   )
 }
+

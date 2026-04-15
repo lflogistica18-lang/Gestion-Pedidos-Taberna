@@ -32,14 +32,19 @@ export function useProducts({ activeOnly }: UseProductsOptions = {}): UseProduct
       query = query.eq('active', activeOnly)
     }
 
-    const { data, error: err } = await query
+    try {
+      const { data, error: err } = await query
 
-    if (err) {
-      setError(err.message)
-    } else {
-      setProducts(data ?? [])
+      if (err) {
+        setError(err.message)
+      } else {
+        setProducts(data ?? [])
+      }
+    } catch (e: any) {
+      setError(e.message || 'Error de conexión')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }, [activeOnly])
 
   useEffect(() => {

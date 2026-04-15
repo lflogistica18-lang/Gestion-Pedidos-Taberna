@@ -13,16 +13,22 @@ export function useKdsOrders() {
   const [loading, setLoading] = useState(true)
 
   const fetch = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('orders')
-      .select('*, order_items(*)')
-      .in('status', KDS_STATUSES)
-      .order('created_at', { ascending: true })
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*, order_items(*)')
+        .is('deleted_at', null)
+        .in('status', KDS_STATUSES)
+        .order('created_at', { ascending: true })
 
-    if (!error && data) {
-      setOrders(data as KdsOrder[])
+      if (!error && data) {
+        setOrders(data as KdsOrder[])
+      }
+    } catch (e: any) {
+      console.error(e)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }, [])
 
   useEffect(() => {

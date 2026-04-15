@@ -3,6 +3,7 @@ import { Layout } from '@/shared/components/Layout'
 import PosPage from '@/modules/pos/pos-page'
 import KdsPage from '@/modules/kds/kds-page'
 import ProductsPage from '@/modules/products/products-page'
+import OrdersPage from '@/modules/orders/orders-page'
 import ReportsPage from '@/modules/reports/reports-page'
 
 export const router = createBrowserRouter([
@@ -14,6 +15,7 @@ export const router = createBrowserRouter([
       { path: 'pos', element: <PosPage /> },
       { path: 'kds', element: <KdsPage /> },
       { path: 'products', element: <ProductsPage /> },
+      { path: 'orders', element: <OrdersPage /> },
       { path: 'reports', element: <ReportsPage /> },
     ],
   },

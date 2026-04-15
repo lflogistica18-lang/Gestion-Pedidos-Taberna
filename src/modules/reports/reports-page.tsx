@@ -4,6 +4,7 @@ import {
   ResponsiveContainer, CartesianGrid,
 } from 'recharts'
 import { useDashboardStats, usePrepTimeStats } from './hooks/useDashboardStats'
+import { EstadoCargando } from '@/shared/components/comunes/EstadoCargando'
 
 function toDateStr(date: Date): string {
   return date.toISOString().split('T')[0]
@@ -78,7 +79,7 @@ export default function ReportsPage() {
 
       {loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
-          <div className="spinner" />
+          <EstadoCargando mensaje="Cargando reportes..." />
         </div>
       ) : !stats ? null : (
         <>

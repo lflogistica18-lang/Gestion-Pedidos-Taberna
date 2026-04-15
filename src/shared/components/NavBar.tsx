@@ -4,6 +4,7 @@ const NAV_ITEMS = [
   { to: '/pos', label: 'Caja', icon: '💰' },
   { to: '/kds', label: 'Cocina', icon: '👨‍🍳' },
   { to: '/products', label: 'Productos', icon: '📦' },
+  { to: '/orders', label: 'Historial', icon: '📋' },
   { to: '/reports', label: 'Reportes', icon: '📊' },
 ]
 

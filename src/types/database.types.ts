@@ -1,5 +1,5 @@
 export type ProductCategory = string
-export type OrderStatus = 'pendiente' | 'en_preparacion' | 'listo' | 'entregado'
+export type OrderStatus = 'pendiente' | 'en_preparacion' | 'listo' | 'entregado' | 'cancelado'
 export type OrderType = 'local' | 'delivery' | 'directo'
 export type PaymentMethod = 'efectivo' | 'transferencia'
 
@@ -25,6 +25,7 @@ export interface Order {
   delivery_address: string | null
   created_at: string
   updated_at: string
+  deleted_at: string | null
 }
 
 export interface OrderItem {

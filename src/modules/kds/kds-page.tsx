@@ -1,5 +1,6 @@
 import { useKdsOrders } from './hooks/useKdsOrders'
 import { KdsOrderCard } from './components/KdsOrderCard'
+import { EstadoCargando } from '@/shared/components/comunes/EstadoCargando'
 
 export default function KdsPage() {
   const { orders, loading } = useKdsOrders()
@@ -18,10 +19,7 @@ export default function KdsPage() {
       </header>
 
       {loading ? (
-        <div className="kds-loading">
-          <div className="spinner" /> 
-          <p>Cargando comandas...</p>
-        </div>
+        <EstadoCargando mensaje="Cargando comandas..." />
       ) : (
         <div className="kds-board">
           {/* Pendientes */}
