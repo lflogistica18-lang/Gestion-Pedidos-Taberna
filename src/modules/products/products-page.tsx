@@ -89,9 +89,9 @@ export default function ProductsPage() {
   return (
     <div>
       {/* Barra de tabs integrada en el pos-header */}
-      <div className="pos-header" style={{ position: 'sticky', top: 0, zIndex: 10, gap: '12px', flexWrap: 'wrap' }}>
+      <div className="pos-header" style={{ position: 'sticky', top: 0, zIndex: 10, gap: '12px', flexWrap: 'wrap', marginBottom: '16px' }}>
         {/* Tabs Activos / Inactivos */}
-        <div style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.15)', borderRadius: '10px', padding: '4px' }}>
+        <div style={{ display: 'flex', gap: '4px', background: '#f3f4f6', borderRadius: '10px', padding: '4px', border: '1px solid #e5e7eb' }}>
           <button
             onClick={() => setTab('activos')}
             style={{
@@ -103,8 +103,8 @@ export default function ProductsPage() {
               fontSize: '0.875rem',
               transition: 'all 200ms',
               background: tab === 'activos' ? 'white' : 'transparent',
-              color: tab === 'activos' ? '#f9a825' : 'rgba(255,255,255,0.85)',
-              boxShadow: tab === 'activos' ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
+              color: tab === 'activos' ? '#ea580c' : '#6b7280',
+              boxShadow: tab === 'activos' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
             }}
           >
             ✅ Activos
@@ -120,8 +120,8 @@ export default function ProductsPage() {
               fontSize: '0.875rem',
               transition: 'all 200ms',
               background: tab === 'inactivos' ? 'white' : 'transparent',
-              color: tab === 'inactivos' ? '#f9a825' : 'rgba(255,255,255,0.85)',
-              boxShadow: tab === 'inactivos' ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
+              color: tab === 'inactivos' ? '#ea580c' : '#6b7280',
+              boxShadow: tab === 'inactivos' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
             }}
           >
             💤 Inactivos
@@ -133,14 +133,15 @@ export default function ProductsPage() {
           onClick={() => setNewCatOpen(v => !v)}
           style={{
             padding: '7px 16px',
-            background: 'rgba(255,255,255,0.2)',
-            border: '1.5px solid rgba(255,255,255,0.4)',
+            background: '#ffffff',
+            border: '1px solid #d1d5db',
             borderRadius: '10px',
-            color: 'white',
+            color: '#374151',
             fontWeight: 700,
             fontSize: '0.8rem',
             cursor: 'pointer',
             transition: 'background 150ms',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
           }}
         >
           + Nueva Categoría

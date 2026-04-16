@@ -44,9 +44,9 @@ export default function OrdersPage() {
   return (
     <div>
       {/* Barra de tabs integrada en el pos-header */}
-      <div className="pos-header" style={{ position: 'sticky', top: 0, zIndex: 10, gap: '12px', flexWrap: 'wrap' }}>
+      <div className="pos-header" style={{ position: 'sticky', top: 0, zIndex: 10, gap: '12px', flexWrap: 'wrap', marginBottom: '16px' }}>
         {/* Tabs Historial / Eliminados */}
-        <div style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.15)', borderRadius: '10px', padding: '4px' }}>
+        <div style={{ display: 'flex', gap: '4px', background: '#f3f4f6', borderRadius: '10px', padding: '4px', border: '1px solid #e5e7eb' }}>
           <button
             onClick={() => setTab('historial')}
             style={{
@@ -58,8 +58,8 @@ export default function OrdersPage() {
               fontSize: '0.875rem',
               transition: 'all 200ms',
               background: tab === 'historial' ? 'white' : 'transparent',
-              color: tab === 'historial' ? '#f9a825' : 'rgba(255,255,255,0.85)',
-              boxShadow: tab === 'historial' ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
+              color: tab === 'historial' ? '#ea580c' : '#6b7280',
+              boxShadow: tab === 'historial' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
             }}
           >
             ✅ Historial Vivo
@@ -75,8 +75,8 @@ export default function OrdersPage() {
               fontSize: '0.875rem',
               transition: 'all 200ms',
               background: tab === 'eliminados' ? 'white' : 'transparent',
-              color: tab === 'eliminados' ? '#f9a825' : 'rgba(255,255,255,0.85)',
-              boxShadow: tab === 'eliminados' ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
+              color: tab === 'eliminados' ? '#ea580c' : '#6b7280',
+              boxShadow: tab === 'eliminados' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
             }}
           >
             🗑️ Papelera
