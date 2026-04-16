@@ -42,20 +42,46 @@ export default function OrdersPage() {
   }
 
   return (
-    <div className="flex flex-col container mx-auto">
-      <div className="bg-white p-4 rounded-lg shadow-sm border m-4 mb-0 flex gap-2">
-        <button 
-          onClick={() => setTab('historial')} 
-          className={`px-4 py-2 rounded-md text-sm border ${tab === 'historial' ? 'bg-blue-600 text-white' : 'text-gray-700 bg-gray-50'}`}
-        >
-          Historial Vivo
-        </button>
-        <button 
-          onClick={() => setTab('eliminados')} 
-          className={`px-4 py-2 rounded-md text-sm border ${tab === 'eliminados' ? 'bg-blue-600 text-white' : 'text-gray-700 bg-gray-50'}`}
-        >
-          Papelera
-        </button>
+    <div>
+      {/* Barra de tabs integrada en el pos-header */}
+      <div className="pos-header" style={{ position: 'sticky', top: 0, zIndex: 10, gap: '12px', flexWrap: 'wrap' }}>
+        {/* Tabs Historial / Eliminados */}
+        <div style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.15)', borderRadius: '10px', padding: '4px' }}>
+          <button
+            onClick={() => setTab('historial')}
+            style={{
+              padding: '6px 18px',
+              borderRadius: '8px',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: 700,
+              fontSize: '0.875rem',
+              transition: 'all 200ms',
+              background: tab === 'historial' ? 'white' : 'transparent',
+              color: tab === 'historial' ? '#f9a825' : 'rgba(255,255,255,0.85)',
+              boxShadow: tab === 'historial' ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
+            }}
+          >
+            ✅ Historial Vivo
+          </button>
+          <button
+            onClick={() => setTab('eliminados')}
+            style={{
+              padding: '6px 18px',
+              borderRadius: '8px',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: 700,
+              fontSize: '0.875rem',
+              transition: 'all 200ms',
+              background: tab === 'eliminados' ? 'white' : 'transparent',
+              color: tab === 'eliminados' ? '#f9a825' : 'rgba(255,255,255,0.85)',
+              boxShadow: tab === 'eliminados' ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
+            }}
+          >
+            🗑️ Papelera
+          </button>
+        </div>
       </div>
 
       <CrudManager<Order>
