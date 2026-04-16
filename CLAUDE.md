@@ -109,6 +109,54 @@ Conventions not yet established. Will populate as patterns emerge during develop
 Architecture not yet mapped. Follow existing patterns found in the codebase.
 <!-- GSD:architecture-end -->
 
+<!-- GSD:deploy-start -->
+## Deploy — VPS
+
+- **Servidor:** `root@187.77.247.24` (Ubuntu 24.04)
+- **Carpeta en VPS:** `/root/Gestion-Pedidos-Taberna`
+- **App:** `http://187.77.247.24:8090`
+- **docker-compose:** v1.29.2 (tiene bug con `--force-recreate`)
+- **`.env` en VPS:** `/root/Gestion-Pedidos-Taberna/.env` (manual, no está en Git, necesario para el build de Vite)
+- **`.dockerignore`:** `.env` fue removido para que Vite lo tome en tiempo de build
+
+### Comando de deploy correcto
+
+```bash
+git pull && \
+docker build --no-cache -t sgp-taberna:latest . && \
+docker-compose stop && \
+docker-compose rm -f && \
+docker-compose up -d
+```
+
+**NUNCA usar `--force-recreate`** — rompe con `KeyError: 'ContainerConfig'` en docker-compose v1.29.
+El error `"network has active endpoints (nginx-proxy-manager)"` al hacer `down` es normal y no bloquea el `up -d`.
+<!-- GSD:deploy-end -->
+
+<!-- GSD:bugs-pendientes-start -->
+## Bugs Pendientes (al 2026-04-15)
+
+### Layout roto en 3 páginas
+Las páginas `/products`, `/orders` y una tercera (confirmar) no respetan el ancho completo.
+El deploy funciona y el JS correcto llega al navegador — es un bug de código.
+
+**Síntomas:**
+- CrudManager no ocupa todo el ancho
+- Botón "Inactivos" en Productos se vuelve invisible
+- Historial (`/orders`) queda completamente fuera del diseño
+
+**Causa probable:**
+- `products-page.tsx` tiene su propio `pos-header` (línea 92) Y `CrudManager` tiene otro `pos-header` interno (línea 106) → doble header apilado
+- `.pos-header` CSS tiene `background: rgba(249,250,251,0.95)` (gris claro) en vez de naranja → el texto blanco del botón "Inactivos" desaparece
+- Revisar si hay `max-width` que restringe el contenedor
+
+**Archivos a revisar:**
+- `src/shared/components/comunes/CrudManager.tsx` (pos-header en línea 106)
+- `src/modules/products/products-page.tsx` (pos-header en línea 92)
+- `src/modules/orders/orders-page.tsx` (no revisado aún)
+- `src/index.css` (estilos de `.pos-header`)
+<!-- GSD:bugs-pendientes-end -->
+
 <!-- GSD:skills-start source:skills/ -->
 ## Project Skills
 
