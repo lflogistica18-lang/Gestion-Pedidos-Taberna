@@ -3,11 +3,15 @@ import {
   AreaChart, Area, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid,
 } from 'recharts'
-import { useDashboardStats, usePrepTimeStats } from './hooks/useDashboardStats'
+import { useDashboardStats } from './hooks/useDashboardStats'
 import { EstadoCargando } from '@/shared/components/comunes/EstadoCargando'
 
+// CRÍTICO: NO usar toISOString() — retorna UTC y en AR (UTC-3) a las 21hs ya es el día siguiente
 function toDateStr(date: Date): string {
-  return date.toISOString().split('T')[0]
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
 }
 
 function parseLocalDate(str: string): Date {
@@ -19,6 +23,23 @@ function formatCurrency(n: number) {
   return '$' + n.toLocaleString('es-AR')
 }
 
+// Emoji por categoría — mapa visual
+const CATEGORY_EMOJI: Record<string, string> = {
+  'Comida': '🍔',
+  'Bebida': '🍺',
+  'Bebidas': '🍺',
+  'Postres': '🍰',
+  'Hamburguesas': '🍔',
+  'Pizzas': '🍕',
+  'Empanadas': '🥟',
+  'Promociones': '🎉',
+  'Extras': '➕',
+}
+
+function getCategoryEmoji(cat: string): string {
+  return CATEGORY_EMOJI[cat] || '📦'
+}
+
 export default function ReportsPage() {
   const todayStr = toDateStr(new Date())
   const [dateFrom, setDateFrom] = useState(todayStr)
@@ -28,10 +49,8 @@ export default function ReportsPage() {
   const dateToObj = parseLocalDate(dateTo)
 
   const { stats, loading } = useDashboardStats(dateFromObj, dateToObj)
-  const { avgPrepTimeMs, prepLoading } = usePrepTimeStats()
 
   const isToday = dateFrom === todayStr && dateTo === todayStr
-  const prepMinutes = Math.round(avgPrepTimeMs / 60000)
   const isMultiDay = stats && stats.dailyData.length > 1
 
   const handleToday = () => {
@@ -95,6 +114,19 @@ export default function ReportsPage() {
               </div>
             </div>
 
+            {/* Card de Margen de Ganancia — nuevo */}
+            <div className="stat-card stat-card--orange">
+              <span className="stat-card__icon">📈</span>
+              <h3 className="stat-card__title">Margen de Ganancia</h3>
+              <span className="stat-card__value">{formatCurrency(stats.totalMargin)}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '0.85rem', color: '#6b7280' }}>
+                <span>Costo: <b style={{ color: '#dc2626' }}>{formatCurrency(stats.totalCost)}</b></span>
+                <span>Margen: <b style={{ color: '#16a34a' }}>
+                  {stats.totalRevenue > 0 ? Math.round((stats.totalMargin / stats.totalRevenue) * 100) : 0}%
+                </b></span>
+              </div>
+            </div>
+
             <div className="stat-card stat-card--blue">
               <span className="stat-card__icon">📦</span>
               <h3 className="stat-card__title">Total Pedidos</h3>
@@ -109,15 +141,14 @@ export default function ReportsPage() {
               </span>
             </div>
 
-            {/* Promedio prep — siempre hoy, no cambia con filtros */}
             <div className="stat-card stat-card--gray">
               <span className="stat-card__icon">⏱️</span>
               <h3 className="stat-card__title">Promedio Preparación</h3>
               <span style={{ fontSize: '0.72rem', color: '#9ca3af', marginBottom: '2px' }}>
-                Solo cocina · hoy
+                Solo cocina · {stats.kitchenOrdersCount} pedido{stats.kitchenOrdersCount !== 1 ? 's' : ''}
               </span>
               <span className="stat-card__value">
-                {prepLoading ? '...' : prepMinutes > 0 ? `${prepMinutes} min` : '--'}
+                {stats.avgPrepTimeMinutes > 0 ? `${stats.avgPrepTimeMinutes} min` : '--'}
               </span>
             </div>
           </div>
@@ -169,7 +200,7 @@ export default function ReportsPage() {
             </div>
           )}
 
-          {/* ── TOP PRODUCTOS ── */}
+          {/* ── TOP PRODUCTOS GLOBAL (con montos) ── */}
           <div className="top-products-list">
             <h2 className="top-products-list__title">👑 Top 5 Productos Más Vendidos</h2>
             {stats.topProducts.length === 0 ? (
@@ -192,6 +223,9 @@ export default function ReportsPage() {
                             ~{avgPerDay}/día
                           </span>
                         )}
+                        <span className="top-product-item__revenue">
+                          {formatCurrency(p.revenue)}
+                        </span>
                         <span className="top-product-item__qty">{p.qty} unid.</span>
                       </div>
                     </div>
@@ -200,6 +234,33 @@ export default function ReportsPage() {
               </div>
             )}
           </div>
+
+          {/* ── TOP POR CATEGORÍA (separado) ── */}
+          {Object.keys(stats.topByCategory).length > 0 && (
+            <div className="reports-grid" style={{ marginTop: '24px' }}>
+              {Object.entries(stats.topByCategory).map(([category, items]) => (
+                <div key={category} className="top-products-list">
+                  <h2 className="top-products-list__title" style={{ fontSize: '1rem' }}>
+                    {getCategoryEmoji(category)} {category} — Más vendidos
+                  </h2>
+                  {items.map((p, i) => (
+                    <div key={p.name} className="top-product-item">
+                      <span className="top-product-item__name">
+                        {i === 0 ? '🥇 ' : i === 1 ? '🥈 ' : i === 2 ? '🥉 ' : ''}
+                        {p.name}
+                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span className="top-product-item__revenue">
+                          {formatCurrency(p.revenue)}
+                        </span>
+                        <span className="top-product-item__qty">{p.qty} unid.</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
         </>
       )}
     </div>

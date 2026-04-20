@@ -131,30 +131,19 @@ docker-compose up -d
 
 **NUNCA usar `--force-recreate`** — rompe con `KeyError: 'ContainerConfig'` en docker-compose v1.29.
 El error `"network has active endpoints (nginx-proxy-manager)"` al hacer `down` es normal y no bloquea el `up -d`.
+
+### Nota Crítica sobre Nombres de Imagen de Docker (Abril 2026)
+Asegúrese de que el comando `docker build` etiquete la imagen EXACTAMENTE como la requiere el servicio en `docker-compose.yml`. Si `docker-compose.yml` demanda `image: sgp-taberna:latest`, usar `-t sgp-taberna-front` en el build resultará en una actualización "fantasma" donde Docker usará la imagen antigua `sgp-taberna:latest` en caché, dando la impresión de que "los cambios front-end no impactan". Ambos lados deben coincidir: `docker build --no-cache -t sgp-taberna:latest .`
 <!-- GSD:deploy-end -->
 
 <!-- GSD:bugs-pendientes-start -->
-## Bugs Pendientes (al 2026-04-15)
+## Bugs Resueltos Recientemente (2026-04-16)
 
-### Layout roto en 3 páginas
-Las páginas `/products`, `/orders` y una tercera (confirmar) no respetan el ancho completo.
-El deploy funciona y el JS correcto llega al navegador — es un bug de código.
-
-**Síntomas:**
-- CrudManager no ocupa todo el ancho
-- Botón "Inactivos" en Productos se vuelve invisible
-- Historial (`/orders`) queda completamente fuera del diseño
-
-**Causa probable:**
-- `products-page.tsx` tiene su propio `pos-header` (línea 92) Y `CrudManager` tiene otro `pos-header` interno (línea 106) → doble header apilado
-- `.pos-header` CSS tiene `background: rgba(249,250,251,0.95)` (gris claro) en vez de naranja → el texto blanco del botón "Inactivos" desaparece
-- Revisar si hay `max-width` que restringe el contenedor
-
-**Archivos a revisar:**
-- `src/shared/components/comunes/CrudManager.tsx` (pos-header en línea 106)
-- `src/modules/products/products-page.tsx` (pos-header en línea 92)
-- `src/modules/orders/orders-page.tsx` (no revisado aún)
-- `src/index.css` (estilos de `.pos-header`)
+### Visibilidad en Pestañas (Historial Vivo y Productos Activos)
+**Síntomas:** El texto del botón "Inactivos" y los selectores del historial quedaban literalmente invisibles tras cargar en el navegador. La vista en producción se negaba a compilar cambios.
+**Resolución:** 
+1. **Frontend:** Se determinó que las pestañas usaban estilos orientados a "Dark Mode" (letras claras/blancas de alta transparencia `rgba(255,255,255,0.15)`) contra un fondo blanco. Se aplicó un diseño para temas claros con contenedores grises suaves (`#f3f4f6`) y texto en botones inactivos gris (`#6b7280`), iluminando a naranja sólido (`#ea580c`) con fondo blanco al hacer enfoque. Se parcheó exitosamente en `products-page.tsx` y `orders-page.tsx`.
+2. **Infraestructura (DevOps):** Los cambios se estancaban por el uso de la etiqueta de compilación `sgp-taberna-front` versus la requerida `sgp-taberna:latest` exigida por el `docker-compose.yml`. Se ajustó la política de build en el servidor alineando etiquetas de imagen, impactando con éxito local y remotamente.
 <!-- GSD:bugs-pendientes-end -->
 
 <!-- GSD:skills-start source:skills/ -->

@@ -1,9 +1,14 @@
 import { useState, useCallback, useEffect } from 'react'
 import { supabase } from '@/shared/lib/supabase'
-import type { Order } from '@/types/database.types'
+import type { Order, OrderItem } from '@/types/database.types'
+
+// Orden con detalle de items incluido
+export interface OrderConDetalle extends Order {
+  order_items: OrderItem[]
+}
 
 export function useAdminOrders() {
-  const [orders, setOrders] = useState<Order[]>([])
+  const [orders, setOrders] = useState<OrderConDetalle[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -11,15 +16,16 @@ export function useAdminOrders() {
     setLoading(true)
     setError(null)
     try {
+      // Traer orders CON detalle de items — join para mostrar en historial
       const { data, error: err } = await supabase
         .from('orders')
-        .select('*')
+        .select('*, order_items(*)')
         .order('created_at', { ascending: false })
 
       if (err) {
         setError(err.message)
       } else {
-        setOrders(data || [])
+        setOrders((data as OrderConDetalle[]) || [])
       }
     } catch (e: any) {
       setError(e.message || 'Error de conexión')
@@ -32,37 +38,114 @@ export function useAdminOrders() {
     fetchOrders()
   }, [fetchOrders])
 
-  const editOrder = async (id: string, updates: Partial<Order>) => {
+  // Soft delete — enviar a papelera
+  // Actualiza optimistamente el estado local y luego hace refetch
+  const enviarAPapelera = async (id: string): Promise<{ error: string | null }> => {
+    // Actualización optimista — mueve orden del historial a papelera de inmediato
+    const ahora = new Date().toISOString()
+    setOrders(prev =>
+      prev.map(o => o.id === id ? { ...o, deleted_at: ahora } : o)
+    )
+
     try {
-      const { error } = await supabase
+      const { error: updateErr } = await supabase
         .from('orders')
-        .update(updates)
+        .update({ deleted_at: ahora })
         .eq('id', id)
-      
-      if (error) return { error: error.message }
+
+      if (updateErr) {
+        // Revertir si falla
+        await fetchOrders()
+        return { error: updateErr.message }
+      }
       return { error: null }
     } catch (e: any) {
+      await fetchOrders()
       return { error: e.message }
     }
   }
 
-  const deactivateOrder = async (id: string) => {
+  // Restaurar desde papelera (quitar deleted_at)
+  const restaurarDePapelera = async (id: string): Promise<{ error: string | null }> => {
+    setOrders(prev =>
+      prev.map(o => o.id === id ? { ...o, deleted_at: null } : o)
+    )
+
     try {
-      const order = orders.find(o => o.id === id)
-      // Si ya está eliminado, lo restauramos (toggle), sino le ponemos fecha
-      const newDeletedAt = order?.deleted_at ? null : new Date().toISOString()
-      
-      const { error } = await supabase
+      const { error: updateErr } = await supabase
         .from('orders')
-        .update({ deleted_at: newDeletedAt })
+        .update({ deleted_at: null })
         .eq('id', id)
 
-      if (error) return { error: error.message }
+      if (updateErr) {
+        await fetchOrders()
+        return { error: updateErr.message }
+      }
       return { error: null }
     } catch (e: any) {
+      await fetchOrders()
       return { error: e.message }
     }
   }
 
-  return { orders, loading, error, refetch: fetchOrders, editOrder, deactivateOrder }
+  // Eliminación permanente — borra de la DB
+  // Resta de caja está implícito — el registro ya no existe
+  const eliminarPermanente = async (id: string): Promise<{ error: string | null }> => {
+    // Actualización optimista
+    setOrders(prev => prev.filter(o => o.id !== id))
+
+    try {
+      // Borrar items primero (si hay FK constraint)
+      const { error: itemsErr } = await supabase
+        .from('order_items')
+        .delete()
+        .eq('order_id', id)
+
+      if (itemsErr) {
+        await fetchOrders()
+        return { error: `Error al borrar items: ${itemsErr.message}` }
+      }
+
+      // Borrar logs de estado
+      const { error: logsErr } = await supabase
+        .from('order_status_log')
+        .delete()
+        .eq('order_id', id)
+
+      // Aceptamos fallo en logs — puede que no existan
+      if (logsErr) {
+        console.warn('Advertencia al borrar logs:', logsErr.message)
+      }
+
+      // Finalmente borrar el pedido
+      const { error: orderErr } = await supabase
+        .from('orders')
+        .delete()
+        .eq('id', id)
+
+      if (orderErr) {
+        await fetchOrders()
+        return { error: `Error al borrar pedido: ${orderErr.message}` }
+      }
+
+      return { error: null }
+    } catch (e: any) {
+      await fetchOrders()
+      return { error: e.message }
+    }
+  }
+
+  // Compatibilidad — alias del soft delete
+  const deactivateOrder = enviarAPapelera
+
+  return {
+    orders,
+    loading,
+    error,
+    refetch: fetchOrders,
+    enviarAPapelera,
+    restaurarDePapelera,
+    eliminarPermanente,
+    deactivateOrder,
+  }
 }

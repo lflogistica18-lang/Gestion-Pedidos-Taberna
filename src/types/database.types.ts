@@ -8,6 +8,7 @@ export interface Product {
   name: string
   category: ProductCategory
   price: number
+  cost: number  // Valor de costo — para calcular margen de ganancia
   active: boolean
   created_at: string
   updated_at: string

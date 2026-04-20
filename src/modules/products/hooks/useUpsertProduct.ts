@@ -10,6 +10,11 @@ export const productSchema = z.object({
     .number()
     .min(0, 'El precio no puede ser negativo')
     .max(999999, 'Precio demasiado alto'),
+  cost: z
+    .number()
+    .min(0, 'El costo no puede ser negativo')
+    .max(999999, 'Costo demasiado alto')
+    .default(0),
 })
 
 export type ProductFormData = z.infer<typeof productSchema>
@@ -32,6 +37,7 @@ export function useUpsertProduct(): UseUpsertProductResult {
       name: data.name.trim(),
       category: data.category as ProductCategory,
       price: data.price,
+      cost: data.cost ?? 0,
     }
 
     try {

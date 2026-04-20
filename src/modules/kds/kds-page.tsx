@@ -3,7 +3,7 @@ import { KdsOrderCard } from './components/KdsOrderCard'
 import { EstadoCargando } from '@/shared/components/comunes/EstadoCargando'
 
 export default function KdsPage() {
-  const { orders, loading, refetch } = useKdsOrders()
+  const { orders, loading, todayCount, refetch } = useKdsOrders()
 
   const pending = orders.filter(o => o.status === 'pendiente')
   const cooking = orders.filter(o => o.status === 'en_preparacion')
@@ -13,6 +13,10 @@ export default function KdsPage() {
       <header className="pos-header">
         <h1 className="pos-header__title">👨‍🍳 KDS - Cocina</h1>
         <div className="kds-stats">
+          {/* Contador del día — siempre visible */}
+          <span className="kds-stat-today">
+            📋 {todayCount} hoy
+          </span>
           <span className="status-badge status--pending" style={{ fontSize: '0.85rem' }}>{pending.length} Pendientes</span>
           <span className="status-badge status--cooking" style={{ fontSize: '0.85rem' }}>{cooking.length} En preparación</span>
         </div>

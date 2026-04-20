@@ -256,10 +256,10 @@ export function CrudManager<T extends EntidadBase>({
                   </button>
                   <button
                     onClick={() => confirmarDesactivar(item.id)}
-                    className="btn btn--danger-soft btn--sm"
+                    className={`btn btn--sm ${item.active === false ? 'btn--success-soft' : 'btn--danger-soft'}`}
                     style={{ flex: 1, minHeight: '40px' }}
                   >
-                    🚫 Apagar
+                    {item.active === false ? '✅ Activar' : '🚫 Apagar'}
                   </button>
                 </div>
               </div>

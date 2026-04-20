@@ -19,12 +19,16 @@ export default function PosPage() {
   const { submitting, error, createOrder } = useCreateOrder()
   const { activeCount } = useActiveOrders()
 
-  // Seleccionar la primera categoría cuando cargan
+  // Seleccionar la primera categoría cuando cargan o cuando cambia la lista
+  // (ej: después de un rename, resetear para no quedar con nombre viejo)
   useEffect(() => {
-    if (categories.length > 0 && !activeCategory) {
-      setActiveCategory(categories[0].name)
+    if (categories.length > 0) {
+      const exists = categories.some(c => c.name === activeCategory)
+      if (!activeCategory || !exists) {
+        setActiveCategory(categories[0].name)
+      }
     }
-  }, [categories, activeCategory])
+  }, [categories])
 
   const items = useCartStore((s) => s.items)
   const orderType = useCartStore((s) => s.orderType)
