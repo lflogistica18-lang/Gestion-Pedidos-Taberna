@@ -1,8 +1,10 @@
 import { useState } from 'react'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
 
 export default function LoginPage() {
-  const { signIn } = useAuth()
+  const { signIn, isAuthenticated, loading: authLoading } = useAuth()
+  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -25,9 +27,15 @@ export default function LoginPage() {
       } else {
         setError(result.error)
       }
+    } else {
+      // Login exitoso → redirigir
+      navigate('/pos', { replace: true })
     }
-    // Si no hay error, AuthGuard detecta el cambio de sesión y redirige automáticamente
   }
+
+  // Si ya está autenticado, redirigir directo
+  if (authLoading) return null
+  if (isAuthenticated) return <Navigate to="/pos" replace />
 
   return (
     <div className="login-page">
