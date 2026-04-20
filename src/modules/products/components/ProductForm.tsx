@@ -24,16 +24,16 @@ export function ProductForm({ product, saving, onSubmit, onCancel }: ProductForm
   } = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
     defaultValues: product
-      ? { name: product.name, category: product.category, price: product.price }
-      : { name: '', category: defaultCategory, price: 0 },
+      ? { name: product.name, category: product.category, price: product.price, cost: (product as any).cost ?? 0 }
+      : { name: '', category: defaultCategory, price: 0, cost: 0 },
   })
 
   // Cuando cambia el producto (abrir modal de edición distinto), resetear el form
   useEffect(() => {
     reset(
       product
-        ? { name: product.name, category: product.category, price: product.price }
-        : { name: '', category: categories[0]?.name ?? 'comida', price: 0 }
+        ? { name: product.name, category: product.category, price: product.price, cost: (product as any).cost ?? 0 }
+        : { name: '', category: categories[0]?.name ?? 'comida', price: 0, cost: 0 }
     )
   }, [product, reset, categories])
 
@@ -97,6 +97,26 @@ export function ProductForm({ product, saving, onSubmit, onCancel }: ProductForm
         />
         {errors.price && (
           <span className="product-form__error">{errors.price.message}</span>
+        )}
+      </div>
+
+      {/* Costo */}
+      <div className="product-form__field">
+        <label className="product-form__label" htmlFor="product-cost">
+          Costo ($)
+        </label>
+        <input
+          id="product-cost"
+          type="number"
+          inputMode="decimal"
+          className={`product-form__input ${errors.cost ? 'product-form__input--error' : ''}`}
+          placeholder="0"
+          step="50"
+          min="0"
+          {...register('cost', { valueAsNumber: true })}
+        />
+        {errors.cost && (
+          <span className="product-form__error">{errors.cost.message}</span>
         )}
       </div>
 
