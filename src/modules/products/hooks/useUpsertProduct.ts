@@ -13,8 +13,7 @@ export const productSchema = z.object({
   cost: z
     .number()
     .min(0, 'El costo no puede ser negativo')
-    .max(999999, 'Costo demasiado alto')
-    .default(0),
+    .max(999999, 'Costo demasiado alto'),
 })
 
 export type ProductFormData = z.infer<typeof productSchema>
