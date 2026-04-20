@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  taberna-frontend:
+    container_name: sgp-taberna-front
+    image: sgp-taberna:latest
+    ports:
+      - "8090:80"
+    restart: unless-stopped
