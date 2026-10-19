@@ -26,8 +26,17 @@ export const TITULOS_SECCION: Record<SeccionMenu, string> = {
   gestion: 'Gestión',
 }
 
+function itemDeRuta(pathname: string): ItemNavegacion | undefined {
+  return ITEMS_NAVEGACION.find((i) => pathname === i.to || pathname.startsWith(`${i.to}/`))
+}
+
 /** Título de la pantalla según la ruta; vacío si la ruta no está en la lista. */
 export function tituloDeRuta(pathname: string): string {
-  const item = ITEMS_NAVEGACION.find((i) => pathname === i.to || pathname.startsWith(`${i.to}/`))
-  return item?.label ?? ''
+  return itemDeRuta(pathname)?.label ?? ''
+}
+
+/** Sección del menú ("Operación", "Gestión") de la ruta; vacío si no está en la lista. */
+export function seccionDeRuta(pathname: string): string {
+  const item = itemDeRuta(pathname)
+  return item ? TITULOS_SECCION[item.seccion] : ''
 }
