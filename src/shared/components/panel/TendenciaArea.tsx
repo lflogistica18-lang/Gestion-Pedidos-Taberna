@@ -43,6 +43,8 @@ export function TendenciaArea({ datos, idGradiente, descripcion, etiquetaValor =
               content={<TooltipGrafico etiquetaValor={etiquetaValor} formatoValor={formatoValor} />}
             />
             <Area
+              // Plata sin animar (guía Panel §f): una cifra que "crece" mientras se lee genera desconfianza
+              isAnimationActive={false}
               type="monotone"
               dataKey="valor"
               stroke="var(--color-grafico-1)"

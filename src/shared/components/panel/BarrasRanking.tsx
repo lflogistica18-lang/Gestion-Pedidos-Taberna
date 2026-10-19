@@ -20,6 +20,8 @@ interface BarrasRankingProps {
   etiquetaValor?: string
   /** Formato del valor; por defecto pesos. */
   formatoValor?: (n: number) => string
+  /** Formato de los números del eje; por defecto pesos abreviados ($15 mil). Para unidades: (n) => String(n). */
+  formatoEje?: (n: number) => string
   /** Etiqueta de la barra elegida; si hay una, las demás se apagan. */
   seleccionada?: string | null
   onSeleccionar?: (etiqueta: string) => void
@@ -30,7 +32,7 @@ const ALTO_FILA = 40
 const ALTO_EJE = 32
 
 export function BarrasRanking({
-  datos, descripcion, etiquetaValor = 'Total', formatoValor = fmtMonto, seleccionada = null, onSeleccionar,
+  datos, descripcion, etiquetaValor = 'Total', formatoValor = fmtMonto, formatoEje = fmtCompacto, seleccionada = null, onSeleccionar,
 }: BarrasRankingProps) {
   // Alto fijo según la cantidad de filas, e incluye la banda del eje inferior.
   const alto = Math.max(160, datos.length * ALTO_FILA + ALTO_EJE)
@@ -46,7 +48,7 @@ export function BarrasRanking({
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={datos} layout="vertical" margin={{ top: 0, right: 12, left: 0, bottom: 0 }}>
             <CartesianGrid horizontal={false} stroke="var(--color-grafico-grilla)" strokeDasharray="3 3" />
-            <XAxis type="number" tickFormatter={fmtCompacto} axisLine={false} tickLine={false} tick={TICK} />
+            <XAxis type="number" tickFormatter={formatoEje} allowDecimals={false} axisLine={false} tickLine={false} tick={TICK} />
             <YAxis
               dataKey="etiqueta"
               type="category"
@@ -61,6 +63,7 @@ export function BarrasRanking({
               content={<TooltipGrafico etiquetaValor={etiquetaValor} formatoValor={formatoValor} />}
             />
             <Bar
+              isAnimationActive={false}
               dataKey="valor"
               radius={[0, 4, 4, 0]}
               maxBarSize={20}
