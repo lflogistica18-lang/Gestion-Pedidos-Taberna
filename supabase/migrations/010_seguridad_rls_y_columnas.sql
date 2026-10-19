@@ -22,7 +22,12 @@ ALTER TABLE sgp.products ADD CONSTRAINT products_cost_check CHECK (cost >= 0);
 -- Precio con precisión fija (antes NUMERIC sin escala)
 ALTER TABLE sgp.products ALTER COLUMN price TYPE NUMERIC(12,2);
 ALTER TABLE sgp.orders ALTER COLUMN total TYPE NUMERIC(12,2);
+-- subtotal es columna generada sobre unit_price: Postgres no deja cambiar el tipo
+-- de unit_price con ella encima, así que se saca y se vuelve a crear igual.
+ALTER TABLE sgp.order_items DROP COLUMN IF EXISTS subtotal;
 ALTER TABLE sgp.order_items ALTER COLUMN unit_price TYPE NUMERIC(12,2);
+ALTER TABLE sgp.order_items
+  ADD COLUMN subtotal NUMERIC(12,2) GENERATED ALWAYS AS (unit_price * quantity) STORED;
 
 -- product_categories: columnas obligatorias del Omni (id, updated_at, deleted_at).
 -- `name` sigue siendo la PK porque products.category la referencia por nombre.
@@ -53,11 +58,18 @@ CREATE INDEX IF NOT EXISTS idx_sgp_product_categories_activas
 -- ─── 3. Renombrar categoría en una sola transacción ───────────────────
 -- Antes el frontend hacía insert → update productos → delete en 3 llamadas:
 -- si fallaba la 2ª quedaba la categoría duplicada.
+-- SECURITY DEFINER: la app no tiene DELETE en ninguna tabla, pero renombrar necesita
+-- sacar del medio una categoría vieja ya borrada. El chequeo de rol va adentro.
 CREATE OR REPLACE FUNCTION sgp.renombrar_categoria(p_viejo TEXT, p_nuevo TEXT)
 RETURNS VOID
 LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = sgp, pg_temp
 AS $$
 BEGIN
+  IF NOT coalesce((SELECT auth.jwt())->'app_metadata'->>'rol', '') = 'taberna' THEN
+    RAISE EXCEPTION 'No tenés permiso para renombrar categorías';
+  END IF;
   IF p_nuevo IS NULL OR btrim(p_nuevo) = '' THEN
     RAISE EXCEPTION 'El nombre no puede estar vacío';
   END IF;
@@ -108,6 +120,8 @@ GRANT USAGE ON SCHEMA sgp TO authenticated;
 GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA sgp TO authenticated;
 REVOKE DELETE ON ALL TABLES IN SCHEMA sgp FROM authenticated;
 GRANT USAGE ON ALL SEQUENCES IN SCHEMA sgp TO authenticated;
+-- Postgres da EXECUTE a PUBLIC por defecto: a la función con permisos propios, solo authenticated
+REVOKE EXECUTE ON FUNCTION sgp.renombrar_categoria(TEXT, TEXT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION sgp.renombrar_categoria(TEXT, TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION sgp.es_taberna() TO authenticated;
 
