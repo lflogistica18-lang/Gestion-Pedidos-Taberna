@@ -8,7 +8,7 @@ import { useLocation } from 'react-router-dom'
 import { MenuUsuario } from './MenuUsuario'
 import { Reloj } from './Reloj'
 import { ChevronRight } from 'lucide-react'
-import { seccionDeRuta, tituloDeRuta } from './navegacion'
+import { seccionDeRuta, tituloDeRuta, useItemsNavegacion } from './navegacion'
 
 interface BarraSuperiorProps {
   email: string
@@ -17,8 +17,9 @@ interface BarraSuperiorProps {
 
 export function BarraSuperior({ email, onSalir }: BarraSuperiorProps) {
   const { pathname } = useLocation()
-  const titulo = tituloDeRuta(pathname)
-  const seccion = seccionDeRuta(pathname)
+  const items = useItemsNavegacion()
+  const titulo = tituloDeRuta(items, pathname)
+  const seccion = seccionDeRuta(items, pathname)
 
   return (
     <header className="z-20 flex h-14 shrink-0 items-center gap-3 border-b border-borde-sutil bg-bg-tarjeta px-4 lg:px-6">

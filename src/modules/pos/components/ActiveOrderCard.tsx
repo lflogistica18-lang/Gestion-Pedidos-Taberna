@@ -7,7 +7,7 @@ import { Boton, fmtMonto, IconButton, mostrarToast, Pastilla } from '@/shared/co
 import type { TonoPastilla } from '@/shared/components/panel'
 import { cn } from '@/shared/lib/cn'
 import { useMinutosDesde } from '@/shared/hooks/useMinutosDesde'
-import { COCINA_ACTIVA, MODO_IMPRESION } from '@/shared/lib/config'
+import { useConfiguracion } from '@/shared/store/useConfiguracion'
 import { useEncolarImpresion } from '../hooks/useEncolarImpresion'
 
 const ESTADOS: Record<string, { label: string; tono: TonoPastilla }> = {
@@ -42,8 +42,10 @@ export function ActiveOrderCard({ order, updating, onDeliver, onDelete }: Active
   const tipo = TIPOS[order.type] ?? { label: order.type, icono: UtensilsCrossed }
   const IconoTipo = tipo.icono
   const isReady = order.status === 'listo'
+  const cocinaActiva = useConfiguracion((s) => s.config.cocina_activa)
+  const modoImpresion = useConfiguracion((s) => s.config.modo_impresion)
   // Sin pantalla de cocina nadie marca "listo": la caja entrega desde cualquier estado activo
-  const puedeEntregar = COCINA_ACTIVA ? isReady : order.status !== 'entregado' && order.status !== 'cancelado'
+  const puedeEntregar = cocinaActiva ? isReady : order.status !== 'entregado' && order.status !== 'cancelado'
 
   const minutesAgo = useMinutosDesde(order.created_at)
 
@@ -57,7 +59,7 @@ export function ActiveOrderCard({ order, updating, onDeliver, onDelete }: Active
 
   // Reimprimir: en modo 'servidor' va a la cola; si no, diálogo del navegador (RawBT)
   const handlePrint = async () => {
-    if (MODO_IMPRESION !== 'servidor') {
+    if (modoImpresion !== 'servidor') {
       imprimirEnNavegador()
       return
     }

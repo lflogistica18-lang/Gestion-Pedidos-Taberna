@@ -2,7 +2,7 @@
 
 import { Bike, Receipt, Timer, TrendingUp, Wallet } from 'lucide-react'
 import { KpiCard, Sparkline, fmtMonto } from '@/shared/components/panel'
-import { COCINA_ACTIVA } from '@/shared/lib/config'
+import { useConfiguracion } from '@/shared/store/useConfiguracion'
 import type { DailyStats } from '../hooks/useDashboardStats'
 
 interface IndicadoresVentasProps {
@@ -15,6 +15,7 @@ function pct(parte: number, total: number): number {
 }
 
 export function IndicadoresVentas({ stats, loading }: IndicadoresVentasProps) {
+  const cocinaActiva = useConfiguracion((st) => st.config.cocina_activa)
   const s = stats
   const revenue = s?.totalRevenue ?? 0
   const orders = s?.totalOrders ?? 0
@@ -61,7 +62,7 @@ export function IndicadoresVentas({ stats, loading }: IndicadoresVentasProps) {
         {loading || !s ? null : <p className="text-xs text-texto-secundario">{pct(d, d + l)}% delivery</p>}
       </KpiCard>
 
-      {COCINA_ACTIVA && (
+      {cocinaActiva && (
         <KpiCard
           tono="azul" titulo="Preparación promedio" icono={<Timer size={16} />}
           valor={s && s.avgPrepTimeMinutes > 0 ? `${s.avgPrepTimeMinutes} min` : '--'}

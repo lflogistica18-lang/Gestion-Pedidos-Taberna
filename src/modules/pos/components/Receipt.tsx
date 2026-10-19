@@ -1,5 +1,7 @@
 import { forwardRef } from 'react'
 import type { OrderWithItems } from '../hooks/useActiveOrders'
+import { useConfiguracion } from '@/shared/store/useConfiguracion'
+import { ETIQUETAS_PAGO } from '@/shared/lib/config'
 
 const TYPE_LABELS: Record<string, string> = {
   local: 'Local',
@@ -7,37 +9,34 @@ const TYPE_LABELS: Record<string, string> = {
   directo: 'Directo',
 }
 
-const PAGO_LABELS: Record<string, string> = {
-  efectivo: 'Efectivo',
-  debito: 'Débito',
-  transferencia: 'Déb / Transfer',
-}
-
 function precio(n: number): string {
   return '$' + Number(n).toLocaleString('es-AR')
 }
 
 interface ReceiptProps {
-  order: OrderWithItems,
-  tabernaName?: string
+  order: OrderWithItems
 }
 
 // Ticket que va a la cocina con el pedido (y que puede acompañar al delivery):
-// ítems con precio, total, pago y dirección si la hay.
-export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(({ order, tabernaName = "Taberna" }, ref) => {
+// ítems con precio, total, pago y dirección si la hay. Encabezado, pie y ancho
+// de papel salen de la configuración del local.
+export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(({ order }, ref) => {
+  const config = useConfiguracion((s) => s.config)
   const dateObj = new Date(order.created_at)
   const dFormat = dateObj.toLocaleDateString('es-AR')
   const tFormat = dateObj.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
 
   return (
-    <div ref={ref} className="print-receipt">
+    <div ref={ref} className={`print-receipt ${config.papel_mm === 58 ? 'print-receipt--58' : ''}`}>
       <div className="print-receipt__header">
-        <h2 className="print-receipt__title">{tabernaName}</h2>
+        <h2 className="print-receipt__title">{config.nombre_local}</h2>
+        {config.direccion && <p className="print-receipt__local">{config.direccion}</p>}
+        {config.telefono && <p className="print-receipt__local">Tel: {config.telefono}</p>}
         <p className="print-receipt__number">PEDIDO #{order.order_number}</p>
         <div className="print-receipt__meta">
           <p>Fecha: {dFormat} {tFormat}</p>
           <p>Tipo: <span className="print-receipt__bold">{TYPE_LABELS[order.type] ?? order.type}</span></p>
-          <p>Pago: {PAGO_LABELS[order.payment_method] ?? order.payment_method}</p>
+          <p>Pago: {ETIQUETAS_PAGO[order.payment_method] ?? order.payment_method}</p>
         </div>
         {(order.customer_name || order.delivery_address) && (
           <div className="print-receipt__customer">
@@ -89,9 +88,11 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(({ order, tabern
         <span className="print-receipt__total-value">{precio(order.total)}</span>
       </div>
 
-      <div className="print-receipt__footer">
-        <p>¡Gracias por su compra!</p>
-      </div>
+      {config.pie_ticket && (
+        <div className="print-receipt__footer">
+          <p>{config.pie_ticket}</p>
+        </div>
+      )}
     </div>
   )
 })

@@ -31,8 +31,8 @@ npm run build
 | `PRINT_EMAIL` / `PRINT_PASSWORD` | Usuario de impresión (ver abajo) |
 | `IMPRESORA_IP` | IP de la impresora (ver punto 4) |
 | `IMPRESORA_PUERTO` | `9100` (casi siempre) |
-| `COLUMNAS` | `48` para papel de 80 mm, `32` para 58 mm |
-| `NOMBRE_LOCAL` | Nombre que sale arriba del ticket |
+| `COLUMNAS` | Respaldo: `48` (80 mm) o `32` (58 mm). Normalmente se toma de la app: **Configuración → Impresión → Ancho del papel** |
+| `NOMBRE_LOCAL` | Respaldo. Normalmente el nombre, la dirección, el teléfono y el pie del ticket se toman de **Configuración → Local / Impresión** en la app (se leen en cada ticket) |
 | `CODEPAGE` | `2` (si salen mal las tildes o la ñ, probar `0`, `16` o `19`) |
 | `SIMULAR` | `false`. Con `true` no imprime: muestra el ticket en pantalla y lo guarda en `simulados/` |
 

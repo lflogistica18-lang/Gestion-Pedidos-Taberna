@@ -62,6 +62,7 @@ Nació con Panel 0.9 (`omni/sistema/diseno/GUIA.md`, borrador 2026-10-14). Fuent
 | Historial | 2026-10-19 | |
 | Productos + `CrudManager` | 2026-10-19 | `CrudManager` partido en `comunes/crud/` |
 | Caja | 2026-10-19 | Pago: Efectivo / Déb-Transfer (unificados a propósito, abril 2026) |
+| Configuración | 2026-10-19 | Submenú + tarjeta por sección; vista previa del ticket; en celu se entra desde el menú de usuario |
 
 Pendiente: Cocina (KDS) escondida, sin migrar. CSS viejo borrado (1449 → 569 líneas): quedan el ticket impreso,
 el KDS y clases contenedoras. Verificado solo con arnés y mocks: falta mirarlo con datos reales.

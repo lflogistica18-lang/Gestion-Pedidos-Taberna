@@ -15,10 +15,13 @@ import { EstadoError } from '@/shared/components/comunes/EstadoError'
 import { Boton, EncabezadoPagina, FiltrosPastilla, Modal, Pastilla, mostrarToast } from '@/shared/components/panel'
 import { BarraCarrito } from './components/BarraCarrito'
 import { useEncolarImpresion } from './hooks/useEncolarImpresion'
-import { MODO_IMPRESION } from '@/shared/lib/config'
+import { useConfiguracion } from '@/shared/store/useConfiguracion'
+import { medioDePagoValido } from '@/shared/lib/config'
 
 export default function PosPage() {
   const [categoriaElegida, setCategoriaElegida] = useState<string>('')
+  const modoImpresion = useConfiguracion((s) => s.config.modo_impresion)
+  const mediosPago = useConfiguracion((s) => s.config.medios_pago)
   const [cartOpen, setCartOpen] = useState(false)
   const [ordersOpen, setOrdersOpen] = useState(false)
 
@@ -70,7 +73,8 @@ export default function PosPage() {
     const pedido = await createOrder({
       items,
       orderType,
-      paymentMethod,
+      // Si Configuración apagó el medio elegido, se cobra con el primero habilitado (lo que ve el carrito)
+      paymentMethod: medioDePagoValido(paymentMethod, mediosPago),
       notes,
       customerName,
       deliveryAddress,
@@ -81,7 +85,7 @@ export default function PosPage() {
       clearCart()
       setCartOpen(false)
 
-      if (MODO_IMPRESION === 'servidor') {
+      if (modoImpresion === 'servidor') {
         // El pedido ya está guardado: si falla la cola, se avisa y se reimprime con 🖨️
         const { error: colaErr } = await encolar(pedido.id)
         if (colaErr) {

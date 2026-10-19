@@ -2,15 +2,16 @@
 
 import { NavLink } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
-import { ITEMS_NAVEGACION } from './navegacion'
+import { useItemsNavegacion } from './navegacion'
 
 export function NavBar() {
+  const items = useItemsNavegacion().filter((i) => i.enBarraInferior !== false)
   return (
     <nav
       aria-label="Navegación principal"
       className="flex shrink-0 border-t border-borde-sutil bg-bg-tarjeta pb-[env(safe-area-inset-bottom)] lg:hidden"
     >
-      {ITEMS_NAVEGACION.map(({ to, label, icono: Icono }) => (
+      {items.map(({ to, label, icono: Icono }) => (
         <NavLink
           key={to}
           to={to}

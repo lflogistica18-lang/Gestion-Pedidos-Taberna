@@ -3,18 +3,14 @@ import { AreaTexto, AvisoEstado, Boton, Campo, ControlSegmentado, Entrada, fmtMo
 import { EstadoVacio } from '@/shared/components/comunes/EstadoVacio'
 import { useCartStore } from '../store/useCartStore'
 import { CartItemRow } from './CartItemRow'
-import type { OrderType, PaymentMethod } from '@/types/database.types'
+import type { OrderType } from '@/types/database.types'
+import { useConfiguracion } from '@/shared/store/useConfiguracion'
+import { ETIQUETAS_PAGO, medioDePagoValido } from '@/shared/lib/config'
 
 const ORDER_TYPES: { value: OrderType; label: string }[] = [
   { value: 'local', label: 'Local' },
   { value: 'delivery', label: 'Delivery' },
   { value: 'directo', label: 'Directa' },
-]
-
-const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
-  { value: 'efectivo', label: 'Efectivo' },
-  // Débito y transferencia van juntos a propósito (decisión del local, abril 2026)
-  { value: 'transferencia', label: 'Déb / Transfer' },
 ]
 
 // El control segmentado de la pieza es chico; en la caja se estira y sube a 44 px.
@@ -41,6 +37,10 @@ export function CartPanel({ variante, submitting, error, onConfirm }: CartPanelP
   const clearCart = useCartStore((s) => s.clearCart)
   const setOrderType = useCartStore((s) => s.setOrderType)
   const setPaymentMethod = useCartStore((s) => s.setPaymentMethod)
+  // Medios que ofrece la Caja según Configuración; si el elegido se apagó, cae al primero
+  const mediosPago = useConfiguracion((s) => s.config.medios_pago)
+  const opcionesPago = mediosPago.map((m) => ({ value: m, label: ETIQUETAS_PAGO[m] }))
+  const pagoElegido = medioDePagoValido(paymentMethod, mediosPago)
   const setNotes = useCartStore((s) => s.setNotes)
   const setCustomerName = useCartStore((s) => s.setCustomerName)
   const setDeliveryAddress = useCartStore((s) => s.setDeliveryAddress)
@@ -96,8 +96,8 @@ export function CartPanel({ variante, submitting, error, onConfirm }: CartPanelP
       <Campo etiqueta="Método de pago">
         <ControlSegmentado
           etiqueta="Método de pago"
-          opciones={PAYMENT_METHODS}
-          value={paymentMethod}
+          opciones={opcionesPago}
+          value={pagoElegido}
           onChange={setPaymentMethod}
           className={CLASES_SEGMENTADO}
         />

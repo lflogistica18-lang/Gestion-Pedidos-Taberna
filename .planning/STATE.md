@@ -13,6 +13,15 @@ Remediación aplicada en una sola pasada, sin probar en vivo:
   reportes excluyen papelera y cancelados; promedio de cocina arreglado; sin borrado físico;
   un solo canal realtime; cero `any`; mobile 44px/16px; deps actualizadas; código muerto fuera.
 
+**⚠️ ANTES DE TODO — la base de la Taberna está en la papelera (dato del Omni, auditoría 2026-10-07):**
+- Las 5 tablas de `sgp` se movieron al schema `papelera_sgp` del proyecto Supabase `zslsosunvsbxxnzeckpg`
+  (el que comparte con dropshipping y cotizador). **Se borran definitivamente después del 2026-11-07.**
+- El contenedor del VPS está apagado (`docker compose down` en `/root/Gestion-Pedidos-Taberna`), el puerto 8090
+  cerrado al mundo y `pedidostaberna.duckdns.org` ya no resuelve (el host sigue en el proxy apuntando a IP:8090).
+- El SGP no está en `omni/proyectos/` (no es submódulo del Omni).
+- Para volver: restaurar a `sgp` (`ALTER TABLE papelera_sgp.<tabla> SET SCHEMA sgp;` × 5) o, mejor, llevarlo a un
+  proyecto Supabase propio. Recién después aplicar 010/011/012.
+
 **Próximo paso (cuando Lucas esté):**
 1. Aplicar `010` en el SQL editor de Supabase → tiene que devolver `OK`.
    ⚠️ Antes, ajustar el `WHERE email ILIKE '%@sgc-taberna.com'` del paso 4 si los usuarios
@@ -35,7 +44,7 @@ cualquier estado activo. El KDS sigue en `src/modules/kds/` para reactivarlo con
   `sistema/diseno/GUIA.md`). Hoy hay 58 colores hardcodeados en `.tsx` y ninguno tokenizado.
 - **Direcciones de pedidos**: hoy `orders.delivery_address` es texto libre; falta libreta de
   direcciones por cliente.
-- **Pantalla Configuración** (aprobada por Lucas 2026-10-19, va después de la tanda 2 de UI):
+- **Pantalla Configuración** — HECHA 2026-10-19 (migración 012):
   tabla `sgp.configuracion` + pantalla estilo Panel (submenú + tarjeta por sección + "Guardar cambios").
   Secciones: Local (nombre, dirección, teléfono → ticket) · Impresión (modo navegador/servidor,
   papel 58/80mm, pie del ticket) · Pantallas (Cocina sí/no) · Medios de pago ofrecidos en Caja.

@@ -1,7 +1,8 @@
-// Botón de usuario (inicial en círculo) con un menú chico: email y Cerrar sesión.
+// Botón de usuario (inicial en círculo) con un menú chico: email, Configuración y Cerrar sesión.
 
 import { useEffect, useRef, useState } from 'react'
-import { LogOut } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { LogOut, Settings } from 'lucide-react'
 import { cn } from '@/shared/lib/cn'
 import { useConfirmarSalida } from './useConfirmarSalida'
 
@@ -58,6 +59,16 @@ export function MenuUsuario({ email, onSalir }: MenuUsuarioProps) {
             <p className="truncate text-sm font-semibold text-texto-primario" title={email}>{email}</p>
           </div>
           <div className="border-t border-borde-sutil pt-1.5">
+            {/* En el celu Configuración no entra en la barra de abajo: se llega desde acá */}
+            <Link
+              to="/config"
+              role="menuitem"
+              onClick={() => setAbierto(false)}
+              className="flex min-h-11 w-full items-center gap-2.5 rounded-lg px-3 text-sm font-medium text-texto-primario transition-colors hover:bg-superficie-2"
+            >
+              <Settings size={16} aria-hidden="true" className="text-texto-secundario" />
+              Configuración
+            </Link>
             <button
               type="button"
               role="menuitem"

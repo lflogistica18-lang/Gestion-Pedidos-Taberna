@@ -25,6 +25,10 @@ export interface OpcionesTicket {
   nombreLocal: string;
   columnas: number;
   codepage: number;
+  direccion?: string | null;
+  telefono?: string | null;
+  /** Texto final; vacío = sin pie. */
+  pie?: string;
 }
 
 const ZONA = 'America/Argentina/Buenos_Aires';
@@ -72,6 +76,8 @@ function construir(pedido: Pedido, op: OpcionesTicket): EscPos {
   const e = new EscPos(op.columnas, op.codepage);
 
   e.alinear('centro').negrita(true).texto(op.nombreLocal).negrita(false);
+  if (op.direccion?.trim()) e.texto(op.direccion);
+  if (op.telefono?.trim()) e.linea(`Tel: ${op.telefono}`);
   e.doble(true).texto(`PEDIDO #${pedido.order_number}`).doble(false);
   e.alinear('izq');
   e.linea(formatoFecha(pedido.created_at));
@@ -101,7 +107,8 @@ function construir(pedido: Pedido, op: OpcionesTicket): EscPos {
   // En doble tamaño entran columnas/2 caracteres por línea.
   e.doble(true).fila('TOTAL', formatoPlata(pedido.total)).doble(false);
   e.feed(1);
-  e.alinear('centro').linea('¡Gracias por su compra!').alinear('izq');
+  const pie = op.pie ?? '¡Gracias por su compra!';
+  if (pie.trim()) e.alinear('centro').texto(pie).alinear('izq');
   e.feed(4);
   e.cortar();
   return e;

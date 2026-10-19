@@ -289,7 +289,8 @@ body { background: var(--color-bg-principal); color: var(--color-texto-primario)
    ========================================================================== */
 @media print {
   /* Papel de comandera 80mm sin márgenes (RawBT / diálogo de Android lo respetan) */
-  @page { size: 80mm auto; margin: 0; }
+  /* Sin márgenes; el ancho del papel lo define la impresora (en RawBT: 58 u 80 mm) */
+  @page { margin: 0; }
 
   /* Ocultar todo lo de la pantalla excepto el recibo */
   body * {
@@ -325,6 +326,18 @@ body { background: var(--color-bg-principal); color: var(--color-texto-primario)
     text-transform: uppercase;
   }
   
+  /* Papel de 58 mm (Configuración → Impresión): área imprimible ~48 mm */
+  .print-receipt--58 {
+    width: 48mm;
+    margin: 0 5mm;
+    font-size: 12px;
+  }
+
+  .print-receipt__local {
+    margin: 0;
+    font-size: 11px;
+  }
+
   .print-receipt__number {
     font-size: 18px;
     font-weight: bold;

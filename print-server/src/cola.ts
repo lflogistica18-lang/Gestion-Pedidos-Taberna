@@ -1,6 +1,6 @@
 import { createClient, type RealtimeChannel } from '@supabase/supabase-js';
 import type { Config } from './config.js';
-import { armarTicket, ticketComoTexto, type Pedido } from './ticket.js';
+import { armarTicket, ticketComoTexto, type OpcionesTicket, type Pedido } from './ticket.js';
 import { imprimir } from './impresora.js';
 
 const MAX_INTENTOS = 3;
@@ -77,6 +77,30 @@ export async function iniciarCola(cfg: Config): Promise<() => Promise<void>> {
     if (data && data.length > 0) log(`♻️ ${data.length} trabajo(s) trabado(s) devuelto(s) a pendiente`);
   }
 
+  // ---------- Configuración del local (pantalla Configuración de la app) ----------
+  // Se lee en cada ticket: si alguien cambia el nombre o el papel, el próximo ticket
+  // ya sale bien sin reiniciar. Si falla (o falta la migración 012), se usa el .env.
+  async function opcionesDelLocal(): Promise<OpcionesTicket> {
+    const base: OpcionesTicket = { nombreLocal: cfg.nombreLocal, columnas: cfg.columnas, codepage: cfg.codepage };
+    const { data, error } = await supabase
+      .from('configuracion')
+      .select('nombre_local, direccion, telefono, papel_mm, pie_ticket')
+      .maybeSingle();
+    if (error || !data) {
+      log(`⚠️ No se pudo leer la configuración del local (${error?.message ?? 'sin fila'}); uso el .env`);
+      return base;
+    }
+    return {
+      ...base,
+      nombreLocal: data.nombre_local || base.nombreLocal,
+      direccion: data.direccion,
+      telefono: data.telefono,
+      pie: data.pie_ticket ?? undefined,
+      // 80 mm → 48 columnas (Font A); 58 mm → 32
+      columnas: data.papel_mm === 58 ? 32 : 48,
+    };
+  }
+
   // ---------- Procesamiento de un trabajo ----------
   async function actualizar(id: string, cambios: Record<string, unknown>, contexto: string): Promise<boolean> {
     for (let i = 1; i <= 3; i++) {
@@ -126,7 +150,7 @@ export async function iniciarCola(cfg: Config): Promise<() => Promise<void>> {
     }
 
     const p = pedido as Pedido;
-    const opciones = { nombreLocal: cfg.nombreLocal, columnas: cfg.columnas, codepage: cfg.codepage };
+    const opciones = await opcionesDelLocal();
     try {
       await imprimir(armarTicket(p, opciones), ticketComoTexto(p, opciones), job.id, cfg);
     } catch (e) {

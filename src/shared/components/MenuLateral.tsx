@@ -6,7 +6,7 @@
 import { NavLink } from 'react-router-dom'
 import { LogOut } from 'lucide-react'
 import { cn } from '@/shared/lib/cn'
-import { ITEMS_NAVEGACION, TITULOS_SECCION, type SeccionMenu } from './navegacion'
+import { TITULOS_SECCION, useItemsNavegacion, type SeccionMenu } from './navegacion'
 import { useConfirmarSalida } from './useConfirmarSalida'
 
 interface MenuLateralProps {
@@ -14,9 +14,10 @@ interface MenuLateralProps {
   onSalir: () => Promise<void>
 }
 
-const SECCIONES: SeccionMenu[] = ['operacion', 'gestion']
+const SECCIONES: SeccionMenu[] = ['operacion', 'gestion', 'ajustes']
 
 export function MenuLateral({ email, onSalir }: MenuLateralProps) {
+  const itemsMenu = useItemsNavegacion()
   const { armado, alTocar } = useConfirmarSalida(onSalir)
   const inicial = (email.trim()[0] ?? '?').toUpperCase()
   const abreviado = email.split('@')[0] ?? email
@@ -33,7 +34,7 @@ export function MenuLateral({ email, onSalir }: MenuLateralProps) {
 
       <nav aria-label="Secciones" className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
         {SECCIONES.map((seccion) => {
-          const items = ITEMS_NAVEGACION.filter((i) => i.seccion === seccion)
+          const items = itemsMenu.filter((i) => i.seccion === seccion)
           if (items.length === 0) return null
           return (
             <div key={seccion} role="group" aria-labelledby={`menu-${seccion}`} className="mt-4">
