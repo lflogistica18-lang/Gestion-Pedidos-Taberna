@@ -7,11 +7,23 @@ const TYPE_LABELS: Record<string, string> = {
   directo: 'Directo',
 }
 
+const PAGO_LABELS: Record<string, string> = {
+  efectivo: 'Efectivo',
+  debito: 'Débito',
+  transferencia: 'Déb / Transfer',
+}
+
+function precio(n: number): string {
+  return '$' + Number(n).toLocaleString('es-AR')
+}
+
 interface ReceiptProps {
   order: OrderWithItems,
   tabernaName?: string
 }
 
+// Ticket que va a la cocina con el pedido (y que puede acompañar al delivery):
+// ítems con precio, total, pago y dirección si la hay.
 export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(({ order, tabernaName = "Taberna" }, ref) => {
   const dateObj = new Date(order.created_at)
   const dFormat = dateObj.toLocaleDateString('es-AR')
@@ -21,16 +33,18 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(({ order, tabern
     <div ref={ref} className="print-receipt">
       <div className="print-receipt__header">
         <h2 className="print-receipt__title">{tabernaName}</h2>
+        <p className="print-receipt__number">PEDIDO #{order.order_number}</p>
         <div className="print-receipt__meta">
-          <p>Pedido: <span className="print-receipt__bold">#{order.order_number}</span></p>
           <p>Fecha: {dFormat} {tFormat}</p>
-          <p>Tipo: {TYPE_LABELS[order.type] ?? order.type}</p>
-          <p>Pago: <span className="print-receipt__capitalize">{order.payment_method}</span></p>
+          <p>Tipo: <span className="print-receipt__bold">{TYPE_LABELS[order.type] ?? order.type}</span></p>
+          <p>Pago: {PAGO_LABELS[order.payment_method] ?? order.payment_method}</p>
         </div>
-        {order.customer_name && (
+        {(order.customer_name || order.delivery_address) && (
           <div className="print-receipt__customer">
-            <p>Cliente: {order.customer_name}</p>
-            {order.delivery_address && <p>Dir: {order.delivery_address}</p>}
+            {order.customer_name && <p>Cliente: {order.customer_name}</p>}
+            {order.delivery_address && (
+              <p className="print-receipt__bold">Dirección: {order.delivery_address}</p>
+            )}
           </div>
         )}
       </div>
@@ -49,8 +63,13 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(({ order, tabern
           {order.order_items.map((item) => (
             <tr key={item.id}>
               <td className="qty">{item.quantity}</td>
-              <td className="desc">{item.product_name}</td>
-              <td className="amt">${item.subtotal.toLocaleString('es-AR')}</td>
+              <td className="desc">
+                {item.product_name}
+                {item.quantity > 1 && (
+                  <span className="print-receipt__unit">{precio(item.unit_price)} c/u</span>
+                )}
+              </td>
+              <td className="amt">{precio(item.subtotal ?? item.unit_price * item.quantity)}</td>
             </tr>
           ))}
         </tbody>
@@ -67,7 +86,7 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(({ order, tabern
 
       <div className="print-receipt__total-section">
         <span className="print-receipt__total-label">TOTAL:</span>
-        <span className="print-receipt__total-value">${order.total.toLocaleString('es-AR')}</span>
+        <span className="print-receipt__total-value">{precio(order.total)}</span>
       </div>
 
       <div className="print-receipt__footer">

@@ -603,6 +603,17 @@ body { background-color: #f9fafb; color: #111827; min-height: 100dvh; }
     text-transform: uppercase;
   }
   
+  .print-receipt__number {
+    font-size: 18px;
+    font-weight: bold;
+    margin: 0 0 8px 0;
+  }
+
+  .print-receipt__unit {
+    display: block;
+    font-size: 10px;
+  }
+
   .print-receipt__meta {
     text-align: left;
     margin-bottom: 10px;

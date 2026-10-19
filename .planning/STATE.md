@@ -23,6 +23,11 @@ Remediación aplicada en una sola pasada, sin probar en vivo:
 3. Deploy (ver CLAUDE.md). El `.env` sigue versionado a propósito: sacarlo del repo rompe el
    `git pull` del VPS; cuando se saque, antes copiar `.env` fuera y restaurarlo.
 
+**Cocina escondida (2026-10-19):** `COCINA_ACTIVA = false` en `src/shared/lib/config.ts`.
+Sin pestaña Cocina; al confirmar un pedido se imprime solo el ticket (ítems con precio, total,
+pago, cliente y dirección si hay) con el diálogo del navegador. La caja marca "Entregar" desde
+cualquier estado activo. El KDS sigue en `src/modules/kds/` para reactivarlo con `true`.
+
 **Siguiente etapa (pedida por Lucas):**
 - Conexión a **comandera** (impresora térmica): requiere print server local
   (`node-thermal-printer`), ver CLAUDE.md "Stack Patterns".

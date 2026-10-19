@@ -1,8 +1,9 @@
 import { NavLink } from 'react-router-dom'
+import { COCINA_ACTIVA } from '@/shared/lib/config'
 
 const NAV_ITEMS = [
   { to: '/pos', label: 'Caja', icon: '💰' },
-  { to: '/kds', label: 'Cocina', icon: '👨‍🍳' },
+  ...(COCINA_ACTIVA ? [{ to: '/kds', label: 'Cocina', icon: '👨‍🍳' }] : []),
   { to: '/products', label: 'Productos', icon: '📦' },
   { to: '/orders', label: 'Historial', icon: '📋' },
   { to: '/reports', label: 'Reportes', icon: '📊' },

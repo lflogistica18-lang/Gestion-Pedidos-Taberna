@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { supabase } from '@/shared/lib/supabase'
 import type { CartItem } from '../store/useCartStore'
-import type { OrderType, PaymentMethod } from '@/types/database.types'
+import type { Order, OrderItem, OrderType, PaymentMethod } from '@/types/database.types'
+import type { OrderWithItems } from './useActiveOrders'
 
 interface CreateOrderParams {
   items: CartItem[]
@@ -16,7 +17,7 @@ interface CreateOrderParams {
 interface UseCreateOrderResult {
   submitting: boolean
   error: string | null
-  createOrder: (params: CreateOrderParams) => Promise<string | null> // retorna order_number
+  createOrder: (params: CreateOrderParams) => Promise<OrderWithItems | null> // pedido creado con sus ítems
 }
 
 export function useCreateOrder(): UseCreateOrderResult {
@@ -31,7 +32,7 @@ export function useCreateOrder(): UseCreateOrderResult {
     customerName,
     deliveryAddress,
     total,
-  }: CreateOrderParams): Promise<string | null> => {
+  }: CreateOrderParams): Promise<OrderWithItems | null> => {
     if (items.length === 0) {
       setError('El carrito está vacío')
       return null
@@ -53,7 +54,7 @@ export function useCreateOrder(): UseCreateOrderResult {
           total,
           status: orderType === 'directo' ? 'entregado' : 'pendiente',
         })
-        .select('id, order_number')
+        .select('*')
         .single()
 
       if (orderErr || !order) {
@@ -70,16 +71,18 @@ export function useCreateOrder(): UseCreateOrderResult {
         quantity: item.quantity,
       }))
 
-      const { error: itemsErr } = await supabase
+      const { data: insertedItems, error: itemsErr } = await supabase
         .from('order_items')
         .insert(orderItems)
+        .select('*')
 
-      if (itemsErr) {
-        setError(itemsErr.message)
+      if (itemsErr || !insertedItems) {
+        setError(itemsErr?.message ?? 'Error al guardar los ítems del pedido')
         return null
       }
 
-      return String(order.order_number)
+      // Devolver el pedido completo: se usa para imprimir el ticket sin otra consulta
+      return { ...(order as Order), order_items: insertedItems as OrderItem[] }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Excepción al crear el pedido')
       return null

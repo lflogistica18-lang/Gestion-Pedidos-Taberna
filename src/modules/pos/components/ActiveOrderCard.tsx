@@ -3,6 +3,7 @@ import { useRef } from 'react'
 import { useReactToPrint } from 'react-to-print'
 import { Receipt } from './Receipt'
 import { useMinutosDesde } from '@/shared/hooks/useMinutosDesde'
+import { COCINA_ACTIVA } from '@/shared/lib/config'
 
 const STATUS_CONFIG = {
   pendiente: { label: 'Pendiente', color: 'status--pending', emoji: '🕐' },
@@ -28,6 +29,8 @@ interface ActiveOrderCardProps {
 export function ActiveOrderCard({ order, updating, onDeliver, onDelete }: ActiveOrderCardProps) {
   const config = STATUS_CONFIG[order.status as keyof typeof STATUS_CONFIG]
   const isReady = order.status === 'listo'
+  // Sin pantalla de cocina nadie marca "listo": la caja entrega desde cualquier estado activo
+  const puedeEntregar = COCINA_ACTIVA ? isReady : order.status !== 'entregado' && order.status !== 'cancelado'
 
   // Calcular tiempo transcurrido
   const minutesAgo = useMinutosDesde(order.created_at)
@@ -107,8 +110,8 @@ export function ActiveOrderCard({ order, updating, onDeliver, onDelete }: Active
             🖨️
           </button>
           
-          {/* Solo cajero puede marcar entregado cuando está listo */}
-        {isReady && (
+          {/* Solo cajero marca entregado (con cocina: cuando está listo) */}
+        {puedeEntregar && (
           <button
             className="btn btn--success-solid active-order-card__deliver-btn"
             onClick={() => onDeliver(order.id)}

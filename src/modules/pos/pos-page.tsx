@@ -1,4 +1,7 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { useReactToPrint } from 'react-to-print'
+import { Receipt } from './components/Receipt'
+import type { OrderWithItems } from './hooks/useActiveOrders'
 import { useProducts } from '@/modules/products/hooks/useProducts'
 import { useCategories } from '@/modules/products/hooks/useCategories'
 import { useCartStore } from './store/useCartStore'
@@ -14,6 +17,20 @@ export default function PosPage() {
   const [cartOpen, setCartOpen] = useState(false)
   const [ordersOpen, setOrdersOpen] = useState(false)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
+
+  // Ticket para cocina: se imprime solo al confirmar cada pedido
+  const [pedidoAImprimir, setPedidoAImprimir] = useState<OrderWithItems | null>(null)
+  const ticketRef = useRef<HTMLDivElement>(null)
+  const imprimirTicket = useReactToPrint({
+    contentRef: ticketRef,
+    documentTitle: pedidoAImprimir ? `Ticket_Pedido_${pedidoAImprimir.order_number}` : 'Ticket',
+    onAfterPrint: () => setPedidoAImprimir(null),
+  })
+
+  // Se imprime recién cuando el ticket ya está montado en el DOM
+  useEffect(() => {
+    if (pedidoAImprimir) imprimirTicket()
+  }, [pedidoAImprimir, imprimirTicket])
 
   const { categories } = useCategories()
   const { products, loading, error: productsError, refetch: refetchProducts } = useProducts({ activeOnly: true })
@@ -45,7 +62,7 @@ export default function PosPage() {
   const filteredProducts = products.filter((p) => p.category === activeCategory)
 
   const handleConfirm = async () => {
-    const orderNumber = await createOrder({
+    const pedido = await createOrder({
       items,
       orderType,
       paymentMethod,
@@ -55,10 +72,11 @@ export default function PosPage() {
       total: getTotal(),
     })
 
-    if (orderNumber) {
+    if (pedido) {
       clearCart()
       setCartOpen(false)
-      setSuccessMsg(`✅ Pedido #${orderNumber} creado`)
+      setPedidoAImprimir(pedido)
+      setSuccessMsg(`✅ Pedido #${pedido.order_number} creado — imprimiendo ticket`)
       setTimeout(() => setSuccessMsg(null), 3500)
     }
   }
@@ -67,6 +85,13 @@ export default function PosPage() {
 
   return (
     <div className="pos-page">
+      {/* Ticket oculto — solo existe mientras se imprime */}
+      {pedidoAImprimir && (
+        <div style={{ display: 'none' }}>
+          <Receipt ref={ticketRef} order={pedidoAImprimir} />
+        </div>
+      )}
+
       {/* Toast de éxito */}
       {successMsg && (
         <div className="pos-toast" role="alert">

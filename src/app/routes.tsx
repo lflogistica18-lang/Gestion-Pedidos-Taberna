@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { Layout } from '@/shared/components/Layout'
 import { AuthGuard } from '@/shared/components/AuthGuard'
+import { COCINA_ACTIVA } from '@/shared/lib/config'
 import LoginPage from '@/modules/auth/LoginPage'
 import PosPage from '@/modules/pos/pos-page'
 import KdsPage from '@/modules/kds/kds-page'
@@ -25,7 +26,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="/pos" replace /> },
       { path: 'pos', element: <PosPage /> },
-      { path: 'kds', element: <KdsPage /> },
+      { path: 'kds', element: COCINA_ACTIVA ? <KdsPage /> : <Navigate to="/pos" replace /> },
       { path: 'products', element: <ProductsPage /> },
       { path: 'orders', element: <OrdersPage /> },
       { path: 'reports', element: <ReportsPage /> },

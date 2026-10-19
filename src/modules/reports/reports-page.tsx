@@ -4,6 +4,7 @@ import {
   ResponsiveContainer, CartesianGrid,
 } from 'recharts'
 import { useDashboardStats } from './hooks/useDashboardStats'
+import { COCINA_ACTIVA } from '@/shared/lib/config'
 import { EstadoCargando } from '@/shared/components/comunes/EstadoCargando'
 import { EstadoError } from '@/shared/components/comunes/EstadoError'
 
@@ -144,6 +145,7 @@ export default function ReportsPage() {
               </span>
             </div>
 
+            {COCINA_ACTIVA && (
             <div className="stat-card stat-card--gray">
               <span className="stat-card__icon">⏱️</span>
               <h3 className="stat-card__title">Promedio Preparación</h3>
@@ -154,6 +156,7 @@ export default function ReportsPage() {
                 {stats.avgPrepTimeMinutes > 0 ? `${stats.avgPrepTimeMinutes} min` : '--'}
               </span>
             </div>
+            )}
           </div>
 
           {/* ── GRÁFICO DE TENDENCIA (solo si hay varios días) ── */}
