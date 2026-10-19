@@ -1,3 +1,6 @@
+> **Vista derivada.** El estado que manda es `estado_proyecto.md` en la raíz (formato Omni v7):
+> si esto lo contradice, gana aquel.
+
 # Project State
 
 ## DÓNDE QUEDAMOS (2026-10-19)

@@ -173,3 +173,26 @@ Do not make direct repo edits outside a GSD workflow unless the user explicitly 
 > Profile not yet configured. Run `/gsd-profile-user` to generate your developer profile.
 > This section is managed by `generate-claude-profile` -- do not edit manually.
 <!-- GSD:profile-end -->
+
+## Omni — reglas de este proyecto
+
+Proyecto registrado en el Omni (`omni/proyectos/Gestion-Pedidos-Taberna`, submódulo). Al retomar:
+`/omni-retomar Gestion-Pedidos-Taberna` lee el bloque **DÓNDE QUEDAMOS** de `estado_proyecto.md`
+(gana sobre `.planning/STATE.md`). Anterior al starter: sin backend, Supabase directo desde el front.
+
+- **Base:** opción A (Supabase Cloud) en el proyecto **compartido** `zslsosunvsbxxnzeckpg`, schema
+  `sgp`. RLS por rol: `(SELECT sgp.es_taberna())` = `app_metadata.rol = 'taberna'`, nunca
+  `user_metadata`, nunca "está logueado", nunca `USING (true)`. Sin `anon`. Sin DELETE: soft delete
+  con `deleted_at`. Migraciones numeradas en `supabase/migrations/` con verificación `OK | FALTA`;
+  `supabase/instalar_sgp_desde_cero.sql` se regenera juntando 001–NNN + seed.
+- **Código:** acceso a datos solo en `hooks/` y `store/`; los hooks devuelven `error` y la pantalla
+  lo muestra (`EstadoError`, `mostrarToast`), nunca falla en silencio. Sin `any`.
+  Patrón G: `shared/components/comunes/CrudManager.tsx` (+ `comunes/crud/`).
+- **Configuración del local** en `sgp.configuracion` vía `shared/store/useConfiguracion`; nada de
+  constantes nuevas en `shared/lib/config.ts` para cosas que el dueño quiera cambiar.
+- **UI:** estilo Panel (`docs/notas/estilo-panel.md`): solo tokens de `src/index.css`, piezas de
+  `shared/components/panel/`; ningún color literal; 44×44, inputs 16 px, cards < md.
+- **No tocar sin pedirlo:** `Receipt.tsx` y `@media print` (sale en papel), `print-server/`.
+- **Deploy:** ver "Deploy — VPS" arriba y `docs/PUESTA-EN-MARCHA.md`. Producción y base: con
+  aprobación de Lucas, desde la compu (una sesión en la nube no llega al VPS ni a Supabase).
+- **Agentes:** construcción con `model: sonnet` y contrato; base, RLS y deploy los hace el orquestador.
