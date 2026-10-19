@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
+import { Loader2 } from 'lucide-react'
 import { useAuth } from './hooks/useAuth'
+import { AvisoEstado, Boton, Entrada } from '@/shared/components/panel'
 
 export default function LoginPage() {
   const { signIn, isAuthenticated, loading: authLoading } = useAuth()
@@ -38,79 +40,63 @@ export default function LoginPage() {
   if (isAuthenticated) return <Navigate to="/pos" replace />
 
   return (
-    <div className="login-page">
-      {/* Fondo con gradiente */}
-      <div className="login-bg" />
-
-      <div className="login-card">
+    <div className="flex min-h-dvh items-center justify-center bg-bg-principal p-4">
+      <div className="w-full max-w-100 rounded-2xl border border-borde-sutil bg-bg-tarjeta p-6 shadow-tarjeta sm:p-8">
         {/* Logo / Marca */}
-        <div className="login-brand">
-          <div className="login-brand__logo">🍺</div>
-          <h1 className="login-brand__name">La Taberna</h1>
-          <p className="login-brand__sub">Sistema de Gestión</p>
+        <div className="mb-6 text-center">
+          <img src="/logo-taberna.png" alt="" className="mx-auto size-16 rounded-2xl object-cover" />
+          <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-texto-primario">La Taberna</h1>
+          <p className="text-sm text-texto-secundario">Sistema de gestión</p>
         </div>
 
         {/* Formulario */}
-        <form className="login-form" onSubmit={handleSubmit} noValidate>
-          <div className="login-form__field">
-            <label htmlFor="login-email" className="login-form__label">
-              Email
-            </label>
-            <input
-              id="login-email"
-              type="email"
-              className="login-form__input"
-              placeholder="usuario@sgc-taberna.com"
-              value={email}
-              onChange={e => { setEmail(e.target.value); setError(null) }}
-              autoComplete="email"
-              autoFocus
-              disabled={loading}
-              required
-            />
-          </div>
+        <form className="flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
+          <Entrada
+            id="login-email"
+            type="email"
+            etiqueta="Email"
+            placeholder="usuario@sgc-taberna.com"
+            value={email}
+            onChange={e => { setEmail(e.target.value); setError(null) }}
+            autoComplete="email"
+            autoFocus
+            disabled={loading}
+            required
+          />
 
-          <div className="login-form__field">
-            <label htmlFor="login-password" className="login-form__label">
-              Contraseña
-            </label>
-            <input
-              id="login-password"
-              type="password"
-              className="login-form__input"
-              placeholder="••••••••"
-              value={password}
-              onChange={e => { setPassword(e.target.value); setError(null) }}
-              autoComplete="current-password"
-              disabled={loading}
-              required
-            />
-          </div>
+          <Entrada
+            id="login-password"
+            type="password"
+            etiqueta="Contraseña"
+            placeholder="••••••••"
+            value={password}
+            onChange={e => { setPassword(e.target.value); setError(null) }}
+            autoComplete="current-password"
+            disabled={loading}
+            required
+          />
 
           {/* Error */}
-          {error && (
-            <div className="login-form__error" role="alert">
-              ⚠️ {error}
-            </div>
-          )}
+          {error && <AvisoEstado tono="rojo" titulo={error} />}
 
-          <button
+          <Boton
             type="submit"
-            className="login-form__btn"
+            variante="primario"
+            className="mt-2 w-full"
             disabled={loading || !email.trim() || !password}
           >
             {loading ? (
-              <span className="login-form__btn-loading">
-                <span className="login-spinner" />
+              <>
+                <Loader2 size={16} className="animate-spin" aria-hidden="true" />
                 Ingresando...
-              </span>
+              </>
             ) : (
-              'Ingresar →'
+              'Ingresar'
             )}
-          </button>
+          </Boton>
         </form>
 
-        <p className="login-footer">
+        <p className="mt-6 text-center text-xs text-texto-secundario">
           sgc-taberna.com · Sistema interno
         </p>
       </div>
