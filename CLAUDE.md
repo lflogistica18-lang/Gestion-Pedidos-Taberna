@@ -114,7 +114,7 @@ Architecture not yet mapped. Follow existing patterns found in the codebase.
 
 - **Servidor:** `root@187.77.247.24` (Ubuntu 24.04)
 - **Carpeta en VPS:** `/root/Gestion-Pedidos-Taberna`
-- **App:** `http://187.77.247.24:8090`
+- **App:** `https://pedidostaberna.duckdns.org` (Nginx Proxy Manager → `sgp-taberna-front:80` por la red `red-proxy`; el 8090 escucha solo en 127.0.0.1). Puesta en marcha paso a paso: `docs/PUESTA-EN-MARCHA.md`
 - **docker-compose:** v1.29.2 (tiene bug con `--force-recreate`)
 - **`.env` en VPS:** `/root/Gestion-Pedidos-Taberna/.env` (manual, no está en Git, necesario para el build de Vite)
 - **`.dockerignore`:** `.env` fue removido para que Vite lo tome en tiempo de build

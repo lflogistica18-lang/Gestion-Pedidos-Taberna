@@ -1,3 +1,11 @@
+# docker-compose.yml — SGP La Taberna en el VPS con proxy inverso compartido
+#
+# Nginx Proxy Manager (NPM) tiene el 80/443 y termina el HTTPS de todos los dominios.
+# Esta app escucha SOLO en localhost (127.0.0.1:8090) y NPM le llega por la red
+# `red-proxy` usando el nombre del contenedor: destino en el panel `sgp-taberna-front:80`.
+# Patrón del Omni (OPERACION.md §5), igual que el resto de las apps desde 2026-10-07.
+#
+# La imagen se construye aparte (ver CLAUDE.md): docker build --no-cache -t sgp-taberna:latest .
 version: '3.8'
 
 services:
@@ -5,5 +13,11 @@ services:
     container_name: sgp-taberna-front
     image: sgp-taberna:latest
     ports:
-      - "8090:80"
+      - "127.0.0.1:8090:80"
+    networks:
+      - red-proxy
     restart: unless-stopped
+
+networks:
+  red-proxy:
+    external: true
