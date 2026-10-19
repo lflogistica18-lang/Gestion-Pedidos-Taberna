@@ -35,6 +35,11 @@ cualquier estado activo. El KDS sigue en `src/modules/kds/` para reactivarlo con
   `sistema/diseno/GUIA.md`). Hoy hay 58 colores hardcodeados en `.tsx` y ninguno tokenizado.
 - **Direcciones de pedidos**: hoy `orders.delivery_address` es texto libre; falta libreta de
   direcciones por cliente.
+- **Pantalla Configuración** (aprobada por Lucas 2026-10-19, va después de la tanda 2 de UI):
+  tabla `sgp.configuracion` + pantalla estilo Panel (submenú + tarjeta por sección + "Guardar cambios").
+  Secciones: Local (nombre, dirección, teléfono → ticket) · Impresión (modo navegador/servidor,
+  papel 58/80mm, pie del ticket) · Pantallas (Cocina sí/no) · Medios de pago ofrecidos en Caja.
+  Reemplaza las constantes de `src/shared/lib/config.ts` y el `.env` del print server donde aplique.
 - Evaluar mover el SGP a un proyecto Supabase propio (hoy comparte proyecto, schema `sgp`).
 
 **Bloqueantes:** ninguno de código. Pendiente del dueño: aplicar la migración y asignar rol.
