@@ -11,6 +11,8 @@ import { ProductGrid } from './components/ProductGrid'
 import { CartPanel } from './components/CartPanel'
 import { ActiveOrdersPanel } from './components/ActiveOrdersPanel'
 import { EstadoError } from '@/shared/components/comunes/EstadoError'
+import { useEncolarImpresion } from './hooks/useEncolarImpresion'
+import { MODO_IMPRESION } from '@/shared/lib/config'
 
 export default function PosPage() {
   const [categoriaElegida, setCategoriaElegida] = useState<string>('')
@@ -35,6 +37,7 @@ export default function PosPage() {
   const { categories } = useCategories()
   const { products, loading, error: productsError, refetch: refetchProducts } = useProducts({ activeOnly: true })
   const { submitting, error, createOrder } = useCreateOrder()
+  const { encolar } = useEncolarImpresion()
   const {
     orders: activeOrders,
     loading: ordersLoading,
@@ -75,8 +78,17 @@ export default function PosPage() {
     if (pedido) {
       clearCart()
       setCartOpen(false)
-      setPedidoAImprimir(pedido)
-      setSuccessMsg(`✅ Pedido #${pedido.order_number} creado — imprimiendo ticket`)
+
+      if (MODO_IMPRESION === 'servidor') {
+        // El pedido ya está guardado: si falla la cola, se avisa y se reimprime con 🖨️
+        const { error: colaErr } = await encolar(pedido.id)
+        setSuccessMsg(colaErr
+          ? `⚠️ Pedido #${pedido.order_number} creado, pero no se mandó a imprimir: ${colaErr}. Reimprimí desde Pedidos.`
+          : `✅ Pedido #${pedido.order_number} creado — enviado a la comandera`)
+      } else {
+        setPedidoAImprimir(pedido)
+        setSuccessMsg(`✅ Pedido #${pedido.order_number} creado — imprimiendo ticket`)
+      }
       setTimeout(() => setSuccessMsg(null), 3500)
     }
   }

@@ -570,6 +570,9 @@ body { background-color: #f9fafb; color: #111827; min-height: 100dvh; }
    PRINT STYLES FOR THERMAL PRINTER (58mm/80mm)
    ========================================================================== */
 @media print {
+  /* Papel de comandera 80mm sin márgenes (RawBT / diálogo de Android lo respetan) */
+  @page { size: 80mm auto; margin: 0; }
+
   /* Ocultar todo lo de la pantalla excepto el recibo */
   body * {
     visibility: hidden;
@@ -583,11 +586,12 @@ body { background-color: #f9fafb; color: #111827; min-height: 100dvh; }
     position: absolute;
     left: 0;
     top: 0;
-    width: 58mm; /* Ajusta a 80mm si tu impresora es más ancha */
-    margin: 0;
+    /* Papel 80mm → área imprimible ~72mm. Para comandera de 58mm: 48mm y 12px */
+    width: 72mm;
+    margin: 0 4mm;
     padding: 0;
     font-family: 'Courier New', Courier, monospace;
-    font-size: 12px;
+    font-size: 13px;
     color: #000;
   }
   

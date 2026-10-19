@@ -3,7 +3,8 @@ import { useRef } from 'react'
 import { useReactToPrint } from 'react-to-print'
 import { Receipt } from './Receipt'
 import { useMinutosDesde } from '@/shared/hooks/useMinutosDesde'
-import { COCINA_ACTIVA } from '@/shared/lib/config'
+import { COCINA_ACTIVA, MODO_IMPRESION } from '@/shared/lib/config'
+import { useEncolarImpresion } from '../hooks/useEncolarImpresion'
 
 const STATUS_CONFIG = {
   pendiente: { label: 'Pendiente', color: 'status--pending', emoji: '🕐' },
@@ -37,10 +38,21 @@ export function ActiveOrderCard({ order, updating, onDeliver, onDelete }: Active
 
   const printRef = useRef<HTMLDivElement>(null)
   
-  const handlePrint = useReactToPrint({
+  const imprimirEnNavegador = useReactToPrint({
     contentRef: printRef,
     documentTitle: `Ticket_Pedido_${order.order_number}`
   })
+  const { encolando, encolar } = useEncolarImpresion()
+
+  // Reimprimir: en modo 'servidor' va a la cola; si no, diálogo del navegador (RawBT)
+  const handlePrint = async () => {
+    if (MODO_IMPRESION !== 'servidor') {
+      imprimirEnNavegador()
+      return
+    }
+    const { error } = await encolar(order.id)
+    if (error) alert('No se pudo mandar a imprimir: ' + error)
+  }
 
   return (
     <div className={`active-order-card ${isReady ? 'active-order-card--ready' : ''}`}>
@@ -102,8 +114,8 @@ export function ActiveOrderCard({ order, updating, onDeliver, onDelete }: Active
 
           <button
             className="btn btn--secondary"
-            onClick={() => handlePrint()}
-            disabled={updating}
+            onClick={handlePrint}
+            disabled={updating || encolando}
             title="Imprimir ticket"
             style={{ padding: '0 12px', fontSize: '1.2rem', color: '#4b5563', background: 'transparent', borderColor: '#d1d5db' }}
           >
