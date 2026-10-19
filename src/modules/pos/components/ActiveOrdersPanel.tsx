@@ -1,26 +1,32 @@
-import { useActiveOrders } from '../hooks/useActiveOrders'
+import type { OrderWithItems } from '../hooks/useActiveOrders'
 import { useUpdateOrderStatus } from '../hooks/useUpdateOrderStatus'
 import { ActiveOrderCard } from './ActiveOrderCard'
+import { EstadoError } from '@/shared/components/comunes/EstadoError'
 
 interface ActiveOrdersPanelProps {
   open: boolean
   onClose: () => void
+  orders: OrderWithItems[]
+  loading: boolean
+  error: string | null
+  refetch: () => void
 }
 
 const STATUS_ORDER = ['listo', 'en_preparacion', 'pendiente'] as const
 
-export function ActiveOrdersPanel({ open, onClose }: ActiveOrdersPanelProps) {
-  const { orders, loading } = useActiveOrders()
+export function ActiveOrdersPanel({ open, onClose, orders, loading, error, refetch }: ActiveOrdersPanelProps) {
   const { updatingId, updateStatus, deleteOrder } = useUpdateOrderStatus()
 
   if (!open) return null
 
   const handleDeliver = async (orderId: string) => {
-    await updateStatus(orderId, 'entregado')
+    const { error: err } = await updateStatus(orderId, 'entregado')
+    if (err) alert('No se pudo actualizar el pedido: ' + err)
   }
 
   const handleDelete = async (orderId: string) => {
-    await deleteOrder(orderId)
+    const { error: err } = await deleteOrder(orderId)
+    if (err) alert('No se pudo actualizar el pedido: ' + err)
   }
 
   // Agrupar por status en el orden correcto
@@ -59,6 +65,8 @@ export function ActiveOrdersPanel({ open, onClose }: ActiveOrdersPanelProps) {
               <div className="spinner" />
               <p>Cargando pedidos...</p>
             </div>
+          ) : error ? (
+            <EstadoError mensaje={error} onReintentar={refetch} />
           ) : orders.length === 0 ? (
             <div className="cart-panel__empty">
               <span>🎉</span>

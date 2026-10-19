@@ -32,33 +32,64 @@ export interface DailyStats {
   dailyData: DailyBreakdown[]
 }
 
-export function useDashboardStats(dateFrom: Date = new Date(), dateTo: Date = new Date()) {
+export interface UseDashboardStatsResult {
+  stats: DailyStats | null
+  loading: boolean
+  error: string | null
+  refetch: () => void
+}
+
+// Fecha local como string YYYY-MM-DD (NUNCA toISOString: en UTC-3 corre el día)
+function localDateKey(date: Date): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+function parseLocalDate(str: string): Date {
+  const [y, m, d] = str.split('-').map(Number)
+  return new Date(y, m - 1, d)
+}
+
+export function useDashboardStats(dateFrom: Date = new Date(), dateTo: Date = new Date()): UseDashboardStatsResult {
   const [stats, setStats] = useState<DailyStats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [tick, setTick] = useState(0)
+
+  // Deps estables: strings locales calculados fuera del effect
+  const fromKey = localDateKey(dateFrom)
+  const toKey = localDateKey(dateTo)
 
   useEffect(() => {
     const fetchStats = async () => {
       setLoading(true)
-      const startOfDay = new Date(dateFrom)
+      setError(null)
+      try {
+      const startOfDay = parseLocalDate(fromKey)
       startOfDay.setHours(0, 0, 0, 0)
 
-      const endOfDay = new Date(dateTo)
+      const endOfDay = parseLocalDate(toKey)
       endOfDay.setHours(23, 59, 59, 999)
 
       // Traer órdenes con items Y logs de estado en un solo query
-      const { data: orders } = await supabase
+      const { data: orders, error: ordersErr } = await supabase
         .from('orders')
         .select('*, order_items(*), order_status_log(*)')
         .gte('created_at', startOfDay.toISOString())
         .lte('created_at', endOfDay.toISOString())
+        .is('deleted_at', null)
+        .neq('status', 'cancelado')
 
       // Traer productos para costo y categoría
-      const { data: products } = await supabase
+      const { data: products, error: productsErr } = await supabase
         .from('products')
         .select('name, cost, category')
 
-      if (!orders) {
-        setLoading(false)
+      if (ordersErr || productsErr || !orders) {
+        setStats(null)
+        setError((ordersErr ?? productsErr)?.message ?? 'No se pudieron cargar los datos')
         return
       }
 
@@ -119,7 +150,7 @@ export function useDashboardStats(dateFrom: Date = new Date(), dateTo: Date = ne
         // ── Promedio de cocina ──────────────────────────────────
         // Solo pedidos que pasaron por estado en_preparacion (fueron a cocina)
         const logs = (order.order_status_log || []) as { action: string; created_at: string }[]
-        const fueAcocina = logs.some(l => l.action === 'en_preparacion')
+        const fueAcocina = logs.some(l => l.action === 'accepted')
 
         if (fueAcocina) {
           // Tiempo = desde el log 'created' al log 'listo' (o 'ready')
@@ -183,17 +214,19 @@ export function useDashboardStats(dateFrom: Date = new Date(), dateTo: Date = ne
         topByCategory,
         dailyData,
       })
-      setLoading(false)
+      } catch (e) {
+        setStats(null)
+        setError((e as Error).message)
+      } finally {
+        setLoading(false)
+      }
     }
 
     fetchStats()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dateFrom.toISOString().split('T')[0], dateTo.toISOString().split('T')[0]])
+  }, [fromKey, toKey, tick])
 
-  return { stats, loading }
+  const refetch = () => setTick(t => t + 1)
+
+  return { stats, loading, error, refetch }
 }
 
-// Mantener export para no romper imports existentes (deprecated — usar useDashboardStats)
-export function usePrepTimeStats() {
-  return { avgPrepTimeMs: 0, prepLoading: false }
-}

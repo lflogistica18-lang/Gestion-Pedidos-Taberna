@@ -1,13 +1,16 @@
 import { useState, useMemo } from 'react'
 import { useAdminOrders } from './hooks/useAdminOrders'
-import type { OrderConDetalle } from './hooks/useAdminOrders'
 import { EstadoCargando } from '@/shared/components/comunes/EstadoCargando'
 import { EstadoError } from '@/shared/components/comunes/EstadoError'
 
 type Tab = 'historial' | 'papelera'
 
+// Fecha local YYYY-MM-DD — NO usar toISOString(): en UTC-3 a las 21hs ya es mañana
 function toDateStr(date: Date): string {
-  return date.toISOString().split('T')[0]
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
 }
 
 function formatCurrency(n: number) {
@@ -36,7 +39,7 @@ function StatusBadge({ status }: { status: string }) {
 
 export default function OrdersPage() {
   const [tab, setTab] = useState<Tab>('historial')
-  const { orders, loading, error, refetch, enviarAPapelera, restaurarDePapelera, eliminarPermanente } = useAdminOrders()
+  const { orders, loading, error, refetch, enviarAPapelera, restaurarDePapelera, hayMas, cargandoMas, cargarMas } = useAdminOrders()
 
   // Filtros
   const todayStr = toDateStr(new Date())
@@ -86,18 +89,6 @@ export default function OrdersPage() {
   const handleRestaurar = async (id: string) => {
     const result = await restaurarDePapelera(id)
     if (result.error) alert(`Error: ${result.error}`)
-  }
-
-  // Eliminar permanente (resta de caja)
-  const handleEliminarPermanente = async (order: OrderConDetalle) => {
-    const confirm = window.confirm(
-      `⚠️ ELIMINAR PERMANENTE\n\nPedido #${order.order_number} — ${formatCurrency(order.total)}\n\nEste monto se restará de la caja. Esta acción NO se puede deshacer.`
-    )
-    if (!confirm) return
-
-    const result = await eliminarPermanente(order.id)
-    if (result.error) alert(`Error: ${result.error}`)
-    else refetch()
   }
 
   if (loading) return <EstadoCargando />
@@ -249,27 +240,28 @@ export default function OrdersPage() {
                       🗑️ Papelera
                     </button>
                   ) : (
-                    <>
-                      <button
-                        onClick={() => handleRestaurar(order.id)}
-                        className="btn btn--success-soft btn--sm"
-                        style={{ flex: 1 }}
-                      >
-                        ♻️ Restaurar
-                      </button>
-                      <button
-                        onClick={() => handleEliminarPermanente(order)}
-                        className="btn btn--danger-solid btn--sm"
-                        style={{ flex: 1 }}
-                      >
-                        ❌ Eliminar
-                      </button>
-                    </>
+                    <button
+                      onClick={() => handleRestaurar(order.id)}
+                      className="btn btn--success-soft btn--sm"
+                      style={{ flex: 1 }}
+                    >
+                      ♻️ Restaurar
+                    </button>
                   )}
                 </div>
               </div>
             )
           })
+        )}
+
+        {hayMas && (
+          <button
+            className="btn btn--secondary"
+            onClick={cargarMas}
+            disabled={cargandoMas}
+          >
+            {cargandoMas ? 'Cargando...' : 'Cargar más'}
+          </button>
         )}
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useProducts } from '@/modules/products/hooks/useProducts'
 import { useCategories } from '@/modules/products/hooks/useCategories'
 import { useCartStore } from './store/useCartStore'
@@ -7,28 +7,30 @@ import { useActiveOrders } from './hooks/useActiveOrders'
 import { ProductGrid } from './components/ProductGrid'
 import { CartPanel } from './components/CartPanel'
 import { ActiveOrdersPanel } from './components/ActiveOrdersPanel'
+import { EstadoError } from '@/shared/components/comunes/EstadoError'
 
 export default function PosPage() {
-  const [activeCategory, setActiveCategory] = useState<string>('')
+  const [categoriaElegida, setCategoriaElegida] = useState<string>('')
   const [cartOpen, setCartOpen] = useState(false)
   const [ordersOpen, setOrdersOpen] = useState(false)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
 
   const { categories } = useCategories()
-  const { products, loading } = useProducts({ activeOnly: true })
+  const { products, loading, error: productsError, refetch: refetchProducts } = useProducts({ activeOnly: true })
   const { submitting, error, createOrder } = useCreateOrder()
-  const { activeCount } = useActiveOrders()
+  const {
+    orders: activeOrders,
+    loading: ordersLoading,
+    error: ordersError,
+    activeCount,
+    refetch: refetchOrders,
+  } = useActiveOrders()
 
-  // Seleccionar la primera categoría cuando cargan o cuando cambia la lista
-  // (ej: después de un rename, resetear para no quedar con nombre viejo)
-  useEffect(() => {
-    if (categories.length > 0) {
-      const exists = categories.some(c => c.name === activeCategory)
-      if (!activeCategory || !exists) {
-        setActiveCategory(categories[0].name)
-      }
-    }
-  }, [categories])
+  // Categoría activa derivada: si la elegida no existe (todavía no cargaron, o
+  // la renombraron) cae a la primera. Derivarla evita un setState dentro de un effect.
+  const activeCategory = categories.some(c => c.name === categoriaElegida)
+    ? categoriaElegida
+    : (categories[0]?.name ?? '')
 
   const items = useCartStore((s) => s.items)
   const orderType = useCartStore((s) => s.orderType)
@@ -86,6 +88,11 @@ export default function PosPage() {
             <span className="pos-orders-btn__badge">{activeCount}</span>
           )}
         </button>
+        {ordersError && (
+          <span role="alert" style={{ fontSize: '0.75rem', color: '#dc2626' }}>
+            ⚠️ No se pudieron cargar los pedidos
+          </span>
+        )}
       </header>
 
       {/* Category tabs */}
@@ -96,7 +103,7 @@ export default function PosPage() {
             role="tab"
             aria-selected={activeCategory === name}
             className={`pos-tab ${activeCategory === name ? 'pos-tab--active' : ''}`}
-            onClick={() => setActiveCategory(name)}
+            onClick={() => setCategoriaElegida(name)}
           >
             {name}
           </button>
@@ -105,7 +112,11 @@ export default function PosPage() {
 
       {/* Product grid */}
       <div className="pos-products">
-        <ProductGrid products={filteredProducts} loading={loading} />
+        {productsError ? (
+          <EstadoError mensaje={productsError} onReintentar={refetchProducts} />
+        ) : (
+          <ProductGrid products={filteredProducts} loading={loading} />
+        )}
       </div>
 
       {/* Cart floating bar */}
@@ -138,6 +149,10 @@ export default function PosPage() {
       <ActiveOrdersPanel
         open={ordersOpen}
         onClose={() => setOrdersOpen(false)}
+        orders={activeOrders}
+        loading={ordersLoading}
+        error={ordersError}
+        refetch={refetchOrders}
       />
     </div>
   )

@@ -7,7 +7,7 @@ import { EstadoError } from './EstadoError'
 // Patron G — componente generico CRUD
 // Usa el sistema de diseño del proyecto (CSS classes de index.css)
 
-interface CrudManagerProps<T extends EntidadBase> {
+interface CrudManagerProps<T extends EntidadBase & { active?: boolean }> {
   titulo: string
   datos: T[]
   campos: CampoSchema[]
@@ -18,9 +18,11 @@ interface CrudManagerProps<T extends EntidadBase> {
   onEditar: (id: string, datos: Partial<T>) => Promise<{ error: string | null }>
   onDesactivar: (id: string) => Promise<{ error: string | null }>
   onRecargar: () => void
+  // Validación opcional (ej: zod) — devuelve mensaje de error o null
+  validar?: (datos: Record<string, unknown>) => string | null
 }
 
-export function CrudManager<T extends EntidadBase>({
+export function CrudManager<T extends EntidadBase & { active?: boolean }>({
   titulo,
   datos,
   campos,
@@ -30,7 +32,8 @@ export function CrudManager<T extends EntidadBase>({
   onCrear,
   onEditar,
   onDesactivar,
-  onRecargar
+  onRecargar,
+  validar
 }: CrudManagerProps<T>) {
   const [modalAbierto, setModalAbierto] = useState(false)
   const [editando, setEditando] = useState<T | null>(null)
@@ -70,6 +73,12 @@ export function CrudManager<T extends EntidadBase>({
         setErrorForm(`El campo "${campo.etiqueta}" es obligatorio`)
         return
       }
+    }
+
+    const errorValidacion = validar?.(formulario)
+    if (errorValidacion) {
+      setErrorForm(errorValidacion)
+      return
     }
 
     setGuardando(true)
@@ -117,11 +126,11 @@ export function CrudManager<T extends EntidadBase>({
                 padding: '8px 14px 8px 36px',
                 border: '1.5px solid #e5e7eb',
                 borderRadius: '10px',
-                fontSize: '0.875rem',
+                fontSize: '1rem',
                 outline: 'none',
                 background: 'white',
                 minWidth: '200px',
-                minHeight: '40px',
+                minHeight: '44px',
               }}
             />
             <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', fontSize: '0.9rem' }}>🔍</span>
@@ -256,10 +265,10 @@ export function CrudManager<T extends EntidadBase>({
                   </button>
                   <button
                     onClick={() => confirmarDesactivar(item.id)}
-                    className={`btn btn--sm ${(item as any).active === false ? 'btn--success-soft' : 'btn--danger-soft'}`}
+                    className={`btn btn--sm ${item.active === false ? 'btn--success-soft' : 'btn--danger-soft'}`}
                     style={{ flex: 1, minHeight: '40px' }}
                   >
-                    {(item as any).active === false ? '✅ Activar' : '🚫 Desactivar'}
+                    {item.active === false ? '✅ Activar' : '🚫 Desactivar'}
                   </button>
                 </div>
               </div>

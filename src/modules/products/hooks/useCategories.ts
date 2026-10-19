@@ -1,30 +1,41 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/shared/lib/supabase'
+import type { ProductCategoryRow } from '@/types/database.types'
 
-export interface CategoryItem {
-  id?: string
-  name: string
-  sort_order: number
+export type CategoryItem = Pick<ProductCategoryRow, 'id' | 'name' | 'sort_order'>
+
+export interface UseCategoriesResult {
+  categories: CategoryItem[]
+  loading: boolean
+  error: string | null
+  createCategory: (name: string) => Promise<{ error: string | null }>
+  renameCategory: (oldName: string, newName: string) => Promise<{ error: string | null }>
+  deleteCategory: (name: string) => Promise<{ error: string | null }>
+  refetch: () => Promise<void>
 }
 
-export function useCategories() {
+export function useCategories(): UseCategoriesResult {
   const [categories, setCategories] = useState<CategoryItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const fetchCategories = async () => {
     setLoading(true)
     try {
-      // Traer sin id primero (funciona siempre)
-      const { data, error } = await supabase
+      const { data, error: err } = await supabase
         .from('product_categories')
-        .select('name, sort_order')
+        .select('id, name, sort_order')
+        .is('deleted_at', null)
         .order('sort_order', { ascending: true })
 
-      if (!error && data) {
-        setCategories(data)
+      if (err) {
+        setError(err.message)
+      } else {
+        setError(null)
+        setCategories((data ?? []) as CategoryItem[])
       }
-    } catch (e: any) {
-      console.error('Error fetching categories:', e)
+    } catch (e) {
+      setError((e as Error).message)
     } finally {
       setLoading(false)
     }
@@ -32,64 +43,61 @@ export function useCategories() {
 
   useEffect(() => { fetchCategories() }, [])
 
-  const createCategory = async (name: string): Promise<boolean> => {
+  const createCategory = async (name: string): Promise<{ error: string | null }> => {
     const trimmed = name.trim()
-    if (!trimmed) return false
+    if (!trimmed) return { error: 'El nombre no puede estar vacío' }
     // Evitar duplicados
-    if (categories.some(c => c.name.toLowerCase() === trimmed.toLowerCase())) return false
+    if (categories.some(c => c.name.toLowerCase() === trimmed.toLowerCase())) {
+      return { error: `La categoría "${trimmed}" ya existe` }
+    }
     try {
       const maxOrder = categories.length > 0
         ? Math.max(...categories.map((c) => c.sort_order))
         : 0
-      const { error } = await supabase
+      const { error: insErr } = await supabase
         .from('product_categories')
         .insert({ name: trimmed, sort_order: maxOrder + 1 })
-      if (!error) await fetchCategories()
-      return !error
-    } catch (e: any) {
-      console.error('Error creating category:', e)
-      return false
+      if (insErr) {
+        // 23505 = nombre duplicado: puede ser una categoría borrada (soft delete) -> revivirla
+        if (insErr.code === '23505') {
+          const { data: revividas, error: revErr } = await supabase
+            .from('product_categories')
+            .update({ deleted_at: null, sort_order: maxOrder + 1 })
+            .eq('name', trimmed)
+            .not('deleted_at', 'is', null)
+            .select('id')
+          if (revErr) return { error: revErr.message }
+          if (!revividas || revividas.length === 0) {
+            return { error: `La categoría "${trimmed}" ya existe` }
+          }
+        } else {
+          return { error: insErr.message }
+        }
+      }
+      await fetchCategories()
+      return { error: null }
+    } catch (e) {
+      return { error: (e as Error).message }
     }
   }
 
-  // Renombrar: delete vieja + insert nueva con mismo sort_order + actualizar productos
-  // Estrategia de reemplazo — no depende de tener columna id
+  // Renombrar: una sola llamada atómica a la función SQL (renombra categoría y productos)
   const renameCategory = async (oldName: string, newName: string): Promise<{ error: string | null }> => {
     const trimmed = newName.trim()
     if (!trimmed) return { error: 'El nombre no puede estar vacío' }
     if (trimmed === oldName) return { error: null }
 
-    const cat = categories.find(c => c.name === oldName)
-    const sortOrder = cat?.sort_order ?? 0
-
     try {
-      // 1. Insertar nueva categoría con mismo orden
-      const { error: insertErr } = await supabase
-        .from('product_categories')
-        .insert({ name: trimmed, sort_order: sortOrder })
-
-      if (insertErr) return { error: `No se pudo crear el nombre nuevo: ${insertErr.message}` }
-
-      // 2. Reasignar productos al nuevo nombre
-      const { error: prodErr } = await supabase
-        .from('products')
-        .update({ category: trimmed })
-        .eq('category', oldName)
-
-      if (prodErr) return { error: `No se pudieron actualizar productos: ${prodErr.message}` }
-
-      // 3. Borrar categoría vieja
-      const { error: delErr } = await supabase
-        .from('product_categories')
-        .delete()
-        .eq('name', oldName)
-
-      if (delErr) return { error: `No se pudo eliminar nombre anterior: ${delErr.message}` }
+      const { error: rpcErr } = await supabase.rpc('renombrar_categoria', {
+        p_viejo: oldName,
+        p_nuevo: trimmed,
+      })
+      if (rpcErr) return { error: rpcErr.message }
 
       await fetchCategories()
       return { error: null }
-    } catch (e: any) {
-      return { error: e.message }
+    } catch (e) {
+      return { error: (e as Error).message }
     }
   }
 
@@ -97,12 +105,14 @@ export function useCategories() {
   const deleteCategory = async (name: string): Promise<{ error: string | null }> => {
     try {
       // Verificar que no tenga productos activos
-      const { data: activos } = await supabase
+      const { data: activos, error: checkErr } = await supabase
         .from('products')
         .select('id')
         .eq('category', name)
         .eq('active', true)
         .limit(1)
+
+      if (checkErr) return { error: checkErr.message }
 
       if (activos && activos.length > 0) {
         return { error: `La categoría "${name}" tiene productos activos. Movelos antes de eliminarla.` }
@@ -110,16 +120,17 @@ export function useCategories() {
 
       const { error: delErr } = await supabase
         .from('product_categories')
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq('name', name)
+        .is('deleted_at', null)
 
       if (delErr) return { error: delErr.message }
       await fetchCategories()
       return { error: null }
-    } catch (e: any) {
-      return { error: e.message }
+    } catch (e) {
+      return { error: (e as Error).message }
     }
   }
 
-  return { categories, loading, createCategory, renameCategory, deleteCategory, refetch: fetchCategories }
+  return { categories, loading, error, createCategory, renameCategory, deleteCategory, refetch: fetchCategories }
 }

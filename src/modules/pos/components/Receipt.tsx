@@ -1,6 +1,12 @@
 import { forwardRef } from 'react'
 import type { OrderWithItems } from '../hooks/useActiveOrders'
 
+const TYPE_LABELS: Record<string, string> = {
+  local: 'Local',
+  delivery: 'Delivery',
+  directo: 'Directo',
+}
+
 interface ReceiptProps {
   order: OrderWithItems,
   tabernaName?: string
@@ -18,7 +24,7 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(({ order, tabern
         <div className="print-receipt__meta">
           <p>Pedido: <span className="print-receipt__bold">#{order.order_number}</span></p>
           <p>Fecha: {dFormat} {tFormat}</p>
-          <p>Tipo: {order.type === 'local' ? 'Local' : 'Delivery'}</p>
+          <p>Tipo: {TYPE_LABELS[order.type] ?? order.type}</p>
           <p>Pago: <span className="print-receipt__capitalize">{order.payment_method}</span></p>
         </div>
         {order.customer_name && (

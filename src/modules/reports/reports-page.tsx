@@ -5,6 +5,7 @@ import {
 } from 'recharts'
 import { useDashboardStats } from './hooks/useDashboardStats'
 import { EstadoCargando } from '@/shared/components/comunes/EstadoCargando'
+import { EstadoError } from '@/shared/components/comunes/EstadoError'
 
 // CRÍTICO: NO usar toISOString() — retorna UTC y en AR (UTC-3) a las 21hs ya es el día siguiente
 function toDateStr(date: Date): string {
@@ -48,7 +49,7 @@ export default function ReportsPage() {
   const dateFromObj = parseLocalDate(dateFrom)
   const dateToObj = parseLocalDate(dateTo)
 
-  const { stats, loading } = useDashboardStats(dateFromObj, dateToObj)
+  const { stats, loading, error, refetch } = useDashboardStats(dateFromObj, dateToObj)
 
   const isToday = dateFrom === todayStr && dateTo === todayStr
   const isMultiDay = stats && stats.dailyData.length > 1
@@ -100,6 +101,8 @@ export default function ReportsPage() {
         <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
           <EstadoCargando mensaje="Cargando reportes..." />
         </div>
+      ) : error ? (
+        <EstadoError mensaje={error} onReintentar={refetch} />
       ) : !stats ? null : (
         <>
           {/* ── STAT CARDS ── */}

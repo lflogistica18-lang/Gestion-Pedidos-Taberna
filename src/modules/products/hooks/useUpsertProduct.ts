@@ -50,8 +50,8 @@ export function useUpsertProduct(): UseUpsertProductResult {
       }
 
       return result
-    } catch (e: any) {
-      setError(e.message || 'Error de conexión')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error de conexión')
       return null
     } finally {
       setSaving(false)
@@ -74,7 +74,7 @@ export function useToggleProduct(): UseToggleProductResult {
     try {
       const { error } = await supabase.from('products').update({ active }).eq('id', id)
       return !error
-    } catch (e: any) {
+    } catch (e) {
       console.error(e)
       return false
     } finally {

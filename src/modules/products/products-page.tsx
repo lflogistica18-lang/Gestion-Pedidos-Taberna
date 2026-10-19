@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useProducts } from './hooks/useProducts'
-import { useUpsertProduct, useToggleProduct } from './hooks/useUpsertProduct'
+import { useUpsertProduct, useToggleProduct, productSchema } from './hooks/useUpsertProduct'
 import { useCategories } from './hooks/useCategories'
 import { CrudManager } from '@/shared/components/comunes/CrudManager'
 import type { CampoSchema } from '@/shared/types/base'
@@ -20,8 +20,12 @@ function CategoriasPanel() {
   const handleCrear = async () => {
     if (!newName.trim()) return
     setSavingNew(true)
-    await createCategory(newName.trim())
+    const { error } = await createCategory(newName.trim())
     setSavingNew(false)
+    if (error) {
+      alert(error)
+      return
+    }
     setNewName('')
   }
 
@@ -143,7 +147,7 @@ export default function ProductsPage() {
     { nombre: 'cost', etiqueta: 'Costo', tipo: 'numero', obligatorio: false, placeholder: 'Valor de costo (referencia)' }
   ]
 
-  const handleCrear = async (datos: Partial<Product>) => {
+  const handleCrear = async (datos: Partial<Product>): Promise<{ error: string | null }> => {
     try {
       const result = await upsert({
         name: datos.name || '',
@@ -154,12 +158,12 @@ export default function ProductsPage() {
       if (!result) return { error: 'Error al crear producto' }
       refetch()
       return { error: null }
-    } catch (e: any) {
-      return { error: e.message }
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : 'Error de conexión' }
     }
   }
 
-  const handleEditar = async (id: string, datos: Partial<Product>) => {
+  const handleEditar = async (id: string, datos: Partial<Product>): Promise<{ error: string | null }> => {
     try {
       const result = await upsert({
         name: datos.name || '',
@@ -170,20 +174,20 @@ export default function ProductsPage() {
       if (!result) return { error: 'Error al actualizar producto' }
       refetch()
       return { error: null }
-    } catch (e: any) {
-      return { error: e.message }
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : 'Error de conexión' }
     }
   }
 
-  const handleDesactivar = async (id: string) => {
+  const handleDesactivar = async (id: string): Promise<{ error: string | null }> => {
     try {
       const isActivating = tab === 'inactivos'
       const ok = await toggle(id, isActivating)
       if (!ok) return { error: 'Error al modificar estado' }
       refetch()
       return { error: null }
-    } catch (e: any) {
-      return { error: e.message }
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : 'Error de conexión' }
     }
   }
 
@@ -267,6 +271,15 @@ export default function ProductsPage() {
             onEditar={handleEditar}
             onDesactivar={handleDesactivar}
             onRecargar={refetch}
+            validar={(d) => {
+              const r = productSchema.safeParse({
+                name: d.name,
+                category: d.category,
+                price: Number(d.price),
+                cost: Number(d.cost ?? 0),
+              })
+              return r.success ? null : r.error.issues[0].message
+            }}
           />
         </>
       )}

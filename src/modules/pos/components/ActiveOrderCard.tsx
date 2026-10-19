@@ -2,13 +2,21 @@ import type { OrderWithItems } from '../hooks/useActiveOrders'
 import { useRef } from 'react'
 import { useReactToPrint } from 'react-to-print'
 import { Receipt } from './Receipt'
+import { useMinutosDesde } from '@/shared/hooks/useMinutosDesde'
 
 const STATUS_CONFIG = {
   pendiente: { label: 'Pendiente', color: 'status--pending', emoji: '🕐' },
   en_preparacion: { label: 'En preparación', color: 'status--cooking', emoji: '👨‍🍳' },
   listo: { label: 'Listo ✓', color: 'status--ready', emoji: '🔔' },
   entregado: { label: 'Entregado', color: 'status--done', emoji: '✅' },
+  cancelado: { label: 'Cancelado', color: 'status--done', emoji: '❌' },
 } as const
+
+const TYPE_LABELS: Record<string, string> = {
+  local: '🍽️ Local',
+  delivery: '🛵 Delivery',
+  directo: '⚡ Directo',
+}
 
 interface ActiveOrderCardProps {
   order: OrderWithItems
@@ -22,9 +30,7 @@ export function ActiveOrderCard({ order, updating, onDeliver, onDelete }: Active
   const isReady = order.status === 'listo'
 
   // Calcular tiempo transcurrido
-  const minutesAgo = Math.floor(
-    (Date.now() - new Date(order.created_at).getTime()) / 60000
-  )
+  const minutesAgo = useMinutosDesde(order.created_at)
 
   const printRef = useRef<HTMLDivElement>(null)
   
@@ -44,7 +50,7 @@ export function ActiveOrderCard({ order, updating, onDeliver, onDelete }: Active
         <div className="active-order-card__meta">
           <span className="active-order-card__number">#{order.order_number}</span>
           <span className="active-order-card__type">
-            {order.type === 'local' ? '🍽️ Local' : '🛵 Delivery'}
+            {TYPE_LABELS[order.type] ?? order.type}
           </span>
         </div>
         <div className="active-order-card__right">

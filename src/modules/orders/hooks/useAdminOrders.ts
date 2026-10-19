@@ -7,10 +7,27 @@ export interface OrderConDetalle extends Order {
   order_items: OrderItem[]
 }
 
-export function useAdminOrders() {
+export interface UseAdminOrdersResult {
+  orders: OrderConDetalle[]
+  loading: boolean
+  error: string | null
+  hayMas: boolean
+  cargandoMas: boolean
+  cargarMas: () => Promise<void>
+  refetch: () => Promise<void>
+  enviarAPapelera: (id: string) => Promise<{ error: string | null }>
+  restaurarDePapelera: (id: string) => Promise<{ error: string | null }>
+}
+
+// Cantidad de pedidos por página del historial
+const PAGE = 100
+
+export function useAdminOrders(): UseAdminOrdersResult {
   const [orders, setOrders] = useState<OrderConDetalle[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [hayMas, setHayMas] = useState(false)
+  const [cargandoMas, setCargandoMas] = useState(false)
 
   const fetchOrders = useCallback(async () => {
     setLoading(true)
@@ -21,14 +38,16 @@ export function useAdminOrders() {
         .from('orders')
         .select('*, order_items(*)')
         .order('created_at', { ascending: false })
+        .range(0, PAGE - 1)
 
       if (err) {
         setError(err.message)
       } else {
         setOrders((data as OrderConDetalle[]) || [])
+        setHayMas((data?.length ?? 0) === PAGE)
       }
-    } catch (e: any) {
-      setError(e.message || 'Error de conexión')
+    } catch (e) {
+      setError((e as Error).message || 'Error de conexión')
     } finally {
       setLoading(false)
     }
@@ -37,6 +56,32 @@ export function useAdminOrders() {
   useEffect(() => {
     fetchOrders()
   }, [fetchOrders])
+
+  // Traer la siguiente página y concatenar
+  const cargarMas = async (): Promise<void> => {
+    if (cargandoMas) return
+    setCargandoMas(true)
+    try {
+      const desde = orders.length
+      const { data, error: err } = await supabase
+        .from('orders')
+        .select('*, order_items(*)')
+        .order('created_at', { ascending: false })
+        .range(desde, desde + PAGE - 1)
+
+      if (err) {
+        setError(err.message)
+      } else {
+        const nuevos = (data as OrderConDetalle[]) || []
+        setOrders(prev => [...prev, ...nuevos])
+        setHayMas(nuevos.length === PAGE)
+      }
+    } catch (e) {
+      setError((e as Error).message || 'Error de conexión')
+    } finally {
+      setCargandoMas(false)
+    }
+  }
 
   // Soft delete — enviar a papelera
   // Actualiza optimistamente el estado local y luego hace refetch
@@ -59,9 +104,9 @@ export function useAdminOrders() {
         return { error: updateErr.message }
       }
       return { error: null }
-    } catch (e: any) {
+    } catch (e) {
       await fetchOrders()
-      return { error: e.message }
+      return { error: (e as Error).message }
     }
   }
 
@@ -82,70 +127,21 @@ export function useAdminOrders() {
         return { error: updateErr.message }
       }
       return { error: null }
-    } catch (e: any) {
+    } catch (e) {
       await fetchOrders()
-      return { error: e.message }
+      return { error: (e as Error).message }
     }
   }
-
-  // Eliminación permanente — borra de la DB
-  // Resta de caja está implícito — el registro ya no existe
-  const eliminarPermanente = async (id: string): Promise<{ error: string | null }> => {
-    // Actualización optimista
-    setOrders(prev => prev.filter(o => o.id !== id))
-
-    try {
-      // Borrar items primero (si hay FK constraint)
-      const { error: itemsErr } = await supabase
-        .from('order_items')
-        .delete()
-        .eq('order_id', id)
-
-      if (itemsErr) {
-        await fetchOrders()
-        return { error: `Error al borrar items: ${itemsErr.message}` }
-      }
-
-      // Borrar logs de estado
-      const { error: logsErr } = await supabase
-        .from('order_status_log')
-        .delete()
-        .eq('order_id', id)
-
-      // Aceptamos fallo en logs — puede que no existan
-      if (logsErr) {
-        console.warn('Advertencia al borrar logs:', logsErr.message)
-      }
-
-      // Finalmente borrar el pedido
-      const { error: orderErr } = await supabase
-        .from('orders')
-        .delete()
-        .eq('id', id)
-
-      if (orderErr) {
-        await fetchOrders()
-        return { error: `Error al borrar pedido: ${orderErr.message}` }
-      }
-
-      return { error: null }
-    } catch (e: any) {
-      await fetchOrders()
-      return { error: e.message }
-    }
-  }
-
-  // Compatibilidad — alias del soft delete
-  const deactivateOrder = enviarAPapelera
 
   return {
     orders,
     loading,
     error,
+    hayMas,
+    cargandoMas,
+    cargarMas,
     refetch: fetchOrders,
     enviarAPapelera,
     restaurarDePapelera,
-    eliminarPermanente,
-    deactivateOrder,
   }
 }

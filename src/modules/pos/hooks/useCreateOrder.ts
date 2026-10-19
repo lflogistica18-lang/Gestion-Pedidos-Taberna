@@ -80,8 +80,8 @@ export function useCreateOrder(): UseCreateOrderResult {
       }
 
       return String(order.order_number)
-    } catch (e: any) {
-      setError(e.message || 'Excepción al crear el pedido')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Excepción al crear el pedido')
       return null
     } finally {
       setSubmitting(false)

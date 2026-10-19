@@ -28,8 +28,18 @@ function useReloj() {
   return { fecha, hora }
 }
 
-export function Layout() {
+// Componente aislado: solo este nodo se re-renderiza cada segundo
+function Reloj() {
   const { fecha, hora } = useReloj()
+  return (
+    <div className="app-header__clock">
+      <span className="app-header__time">{hora}</span>
+      <span className="app-header__date">{fecha}</span>
+    </div>
+  )
+}
+
+export function Layout() {
   const { user, signOut } = useAuth()
   const [confirmLogout, setConfirmLogout] = useState(false)
 
@@ -59,10 +69,7 @@ export function Layout() {
         </div>
 
         <div className="app-header__right">
-          <div className="app-header__clock">
-            <span className="app-header__time">{hora}</span>
-            <span className="app-header__date">{fecha}</span>
-          </div>
+          <Reloj />
 
           {/* Botón de logout — doble tap para confirmar */}
           <button

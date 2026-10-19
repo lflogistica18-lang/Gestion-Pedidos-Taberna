@@ -16,40 +16,56 @@ function localDateStr(date: Date): string {
   return `${y}-${m}-${d}`
 }
 
-export function useKdsOrders() {
+export interface UseKdsOrdersResult {
+  orders: KdsOrder[]
+  loading: boolean
+  error: string | null
+  todayCount: number
+  refetch: () => Promise<void>
+}
+
+export function useKdsOrders(): UseKdsOrdersResult {
   const [orders, setOrders] = useState<KdsOrder[]>([])
   const [todayCount, setTodayCount] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const fetch = useCallback(async () => {
     try {
       // Pedidos activos (pendiente / en preparación)
-      const { data, error } = await supabase
+      const { data, error: err } = await supabase
         .from('orders')
         .select('*, order_items(*)')
         .is('deleted_at', null)
         .in('status', KDS_STATUSES)
         .order('created_at', { ascending: true })
 
-      if (!error && data) {
-        setOrders(data as KdsOrder[])
+      if (err) {
+        setError(err.message)
+        return
       }
+      setOrders((data ?? []) as KdsOrder[])
 
       // Pedidos totales del día (sin filtrar por estado — todos los del día)
       const today = localDateStr(new Date())
       const startOfToday = `${today}T00:00:00`
       const endOfToday = `${today}T23:59:59`
 
-      const { count } = await supabase
+      const { count, error: countErr } = await supabase
         .from('orders')
         .select('id', { count: 'exact', head: true })
         .gte('created_at', new Date(startOfToday).toISOString())
         .lte('created_at', new Date(endOfToday).toISOString())
         .is('deleted_at', null)
 
+      if (countErr) {
+        setError(countErr.message)
+        return
+      }
+      setError(null)
       setTodayCount(count ?? 0)
-    } catch (e: any) {
-      console.error(e)
+    } catch (e) {
+      setError((e as Error).message)
     } finally {
       setLoading(false)
     }
@@ -68,5 +84,5 @@ export function useKdsOrders() {
     return () => { supabase.removeChannel(channel) }
   }, [fetch])
 
-  return { orders, loading, todayCount, refetch: fetch }
+  return { orders, loading, error, todayCount, refetch: fetch }
 }
