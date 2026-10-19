@@ -55,4 +55,13 @@ Nació con Panel 0.9 (`omni/sistema/diseno/GUIA.md`, borrador 2026-10-14). Fuent
 
 ## Pantallas hechas
 
-(ninguna todavía)
+| Pantalla | Fecha | Notas |
+|---|---|---|
+| Cáscara (tokens, piezas `panel/`, menú, barra, login, Sin acceso, estados) | 2026-10-19 | Reloj 24 h; barra con ruta "Gestión › X" desde lg |
+| Reportes (dashboard) | 2026-10-19 | Gráficos sin animación; `BarrasRanking.formatoEje` para unidades |
+| Historial | 2026-10-19 | |
+| Productos + `CrudManager` | 2026-10-19 | `CrudManager` partido en `comunes/crud/` |
+| Caja | 2026-10-19 | Pago: Efectivo / Déb-Transfer (unificados a propósito, abril 2026) |
+
+Pendiente: Cocina (KDS) escondida, sin migrar. CSS viejo borrado (1449 → 569 líneas): quedan el ticket impreso,
+el KDS y clases contenedoras. Verificado solo con arnés y mocks: falta mirarlo con datos reales.

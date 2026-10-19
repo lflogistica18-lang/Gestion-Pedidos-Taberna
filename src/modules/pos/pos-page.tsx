@@ -10,7 +10,10 @@ import { useActiveOrders } from './hooks/useActiveOrders'
 import { ProductGrid } from './components/ProductGrid'
 import { CartPanel } from './components/CartPanel'
 import { ActiveOrdersPanel } from './components/ActiveOrdersPanel'
+import { ClipboardList, ShoppingCart } from 'lucide-react'
 import { EstadoError } from '@/shared/components/comunes/EstadoError'
+import { Boton, EncabezadoPagina, FiltrosPastilla, Modal, Pastilla, mostrarToast } from '@/shared/components/panel'
+import { BarraCarrito } from './components/BarraCarrito'
 import { useEncolarImpresion } from './hooks/useEncolarImpresion'
 import { MODO_IMPRESION } from '@/shared/lib/config'
 
@@ -18,7 +21,6 @@ export default function PosPage() {
   const [categoriaElegida, setCategoriaElegida] = useState<string>('')
   const [cartOpen, setCartOpen] = useState(false)
   const [ordersOpen, setOrdersOpen] = useState(false)
-  const [successMsg, setSuccessMsg] = useState<string | null>(null)
 
   // Ticket para cocina: se imprime solo al confirmar cada pedido
   const [pedidoAImprimir, setPedidoAImprimir] = useState<OrderWithItems | null>(null)
@@ -82,21 +84,24 @@ export default function PosPage() {
       if (MODO_IMPRESION === 'servidor') {
         // El pedido ya está guardado: si falla la cola, se avisa y se reimprime con 🖨️
         const { error: colaErr } = await encolar(pedido.id)
-        setSuccessMsg(colaErr
-          ? `⚠️ Pedido #${pedido.order_number} creado, pero no se mandó a imprimir: ${colaErr}. Reimprimí desde Pedidos.`
-          : `✅ Pedido #${pedido.order_number} creado — enviado a la comandera`)
+        if (colaErr) {
+          mostrarToast(`Pedido #${pedido.order_number} creado, pero no se mandó a imprimir: ${colaErr}. Reimprimí desde Pedidos.`, 'error')
+        } else {
+          mostrarToast(`Pedido #${pedido.order_number} creado — enviado a la comandera`, 'exito')
+        }
       } else {
         setPedidoAImprimir(pedido)
-        setSuccessMsg(`✅ Pedido #${pedido.order_number} creado — imprimiendo ticket`)
+        mostrarToast(`Pedido #${pedido.order_number} creado — imprimiendo ticket`, 'exito')
       }
-      setTimeout(() => setSuccessMsg(null), 3500)
     }
   }
 
   const itemCount = getItemCount()
+  const total = getTotal()
+  const cantidadPorCategoria = (nombre: string) => products.filter((p) => p.category === nombre).length
 
   return (
-    <div className="pos-page">
+    <div className="flex min-h-full flex-col lg:h-full lg:flex-row">
       {/* Ticket oculto — solo existe mientras se imprime */}
       {pedidoAImprimir && (
         <div style={{ display: 'none' }}>
@@ -104,85 +109,67 @@ export default function PosPage() {
         </div>
       )}
 
-      {/* Toast de éxito */}
-      {successMsg && (
-        <div className="pos-toast" role="alert">
-          {successMsg}
-        </div>
-      )}
+      <div className="flex min-w-0 flex-1 flex-col lg:overflow-y-auto">
+        <div className="flex-1 px-4 py-4 sm:px-6 sm:py-6">
+          <EncabezadoPagina
+            icono={<ShoppingCart size={22} />}
+            titulo="Caja"
+            detalle={`${filteredProducts.length} ${filteredProducts.length === 1 ? 'producto' : 'productos'}${activeCategory ? ` · ${activeCategory}` : ''}`}
+            acciones={
+              <>
+                {ordersError && <Pastilla tono="rojo">No se pudieron cargar los pedidos</Pastilla>}
+                <Boton
+                  onClick={() => setOrdersOpen(true)}
+                  aria-label={`Ver pedidos activos: ${activeCount}`}
+                >
+                  <ClipboardList size={16} />
+                  Pedidos
+                  {activeCount > 0 && <Pastilla tono="naranja">{activeCount}</Pastilla>}
+                </Boton>
+              </>
+            }
+            pestanas={
+              <FiltrosPastilla
+                etiqueta="Categorías"
+                value={activeCategory}
+                onChange={setCategoriaElegida}
+                opciones={categories.map(({ name }) => ({
+                  value: name,
+                  label: name,
+                  cantidad: loading ? undefined : cantidadPorCategoria(name),
+                }))}
+              />
+            }
+          />
 
-      {/* Header */}
-      <header className="pos-header">
-        <h1 className="pos-header__title">Caja</h1>
-        <button
-          id="btn-pedidos-activos"
-          className={`pos-orders-btn ${activeCount > 0 ? 'pos-orders-btn--active' : ''}`}
-          onClick={() => setOrdersOpen(true)}
-          aria-label={`Ver pedidos activos: ${activeCount}`}
-        >
-          📋 Pedidos
-          {activeCount > 0 && (
-            <span className="pos-orders-btn__badge">{activeCount}</span>
+          {productsError ? (
+            <EstadoError mensaje={productsError} onReintentar={refetchProducts} />
+          ) : (
+            <ProductGrid products={filteredProducts} loading={loading} />
           )}
-        </button>
-        {ordersError && (
-          <span role="alert" style={{ fontSize: '0.75rem', color: '#dc2626' }}>
-            ⚠️ No se pudieron cargar los pedidos
-          </span>
-        )}
-      </header>
+        </div>
 
-      {/* Category tabs */}
-      <div className="pos-tabs" role="tablist">
-        {categories.map(({ name }) => (
-          <button
-            key={name}
-            role="tab"
-            aria-selected={activeCategory === name}
-            className={`pos-tab ${activeCategory === name ? 'pos-tab--active' : ''}`}
-            onClick={() => setCategoriaElegida(name)}
-          >
-            {name}
-          </button>
-        ))}
+        {itemCount > 0 && <BarraCarrito cantidad={itemCount} total={total} onAbrir={() => setCartOpen(true)} />}
       </div>
 
-      {/* Product grid */}
-      <div className="pos-products">
-        {productsError ? (
-          <EstadoError mensaje={productsError} onReintentar={refetchProducts} />
-        ) : (
-          <ProductGrid products={filteredProducts} loading={loading} />
-        )}
-      </div>
+      {/* Carrito fijo a la derecha desde lg */}
+      <aside
+        aria-label="Pedido en curso"
+        className="hidden w-[360px] shrink-0 border-l border-borde-sutil bg-bg-tarjeta lg:block"
+      >
+        <CartPanel variante="panel" submitting={submitting} error={error} onConfirm={handleConfirm} />
+      </aside>
 
-      {/* Cart floating bar */}
-      {itemCount > 0 && (
-        <button
-          id="btn-ver-carrito"
-          className="pos-cart-bar"
-          onClick={() => setCartOpen(true)}
-          aria-label={`Ver carrito: ${itemCount} ítems`}
-        >
-          <span className="pos-cart-bar__count">
-            🛒 {itemCount} ítem{itemCount !== 1 ? 's' : ''}
-          </span>
-          <span className="pos-cart-bar__total">
-            ${getTotal().toLocaleString('es-AR')} →
-          </span>
-        </button>
-      )}
-
-      {/* Cart Panel */}
-      <CartPanel
+      {/* Carrito como hoja inferior en celu y tablet parada */}
+      <Modal
         open={cartOpen}
-        submitting={submitting}
-        error={error}
-        onConfirm={handleConfirm}
         onClose={() => setCartOpen(false)}
-      />
+        title="Pedido"
+        subtitulo={`${itemCount} ${itemCount === 1 ? 'ítem' : 'ítems'}`}
+      >
+        <CartPanel variante="hoja" submitting={submitting} error={error} onConfirm={handleConfirm} />
+      </Modal>
 
-      {/* Active Orders Panel */}
       <ActiveOrdersPanel
         open={ordersOpen}
         onClose={() => setOrdersOpen(false)}

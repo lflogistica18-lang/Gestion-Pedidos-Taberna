@@ -1,10 +1,16 @@
+import { PackageSearch } from 'lucide-react'
 import type { Product } from '@/types/database.types'
+import { EstadoVacio } from '@/shared/components/comunes/EstadoVacio'
 import { useCartStore } from '../store/useCartStore'
+import { TarjetaProducto } from './TarjetaProducto'
 
 interface ProductGridProps {
   products: Product[]
   loading: boolean
 }
+
+// El carrito vive al costado desde lg: con menos ancho útil la grilla pasa a 2 y 3 columnas.
+const CLASES_GRILLA = 'grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-2 min-[1200px]:grid-cols-3 2xl:grid-cols-4'
 
 export function ProductGrid({ products, loading }: ProductGridProps) {
   const addItem = useCartStore((s) => s.addItem)
@@ -16,9 +22,9 @@ export function ProductGrid({ products, loading }: ProductGridProps) {
 
   if (loading) {
     return (
-      <div className="pos-grid pos-grid--loading">
+      <div className={CLASES_GRILLA} role="status" aria-label="Cargando productos">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="pos-product-card pos-product-btn--skeleton" />
+          <div key={i} className="h-32 animate-pulse rounded-xl border border-borde-sutil bg-superficie-2" />
         ))}
       </div>
     )
@@ -26,60 +32,23 @@ export function ProductGrid({ products, loading }: ProductGridProps) {
 
   if (products.length === 0) {
     return (
-      <div className="pos-grid pos-grid--empty">
-        <p>No hay productos en esta categoría</p>
+      <div className="rounded-xl border border-borde-sutil bg-bg-tarjeta shadow-tarjeta">
+        <EstadoVacio mensaje="No hay productos en esta categoría" icono={<PackageSearch size={26} />} />
       </div>
     )
   }
 
   return (
-    <div className="pos-grid">
-      {products.map((product) => {
-        const qty = getQuantity(product.id)
-        return (
-          <div
-            key={product.id}
-            className={`pos-product-card ${qty > 0 ? 'pos-product-card--in-cart' : ''}`}
-          >
-            {/* Header naranja con nombre */}
-            <button
-              className="pos-product-card__header"
-              onClick={() => addItem(product)}
-              aria-label={`Agregar ${product.name}`}
-            >
-              <span className="pos-product-card__name">{product.name}</span>
-            </button>
-
-            {/* Footer: precio + controles qty */}
-            <div className="pos-product-card__footer">
-              <span className="pos-product-card__price">
-                ${product.price.toLocaleString('es-AR')}
-              </span>
-
-              {/* Controles de cantidad — visibles cuando qty > 0 */}
-              {qty > 0 && (
-                <div className="pos-product-card__qty-ctrl">
-                  <button
-                    className="pos-product-card__qty-btn pos-product-card__qty-btn--minus"
-                    onClick={(e) => { e.stopPropagation(); updateQuantity(product.id, -1) }}
-                    aria-label={`Quitar ${product.name}`}
-                  >
-                    −
-                  </button>
-                  <span className="pos-product-card__qty-num">{qty}</span>
-                  <button
-                    className="pos-product-card__qty-btn pos-product-card__qty-btn--plus"
-                    onClick={(e) => { e.stopPropagation(); addItem(product) }}
-                    aria-label={`Agregar ${product.name}`}
-                  >
-                    +
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        )
-      })}
+    <div className={CLASES_GRILLA}>
+      {products.map((product) => (
+        <TarjetaProducto
+          key={product.id}
+          product={product}
+          cantidad={getQuantity(product.id)}
+          onAgregar={() => addItem(product)}
+          onRestar={() => updateQuantity(product.id, -1)}
+        />
+      ))}
     </div>
   )
 }

@@ -1,27 +1,35 @@
+import { Check, ShoppingCart, Trash2 } from 'lucide-react'
+import { AreaTexto, AvisoEstado, Boton, Campo, ControlSegmentado, Entrada, fmtMonto } from '@/shared/components/panel'
+import { EstadoVacio } from '@/shared/components/comunes/EstadoVacio'
 import { useCartStore } from '../store/useCartStore'
 import { CartItemRow } from './CartItemRow'
 import type { OrderType, PaymentMethod } from '@/types/database.types'
 
-const ORDER_TYPES: { value: OrderType; label: string; emoji: string }[] = [
-  { value: 'local', label: 'Local', emoji: '🍽️' },
-  { value: 'delivery', label: 'Delivery', emoji: '🛵' },
-  { value: 'directo', label: 'Directa', emoji: '🏪' },
+const ORDER_TYPES: { value: OrderType; label: string }[] = [
+  { value: 'local', label: 'Local' },
+  { value: 'delivery', label: 'Delivery' },
+  { value: 'directo', label: 'Directa' },
 ]
 
-const PAYMENT_METHODS: { value: PaymentMethod; label: string; emoji: string }[] = [
-  { value: 'efectivo', label: 'Efectivo', emoji: '💵' },
-  { value: 'transferencia', label: 'Déb / Transfer', emoji: '💳' },
+const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
+  { value: 'efectivo', label: 'Efectivo' },
+  // Débito y transferencia van juntos a propósito (decisión del local, abril 2026)
+  { value: 'transferencia', label: 'Déb / Transfer' },
 ]
+
+// El control segmentado de la pieza es chico; en la caja se estira y sube a 44 px.
+const CLASES_SEGMENTADO = 'flex w-full [&>button]:min-h-11 [&>button]:flex-1 [&>button]:text-sm'
 
 interface CartPanelProps {
-  open: boolean
+  /** `panel`: columna fija de lg (el pie queda abajo). `hoja`: dentro del Modal de celu. */
+  variante: 'panel' | 'hoja'
   submitting: boolean
   error: string | null
   onConfirm: () => void
-  onClose: () => void
 }
 
-export function CartPanel({ open, submitting, error, onConfirm, onClose }: CartPanelProps) {
+/** Contenido del carrito: se usa igual en el panel derecho y en la hoja del celu. */
+export function CartPanel({ variante, submitting, error, onConfirm }: CartPanelProps) {
   const items = useCartStore((s) => s.items)
   const orderType = useCartStore((s) => s.orderType)
   const paymentMethod = useCartStore((s) => s.paymentMethod)
@@ -29,6 +37,7 @@ export function CartPanel({ open, submitting, error, onConfirm, onClose }: CartP
   const customerName = useCartStore((s) => s.customerName)
   const deliveryAddress = useCartStore((s) => s.deliveryAddress)
   const getTotal = useCartStore((s) => s.getTotal)
+  const getItemCount = useCartStore((s) => s.getItemCount)
   const clearCart = useCartStore((s) => s.clearCart)
   const setOrderType = useCartStore((s) => s.setOrderType)
   const setPaymentMethod = useCartStore((s) => s.setPaymentMethod)
@@ -36,142 +45,129 @@ export function CartPanel({ open, submitting, error, onConfirm, onClose }: CartP
   const setCustomerName = useCartStore((s) => s.setCustomerName)
   const setDeliveryAddress = useCartStore((s) => s.setDeliveryAddress)
 
-  if (!open) return null
-
   const isDelivery = orderType === 'delivery'
+  const esPanel = variante === 'panel'
+  const cantidad = getItemCount()
+
+  const cuerpo = (
+    <div className="space-y-4">
+      {items.length === 0 ? (
+        <div className="rounded-xl border border-borde-sutil bg-bg-principal">
+          <EstadoVacio mensaje="El carrito está vacío" icono={<ShoppingCart size={26} />} />
+        </div>
+      ) : (
+        <ul className="space-y-2">
+          {items.map((item) => (
+            <CartItemRow key={item.productId} item={item} />
+          ))}
+        </ul>
+      )}
+
+      <Campo etiqueta="Tipo de pedido">
+        <ControlSegmentado
+          etiqueta="Tipo de pedido"
+          opciones={ORDER_TYPES}
+          value={orderType}
+          onChange={setOrderType}
+          className={CLASES_SEGMENTADO}
+        />
+      </Campo>
+
+      <Entrada
+        etiqueta="Nombre del cliente"
+        obligatorio={isDelivery}
+        placeholder="Ej: Juan García"
+        value={customerName}
+        onChange={(e) => setCustomerName(e.target.value)}
+        autoComplete="off"
+      />
+
+      {isDelivery && (
+        <Entrada
+          etiqueta="Dirección de entrega"
+          obligatorio
+          placeholder="Ej: Av. Corrientes 1234, 3° B"
+          value={deliveryAddress}
+          onChange={(e) => setDeliveryAddress(e.target.value)}
+          autoComplete="street-address"
+        />
+      )}
+
+      <Campo etiqueta="Método de pago">
+        <ControlSegmentado
+          etiqueta="Método de pago"
+          opciones={PAYMENT_METHODS}
+          value={paymentMethod}
+          onChange={setPaymentMethod}
+          className={CLASES_SEGMENTADO}
+        />
+      </Campo>
+
+      <AreaTexto
+        etiqueta="Observaciones"
+        opcional
+        placeholder={isDelivery ? 'Ej: sin cebollas, timbre roto...' : 'Ej: sin cebollas, mesa 5...'}
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        rows={2}
+      />
+    </div>
+  )
+
+  const aviso = error && <AvisoEstado tono="rojo" titulo="No se pudo confirmar el pedido">{error}</AvisoEstado>
+
+  // En la hoja del celu el pie va pegado abajo: solo total y botón, para no tapar
+  // los campos. El aviso de error queda al final del formulario.
+  const pie = (
+    <div className="space-y-3">
+      {esPanel && aviso}
+      <div className="flex items-baseline justify-between">
+        <span className="text-base font-medium text-texto-secundario">Total</span>
+        <span className="text-2xl font-bold tabular-nums text-texto-primario">{fmtMonto(getTotal())}</span>
+      </div>
+      <Boton
+        variante="primario"
+        className="w-full sm:min-h-11"
+        onClick={onConfirm}
+        disabled={submitting || items.length === 0}
+      >
+        <Check size={16} />
+        {submitting ? 'Procesando...' : 'Confirmar pedido'}
+      </Boton>
+    </div>
+  )
+
+  const limpiar = (
+    <Boton compacto onClick={clearCart} disabled={items.length === 0}>
+      <Trash2 size={14} />
+      Limpiar
+    </Boton>
+  )
+
+  if (esPanel) {
+    return (
+      <div className="flex h-full min-h-0 flex-col">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-borde-sutil px-4 py-3">
+          <div>
+            <h2 className="text-base font-semibold text-texto-primario">Pedido</h2>
+            <p className="text-sm text-texto-secundario">{cantidad} {cantidad === 1 ? 'ítem' : 'ítems'}</p>
+          </div>
+          {limpiar}
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-4">{cuerpo}</div>
+        <div className="shrink-0 border-t border-borde-sutil p-4">{pie}</div>
+      </div>
+    )
+  }
 
   return (
-    <div
-      className="cart-backdrop"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Carrito de pedido"
-    >
-      <div className="cart-panel">
-        {/* Header */}
-        <div className="cart-panel__header">
-          <button className="cart-panel__drag-handle" onClick={onClose} aria-label="Cerrar" />
-          <h2 className="cart-panel__title">🛒 Pedido</h2>
-          <button
-            className="cart-panel__clear"
-            onClick={clearCart}
-            disabled={items.length === 0}
-          >
-            Limpiar
-          </button>
-        </div>
-
-        <div className="cart-panel__body">
-          {/* Items */}
-          {items.length === 0 ? (
-            <div className="cart-panel__empty">
-              <span>🛒</span>
-              <p>El carrito está vacío</p>
-            </div>
-          ) : (
-            <div className="cart-panel__items">
-              {items.map((item) => (
-                <CartItemRow key={item.productId} item={item} />
-              ))}
-            </div>
-          )}
-
-          {/* Tipo de pedido — POS-03 */}
-          <div className="cart-section">
-            <p className="cart-section__label">Tipo de pedido</p>
-            <div className="cart-section__options">
-              {ORDER_TYPES.map(({ value, label, emoji }) => (
-                <button
-                  key={value}
-                  className={`cart-option-btn ${orderType === value ? 'cart-option-btn--active' : ''}`}
-                  onClick={() => setOrderType(value)}
-                >
-                  {emoji} {label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Nombre del cliente */}
-          <div className="cart-section">
-            <p className="cart-section__label">
-              Nombre del cliente {isDelivery && <span className="cart-section__required">*</span>}
-            </p>
-            <input
-              type="text"
-              className="cart-input"
-              placeholder="Ej: Juan García"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              autoComplete="off"
-            />
-          </div>
-
-          {/* Dirección de entrega — solo si es delivery */}
-          {isDelivery && (
-            <div className="cart-section">
-              <p className="cart-section__label">
-                Dirección de entrega <span className="cart-section__required">*</span>
-              </p>
-              <input
-                type="text"
-                className="cart-input"
-                placeholder="Ej: Av. Corrientes 1234, 3° B"
-                value={deliveryAddress}
-                onChange={(e) => setDeliveryAddress(e.target.value)}
-                autoComplete="street-address"
-              />
-            </div>
-          )}
-
-          {/* Método de pago — POS-04 */}
-          <div className="cart-section">
-            <p className="cart-section__label">Método de pago</p>
-            <div className="cart-section__options">
-              {PAYMENT_METHODS.map(({ value, label, emoji }) => (
-                <button
-                  key={value}
-                  className={`cart-option-btn ${paymentMethod === value ? 'cart-option-btn--active' : ''}`}
-                  onClick={() => setPaymentMethod(value)}
-                >
-                  {emoji} {label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Observaciones */}
-          <div className="cart-section">
-            <p className="cart-section__label">Observaciones (opcional)</p>
-            <textarea
-              className="cart-notes"
-              placeholder={isDelivery ? 'Ej: sin cebollas, timbre roto...' : 'Ej: sin cebollas, mesa 5...'}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={2}
-            />
-          </div>
-        </div>
-
-        {/* Footer — POS-07 */}
-        <div className="cart-panel__footer">
-          {error && <p className="cart-panel__error">⚠️ {error}</p>}
-          <div className="cart-panel__total">
-            <span>Total</span>
-            <span className="cart-panel__total-amount">
-              ${getTotal().toLocaleString('es-AR')}
-            </span>
-          </div>
-          <button
-            id="btn-confirmar-pedido"
-            className="btn btn--primary btn--confirm"
-            onClick={onConfirm}
-            disabled={submitting || items.length === 0}
-          >
-            {submitting ? '⏳ Procesando...' : '✅ Confirmar pedido'}
-          </button>
-        </div>
+    <div>
+      <div className="mb-3 flex justify-end">{limpiar}</div>
+      {cuerpo}
+      {aviso && <div className="mt-4">{aviso}</div>}
+      {/* Pie pegado al fondo de la hoja: compensa el padding del Modal */}
+      <div className="sticky bottom-0 -mx-5 -mb-5 mt-4 border-t border-borde-sutil bg-bg-tarjeta px-5 pb-5 pt-3 sm:-mx-6 sm:-mb-6 sm:px-6 sm:pb-6">
+        {pie}
       </div>
     </div>
   )
