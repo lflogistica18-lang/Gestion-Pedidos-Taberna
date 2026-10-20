@@ -25,7 +25,7 @@ export function SeccionMediosPago({ config, borrador, onCambiar, onGuardado, blo
     <TarjetaSeccion
       icono={<Wallet size={16} />}
       titulo="Medios de pago"
-      subtitulo="Qué opciones ofrece la Caja al cobrar"
+      subtitulo="Qué opciones ofrece Pedido + al cobrar"
       hayCambios={hayCambios}
       guardando={guardando}
       motivoBloqueo={bloqueado ? 'Reintentá antes de guardar' : undefined}

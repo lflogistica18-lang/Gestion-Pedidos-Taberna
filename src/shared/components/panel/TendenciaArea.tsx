@@ -27,7 +27,7 @@ export function TendenciaArea({ datos, idGradiente, descripcion, etiquetaValor =
   return (
     <>
       <div role="img" aria-label={descripcion} className="h-44 w-full min-w-0">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0} initialDimension={{ width: 320, height: 176 }}>
           <AreaChart data={datos} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id={idGradiente} x1="0" y1="0" x2="0" y2="1">

@@ -31,13 +31,13 @@ export default function LoginPage() {
       }
     } else {
       // Login exitoso → redirigir
-      navigate('/pos', { replace: true })
+      navigate('/reports', { replace: true })
     }
   }
 
   // Si ya está autenticado, redirigir directo
   if (authLoading) return null
-  if (isAuthenticated) return <Navigate to="/pos" replace />
+  if (isAuthenticated) return <Navigate to="/reports" replace />
 
   return (
     <div className="flex min-h-dvh items-center justify-center bg-bg-principal p-4">

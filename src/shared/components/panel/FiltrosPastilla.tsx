@@ -38,9 +38,11 @@ interface FiltrosPastillaProps<T extends string> {
   /** Qué se está filtrando, para lectores de pantalla. */
   etiqueta?: string
   className?: string
+  /** En celu esconde los contadores para que entren en menos líneas (aparecen desde sm). */
+  contadorDesdeSm?: boolean
 }
 
-export function FiltrosPastilla<T extends string>({ opciones, value, onChange, etiqueta = 'Filtros', className }: FiltrosPastillaProps<T>) {
+export function FiltrosPastilla<T extends string>({ opciones, value, onChange, etiqueta = 'Filtros', className, contadorDesdeSm }: FiltrosPastillaProps<T>) {
   return (
     <div
       role="group"
@@ -57,7 +59,7 @@ export function FiltrosPastilla<T extends string>({ opciones, value, onChange, e
             aria-pressed={activa}
             onClick={() => onChange(o.value)}
             className={cn(
-              'inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-[13px] font-medium transition-colors sm:min-h-9 sm:gap-2 sm:px-3.5 sm:text-sm',
+              'inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 text-[13px] font-medium transition-colors sm:min-h-9 sm:gap-2 sm:px-3.5 sm:text-sm',
               'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento-primario',
               tono
                 ? activa ? tono.activa : tono.inactiva
@@ -68,7 +70,7 @@ export function FiltrosPastilla<T extends string>({ opciones, value, onChange, e
           >
             {o.label}
             {o.cantidad != null && (
-              <span className={cn('font-semibold tabular-nums', activa ? 'text-sobre-acento/80' : tono ? tono.cantidadInactiva : 'text-texto-secundario')}>
+              <span className={cn('font-semibold tabular-nums', contadorDesdeSm && 'hidden sm:inline', activa ? 'text-sobre-acento/80' : tono ? tono.cantidadInactiva : 'text-texto-secundario')}>
                 {o.cantidad}
               </span>
             )}

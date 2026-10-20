@@ -19,7 +19,7 @@ export function SeccionPantallas({ config, borrador, onCambiar, onGuardado, bloq
     >
       <Interruptor
         etiqueta="Pantalla de Cocina"
-        detalle="Muestra los pedidos en una pantalla para la cocina. Apagada, la cocina trabaja con el ticket impreso y la Caja marca Entregado."
+        detalle="Muestra los pedidos en una pantalla para la cocina. Apagada, la cocina trabaja con el ticket impreso y Pedido + marca Entregado."
         activo={cocina}
         onChange={(v) => onCambiar({ cocina_activa: v })}
       />

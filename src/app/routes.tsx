@@ -24,7 +24,7 @@ export const router = createBrowserRouter([
       </AuthGuard>
     ),
     children: [
-      { index: true, element: <Navigate to="/pos" replace /> },
+      { index: true, element: <Navigate to="/reports" replace /> },
       { path: 'pos', element: <PosPage /> },
       { path: 'kds', element: <RutaCocina /> },
       { path: 'products', element: <ProductsPage /> },

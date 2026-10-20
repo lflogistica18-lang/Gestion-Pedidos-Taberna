@@ -29,12 +29,12 @@ export function TopPorCategoria({ porCategoria }: TopPorCategoriaProps) {
             <EncabezadoSeccion icono={<Icono size={16} />} titulo={categoria} subtitulo="Más vendidos" />
             <ol className="mt-3 divide-y divide-borde-sutil">
               {items.slice(0, 3).map((p, i) => (
-                <li key={p.name} className="flex items-center justify-between gap-3 py-2.5">
-                  <span className="flex min-w-0 items-center gap-2">
+                <li key={p.name} className="flex min-w-0 items-center gap-3 py-2.5">
+                  <span className="flex min-w-0 flex-1 items-center gap-2">
                     <span className="w-5 shrink-0 text-sm font-semibold text-texto-secundario">{i + 1}</span>
                     <span className="truncate text-sm font-medium text-texto-primario">{p.name}</span>
                   </span>
-                  <span className="shrink-0 text-right text-sm">
+                  <span className="shrink-0 whitespace-nowrap text-right text-sm">
                     <strong className="font-bold text-texto-primario">{fmtMonto(p.revenue)}</strong>
                     <span className="ml-2 text-texto-secundario">{p.qty} u.</span>
                   </span>

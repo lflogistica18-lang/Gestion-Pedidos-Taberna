@@ -43,7 +43,7 @@ export default function ConfigPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6 sm:py-6">
-      <EncabezadoPagina icono={<Settings size={22} />} titulo="Configuración" detalle="Datos del local, impresión y Caja" />
+      <EncabezadoPagina icono={<Settings size={22} />} titulo="Configuración" detalle="Datos del local, impresión y Pedido +" />
 
       {error && !cargando && (
         <AvisoEstado

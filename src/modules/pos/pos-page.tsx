@@ -10,18 +10,24 @@ import { useActiveOrders } from './hooks/useActiveOrders'
 import { ProductGrid } from './components/ProductGrid'
 import { CartPanel } from './components/CartPanel'
 import { ActiveOrdersPanel } from './components/ActiveOrdersPanel'
-import { ClipboardList, ShoppingCart } from 'lucide-react'
+import { ClipboardList, PlusCircle, Search, X } from 'lucide-react'
 import { EstadoError } from '@/shared/components/comunes/EstadoError'
-import { Boton, EncabezadoPagina, FiltrosPastilla, Modal, Pastilla, mostrarToast } from '@/shared/components/panel'
+import { Boton, EncabezadoPagina, Entrada, FiltrosPastilla, IconButton, Modal, Pastilla, mostrarToast } from '@/shared/components/panel'
 import { BarraCarrito } from './components/BarraCarrito'
 import { useEncolarImpresion } from './hooks/useEncolarImpresion'
 import { useConfiguracion } from '@/shared/store/useConfiguracion'
 import { medioDePagoValido } from '@/shared/lib/config'
 
+/** Minúsculas y sin acentos, para buscar sin distinguir. */
+function normalizar(texto: string): string {
+  return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+}
+
 export default function PosPage() {
   const [categoriaElegida, setCategoriaElegida] = useState<string>('')
   const modoImpresion = useConfiguracion((s) => s.config.modo_impresion)
   const mediosPago = useConfiguracion((s) => s.config.medios_pago)
+  const [busqueda, setBusqueda] = useState('')
   const [cartOpen, setCartOpen] = useState(false)
   const [ordersOpen, setOrdersOpen] = useState(false)
 
@@ -51,11 +57,9 @@ export default function PosPage() {
     refetch: refetchOrders,
   } = useActiveOrders()
 
-  // Categoría activa derivada: si la elegida no existe (todavía no cargaron, o
-  // la renombraron) cae a la primera. Derivarla evita un setState dentro de un effect.
-  const activeCategory = categories.some(c => c.name === categoriaElegida)
-    ? categoriaElegida
-    : (categories[0]?.name ?? '')
+  // Categoría activa derivada: '' = todas. Si la elegida ya no existe (la renombraron)
+  // cae a todas. Derivarla evita un setState dentro de un effect.
+  const activeCategory = categories.some(c => c.name === categoriaElegida) ? categoriaElegida : ''
 
   const items = useCartStore((s) => s.items)
   const orderType = useCartStore((s) => s.orderType)
@@ -67,7 +71,12 @@ export default function PosPage() {
   const getItemCount = useCartStore((s) => s.getItemCount)
   const clearCart = useCartStore((s) => s.clearCart)
 
-  const filteredProducts = products.filter((p) => p.category === activeCategory)
+  // Con texto en el buscador se busca en todas las categorías
+  const textoBusqueda = normalizar(busqueda.trim())
+  const buscando = textoBusqueda !== ''
+  const filteredProducts = products.filter((p) =>
+    buscando ? normalizar(p.name).includes(textoBusqueda) : !activeCategory || p.category === activeCategory,
+  )
 
   const handleConfirm = async () => {
     const pedido = await createOrder({
@@ -114,11 +123,11 @@ export default function PosPage() {
       )}
 
       <div className="flex min-w-0 flex-1 flex-col lg:overflow-y-auto">
-        <div className="flex-1 px-4 py-4 sm:px-6 sm:py-6">
+        <div className="flex-1 px-4 py-3 sm:px-6 sm:py-6">
           <EncabezadoPagina
-            icono={<ShoppingCart size={22} />}
-            titulo="Caja"
-            detalle={`${filteredProducts.length} ${filteredProducts.length === 1 ? 'producto' : 'productos'}${activeCategory ? ` · ${activeCategory}` : ''}`}
+            icono={<PlusCircle size={22} />}
+            titulo="Pedido +"
+            enLinea
             acciones={
               <>
                 {ordersError && <Pastilla tono="rojo">No se pudieron cargar los pedidos</Pastilla>}
@@ -133,23 +142,55 @@ export default function PosPage() {
               </>
             }
             pestanas={
-              <FiltrosPastilla
-                etiqueta="Categorías"
-                value={activeCategory}
-                onChange={setCategoriaElegida}
-                opciones={categories.map(({ name }) => ({
-                  value: name,
-                  label: name,
-                  cantidad: loading ? undefined : cantidadPorCategoria(name),
-                }))}
-              />
+              <div className="flex flex-col gap-2 sm:gap-3">
+              <div className="relative">
+                <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-texto-secundario" aria-hidden="true" />
+                <Entrada
+                  type="search"
+                  aria-label="Buscar producto"
+                  placeholder="Buscar producto…"
+                  value={busqueda}
+                  onChange={(e) => setBusqueda(e.target.value)}
+                  autoComplete="off"
+                  className="w-full pl-10 pr-12 [&::-webkit-search-cancel-button]:appearance-none"
+                />
+                {busqueda && (
+                  <IconButton
+                    etiqueta="Borrar búsqueda"
+                    onClick={() => setBusqueda('')}
+                    className="absolute right-0 top-1/2 -translate-y-1/2"
+                  >
+                    <X size={18} />
+                  </IconButton>
+                )}
+              </div>
+                <FiltrosPastilla
+                  etiqueta="Categorías"
+                contadorDesdeSm
+                  value={activeCategory}
+                  onChange={setCategoriaElegida}
+                  opciones={[
+                    { value: '', label: 'Todas', cantidad: loading ? undefined : products.length },
+                    ...categories.map(({ name }) => ({
+                      value: name,
+                      label: name,
+                      cantidad: loading ? undefined : cantidadPorCategoria(name),
+                    })),
+                  ]}
+                />
+              </div>
             }
           />
 
           {productsError ? (
             <EstadoError mensaje={productsError} onReintentar={refetchProducts} />
           ) : (
-            <ProductGrid products={filteredProducts} loading={loading} />
+            <ProductGrid
+              products={filteredProducts}
+              loading={loading}
+              agrupar={buscando || !activeCategory}
+              mensajeVacio={buscando ? 'No hay productos que coincidan con la búsqueda' : 'No hay productos en esta categoría'}
+            />
           )}
         </div>
 

@@ -10,7 +10,6 @@ import { ETIQUETAS_PAGO, medioDePagoValido } from '@/shared/lib/config'
 const ORDER_TYPES: { value: OrderType; label: string }[] = [
   { value: 'local', label: 'Local' },
   { value: 'delivery', label: 'Delivery' },
-  { value: 'directo', label: 'Directa' },
 ]
 
 // El control segmentado de la pieza es chico; en la caja se estira y sube a 44 px.

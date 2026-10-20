@@ -31,15 +31,17 @@ interface EncabezadoPaginaProps {
   pestanas?: ReactNode
   /** Color del cuadradito del ícono. Por defecto naranja. */
   tono?: TonoEncabezado
+  /** Título y acciones siempre en una sola fila (el título se acorta); en celu sin cuadradito de ícono. */
+  enLinea?: boolean
 }
 
-export function EncabezadoPagina({ icono, titulo, detalle, acciones, pestanas, tono = 'naranja' }: EncabezadoPaginaProps) {
+export function EncabezadoPagina({ icono, titulo, detalle, acciones, pestanas, tono = 'naranja', enLinea }: EncabezadoPaginaProps) {
   return (
-    <header className="mb-4 sm:mb-6">
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+    <header className={enLinea ? 'mb-3 sm:mb-6' : 'mb-4 sm:mb-6'}>
+      <div className={cn('flex items-center justify-between gap-x-4 gap-y-3', !enLinea && 'flex-wrap')}>
         <div className="flex min-w-0 items-center gap-3">
           <span
-            className={cn('flex size-11 shrink-0 items-center justify-center rounded-xl', CLASES_TONO[tono])}
+            className={cn('size-11 shrink-0 items-center justify-center rounded-xl', enLinea ? 'hidden sm:flex' : 'flex', CLASES_TONO[tono])}
             aria-hidden="true"
           >
             {icono}
@@ -49,7 +51,7 @@ export function EncabezadoPagina({ icono, titulo, detalle, acciones, pestanas, t
             {detalle && <p className="mt-0.5 text-sm text-texto-secundario">{detalle}</p>}
           </div>
         </div>
-        {acciones && <div className="flex flex-wrap items-center gap-2">{acciones}</div>}
+        {acciones && <div className={cn('flex items-center gap-2', enLinea ? 'shrink-0' : 'flex-wrap')}>{acciones}</div>}
       </div>
       {pestanas && <div className="mt-3 min-w-0 sm:mt-4">{pestanas}</div>}
     </header>

@@ -2,7 +2,7 @@
 // y BarraSuperior (para mostrar la ruta de la pantalla actual).
 // Depende de la configuración del local (Cocina visible o no).
 
-import { BarChart3, ChefHat, ClipboardList, Package, Settings, ShoppingCart, type LucideIcon } from 'lucide-react'
+import { ChefHat, ClipboardList, Package, PlusCircle, Settings, Wallet, type LucideIcon } from 'lucide-react'
 import { useConfiguracion } from '@/shared/store/useConfiguracion'
 
 export type SeccionMenu = 'operacion' | 'gestion' | 'ajustes'
@@ -18,11 +18,11 @@ export interface ItemNavegacion {
 
 export function itemsNavegacion(cocinaActiva: boolean): ItemNavegacion[] {
   return [
-    { to: '/pos', label: 'Caja', icono: ShoppingCart, seccion: 'operacion' },
+    { to: '/reports', label: 'Caja', icono: Wallet, seccion: 'operacion' },
+    { to: '/pos', label: 'Pedido +', icono: PlusCircle, seccion: 'operacion' },
     ...(cocinaActiva ? [{ to: '/kds', label: 'Cocina', icono: ChefHat, seccion: 'operacion' } satisfies ItemNavegacion] : []),
-    { to: '/products', label: 'Productos', icono: Package, seccion: 'gestion' },
     { to: '/orders', label: 'Historial', icono: ClipboardList, seccion: 'gestion' },
-    { to: '/reports', label: 'Reportes', icono: BarChart3, seccion: 'gestion' },
+    { to: '/products', label: 'Productos', icono: Package, seccion: 'gestion' },
     { to: '/config', label: 'Configuración', icono: Settings, seccion: 'ajustes', enBarraInferior: false },
   ]
 }

@@ -1,5 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/shared/lib/supabase'
+import { acumuladoPorHora, type PuntoAcumulado } from '../lib/calculos'
+
+// Cada cuánto se vuelve a pedir la data cuando el período incluye hoy.
+const REFRESCO_MS = 60_000
 
 export interface DailyBreakdown {
   date: string
@@ -30,6 +34,8 @@ export interface DailyStats {
   topProducts: TopProducto[]
   topByCategory: Record<string, TopProducto[]>
   dailyData: DailyBreakdown[]
+  /** Solo si el período es un único día: ventas acumuladas por hora local. */
+  hourlyData: PuntoAcumulado[]
 }
 
 export interface UseDashboardStatsResult {
@@ -57,15 +63,32 @@ export function useDashboardStats(dateFrom: Date = new Date(), dateTo: Date = ne
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [tick, setTick] = useState(0)
+  // Período ya cargado: los refrescos del mismo período no muestran esqueleto.
+  const cargadoRef = useRef<string | null>(null)
 
   // Deps estables: strings locales calculados fuera del effect
   const fromKey = localDateKey(dateFrom)
   const toKey = localDateKey(dateTo)
+  const incluyeHoy = toKey >= localDateKey(new Date())
+
+  // Mientras el período incluye hoy, las ventas se van sumando solas.
+  useEffect(() => {
+    if (!incluyeHoy) return
+    const id = setInterval(() => {
+      if (document.visibilityState === 'visible') setTick(t => t + 1)
+    }, REFRESCO_MS)
+    return () => clearInterval(id)
+  }, [incluyeHoy])
 
   useEffect(() => {
+    let cancelado = false
+    const clave = `${fromKey}|${toKey}`
     const fetchStats = async () => {
-      setLoading(true)
-      setError(null)
+      const refresco = cargadoRef.current === clave
+      if (!refresco) {
+        setLoading(true)
+        setError(null)
+      }
       try {
       const startOfDay = parseLocalDate(fromKey)
       startOfDay.setHours(0, 0, 0, 0)
@@ -87,7 +110,11 @@ export function useDashboardStats(dateFrom: Date = new Date(), dateTo: Date = ne
         .from('products')
         .select('name, cost, category')
 
+      if (cancelado) return
       if (ordersErr || productsErr || !orders) {
+        // Un refresco de fondo que falla no borra lo que ya se ve; la próxima vuelta reintenta.
+        if (refresco) return
+        cargadoRef.current = null
         setStats(null)
         setError((ordersErr ?? productsErr)?.message ?? 'No se pudieron cargar los datos')
         return
@@ -127,9 +154,7 @@ export function useDashboardStats(dateFrom: Date = new Date(), dateTo: Date = ne
         else localCount++
 
         // Agrupar por día
-        const dateKey = new Date(order.created_at).toLocaleDateString('es-AR', {
-          day: '2-digit', month: '2-digit',
-        })
+        const dateKey = localDateKey(new Date(order.created_at))
         if (!dailyMap[dateKey]) dailyMap[dateKey] = { revenue: 0, orders: 0 }
         dailyMap[dateKey].revenue += orderTotal
         dailyMap[dateKey].orders += 1
@@ -169,12 +194,8 @@ export function useDashboardStats(dateFrom: Date = new Date(), dateTo: Date = ne
 
       // Ordenar daily data cronológicamente
       const dailyData: DailyBreakdown[] = Object.entries(dailyMap)
-        .map(([date, data]) => ({ date, ...data }))
-        .sort((a, b) => {
-          const [da, ma] = a.date.split('/').map(Number)
-          const [db, mb] = b.date.split('/').map(Number)
-          return ma !== mb ? ma - mb : da - db
-        })
+        .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)) // YYYY-MM-DD ordena bien también entre años
+        .map(([key, data]) => ({ date: `${key.slice(8, 10)}/${key.slice(5, 7)}`, ...data }))
 
       // Top 5 global
       const topProducts: TopProducto[] = Object.entries(productsMap)
@@ -198,6 +219,13 @@ export function useDashboardStats(dateFrom: Date = new Date(), dateTo: Date = ne
         ? Math.round(totalPrepMs / kitchenOrdersCount / 60000)
         : 0
 
+      // Por hora solo tiene sentido con un único día. Si es hoy, llega hasta la hora actual.
+      const hourlyData = fromKey === toKey
+        ? acumuladoPorHora(orders, toKey === localDateKey(new Date()) ? new Date().getHours() : undefined)
+        : []
+
+      cargadoRef.current = clave
+      setError(null)
       setStats({
         totalRevenue,
         totalRevenueCash,
@@ -213,16 +241,20 @@ export function useDashboardStats(dateFrom: Date = new Date(), dateTo: Date = ne
         topProducts,
         topByCategory,
         dailyData,
+        hourlyData,
       })
       } catch (e) {
+        if (cancelado || refresco) return
+        cargadoRef.current = null
         setStats(null)
         setError((e as Error).message)
       } finally {
-        setLoading(false)
+        if (!cancelado) setLoading(false)
       }
     }
 
     fetchStats()
+    return () => { cancelado = true }
   }, [fromKey, toKey, tick])
 
   const refetch = () => setTick(t => t + 1)

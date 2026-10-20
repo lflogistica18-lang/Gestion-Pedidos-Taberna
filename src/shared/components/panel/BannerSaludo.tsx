@@ -13,9 +13,11 @@ interface BannerSaludoProps {
   acciones?: ReactNode
   /** Contenido libre debajo (por ejemplo, el total del día). */
   children?: ReactNode
+  /** Contenido a la derecha de `children` (≥ sm) o debajo (celu), por ejemplo una línea de tendencia. */
+  lateral?: ReactNode
 }
 
-export function BannerSaludo({ titulo, subtitulo, acciones, children }: BannerSaludoProps) {
+export function BannerSaludo({ titulo, subtitulo, acciones, children, lateral }: BannerSaludoProps) {
   return (
     <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-banner-desde to-banner-hasta p-5 text-sobre-acento sm:p-7">
       {/* Brillo diagonal decorativo */}
@@ -26,7 +28,14 @@ export function BannerSaludo({ titulo, subtitulo, acciones, children }: BannerSa
       <div className="relative">
         <h1 className="break-words text-2xl font-extrabold tracking-tight sm:text-3xl">{titulo}</h1>
         {subtitulo && <p className="mt-1 text-sm font-semibold text-sobre-acento/90 sm:text-base">{subtitulo}</p>}
-        {children && <div className="mt-4">{children}</div>}
+        {lateral ? (
+          <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+            <div className="min-w-0">{children}</div>
+            <div className="min-w-0 sm:w-1/2 sm:max-w-md">{lateral}</div>
+          </div>
+        ) : (
+          children && <div className="mt-4">{children}</div>
+        )}
         {acciones && <div className="mt-5 flex flex-wrap gap-3">{acciones}</div>}
       </div>
     </section>

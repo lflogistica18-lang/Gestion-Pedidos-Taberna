@@ -1,11 +1,14 @@
 import { useState } from 'react'
-import { LineChart, ReceiptText } from 'lucide-react'
+import { ReceiptText } from 'lucide-react'
 import {
-  BannerSaludo, EncabezadoSeccion, SeccionPanel, TendenciaArea, fmtMonto,
+  BannerSaludo, SeccionPanel, fmtMonto,
 } from '@/shared/components/panel'
 import { EstadoError } from '@/shared/components/comunes/EstadoError'
 import { EstadoVacio } from '@/shared/components/comunes/EstadoVacio'
 import { useDashboardStats } from './hooks/useDashboardStats'
+import { useVentasPorDiaSemana } from './hooks/useVentasPorDiaSemana'
+import { DiasDeVenta } from './components/DiasDeVenta'
+import { TendenciaBanner } from './components/TendenciaBanner'
 import { IndicadoresVentas } from './components/IndicadoresVentas'
 import { MedioDePago } from './components/MedioDePago'
 import { SelectorPeriodo } from './components/SelectorPeriodo'
@@ -23,6 +26,7 @@ export default function ReportsPage() {
 
   const { desde, hasta } = rangoDePreset(preset, hoyDate, elegido)
   const { stats, loading, error, refetch } = useDashboardStats(parseLocalDate(desde), parseLocalDate(hasta))
+  const semana = useVentasPorDiaSemana()
 
   // Al pasar a "Elegir" arranca con el rango que se estaba viendo.
   const cambiarPreset = (p: PeriodoPreset) => {
@@ -33,11 +37,23 @@ export default function ReportsPage() {
   const cambiarHasta = (v: string) => setElegido((e) => ({ desde: v < e.desde ? v : e.desde, hasta: v }))
 
   const hayDatos = !!stats && stats.totalOrders > 0
-  const variosDias = !!stats && stats.dailyData.length > 1
+  // Un solo día: acumulado por hora. Varios días: ventas por día. Con menos de 2 puntos no hay línea.
+  const unSoloDia = desde === hasta
+  const puntosTendencia = !stats ? [] : unSoloDia
+    ? stats.hourlyData
+    : stats.dailyData.map((d) => ({ etiqueta: d.date, valor: d.revenue }))
+  const mostrarTendencia = !error && !loading && hayDatos && puntosTendencia.length > 1
 
   return (
     <div className="mx-auto max-w-6xl space-y-4 px-4 py-4 sm:px-6 sm:py-6">
       <BannerSaludo
+        lateral={mostrarTendencia ? (
+          <TendenciaBanner
+            datos={puntosTendencia}
+            descripcion={unSoloDia ? 'Ventas acumuladas hora por hora' : 'Ventas por día del período'}
+            etiquetaValor={unSoloDia ? 'Acumulado' : 'Ventas'}
+          />
+        ) : undefined}
         titulo={`Ventas de ${periodoEnPalabras(preset, desde, hasta)}`}
         acciones={
           <SelectorPeriodo
@@ -72,19 +88,10 @@ export default function ReportsPage() {
         <>
           <IndicadoresVentas stats={stats} />
           <MedioDePago efectivo={stats.totalRevenueCash} transferencia={stats.totalRevenueTransfer} />
-          {variosDias && (
-            <SeccionPanel>
-              <EncabezadoSeccion icono={<LineChart size={16} />} titulo="Tendencia de ingresos" subtitulo="Evolución diaria del período" />
-              <div className="mt-3">
-                <TendenciaArea
-                  datos={stats.dailyData.map((d) => ({ etiqueta: d.date, valor: d.revenue }))}
-                  idGradiente="gradiente-ingresos"
-                  descripcion="Ingresos por día del período"
-                  etiquetaValor="Ingresos"
-                />
-              </div>
-            </SeccionPanel>
-          )}
+          <DiasDeVenta
+            dias={semana.dias} hayDatos={semana.hayDatos} loading={semana.loading}
+            error={semana.error} onReintentar={semana.refetch}
+          />
           <TopProductos productos={stats.topProducts} />
           <TopPorCategoria porCategoria={stats.topByCategory} />
         </>
