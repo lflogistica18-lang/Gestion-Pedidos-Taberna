@@ -2,10 +2,8 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-ARG VITE_SUPABASE_URL
-ARG VITE_SUPABASE_ANON_KEY
-ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
-ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
+# Vite toma VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY del .env que entra con `COPY . .`.
+# No declarar ENV para esas variables: sin --build-arg quedan vacías y pisan al .env.
 COPY package*.json ./
 RUN npm install --legacy-peer-deps
 
