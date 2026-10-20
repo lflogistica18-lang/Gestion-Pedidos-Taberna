@@ -2,6 +2,9 @@ import net from 'node:net';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { ConfigImpresora } from './config.js';
+import { enviarRawWindows } from './windows.js';
+
+export { ImpresoraNoDisponible } from './windows.js';
 
 const TIMEOUT_MS = 8000;
 
@@ -43,18 +46,22 @@ export function enviar(buffer: Buffer, ip: string, puerto: number): Promise<void
 }
 
 /**
- * Punto único de salida: imprime de verdad, o en modo SIMULAR muestra el texto
+ * Punto único de salida: imprime de verdad (por red o en una impresora de Windows), o en modo SIMULAR muestra el texto
  * y guarda el binario en ./simulados/<id>.bin.
  */
 export async function imprimir(buffer: Buffer, texto: string, id: string, cfg: ConfigImpresora): Promise<void> {
   if (cfg.simular) {
-    const dir = path.resolve('simulados');
+    const dir = cfg.dirSimulados ?? path.resolve('simulados');
     await mkdir(dir, { recursive: true });
     const archivo = path.join(dir, `${id}.bin`);
     await writeFile(archivo, buffer);
     console.log(`\n┌──── TICKET SIMULADO (${id}) ────`);
     console.log(texto);
     console.log(`└──── binario guardado en ${archivo}\n`);
+    return;
+  }
+  if (cfg.tipo === 'windows') {
+    await enviarRawWindows(buffer, cfg.impresoraWindows);
     return;
   }
   await enviar(buffer, cfg.ip, cfg.puerto);

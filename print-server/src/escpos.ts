@@ -17,6 +17,20 @@ const MAPA_CP850 = new Map<string, number>([
 ]);
 
 /**
+ * Mismos caracteres en WPC1252 (ESC t 16, la tabla de la impresora USB del local).
+ * En Windows-1252 las letras con tilde, ñ, ¿ y ¡ ocupan el mismo byte que en Latin-1.
+ */
+const MAPA_CP1252 = new Map<string, number>([
+  ['á', 0xe1], ['é', 0xe9], ['í', 0xed], ['ó', 0xf3], ['ú', 0xfa],
+  ['Á', 0xc1], ['É', 0xc9], ['Í', 0xcd], ['Ó', 0xd3], ['Ú', 0xda],
+  ['ñ', 0xf1], ['Ñ', 0xd1], ['ü', 0xfc], ['Ü', 0xdc],
+  ['¿', 0xbf], ['¡', 0xa1], ['°', 0xb0],
+]);
+
+/** ESC t n que corresponde a WPC1252 en las impresoras Epson y compatibles. */
+export const CODEPAGE_WPC1252 = 16;
+
+/**
  * Deja el texto listo para imprimir: sin emojis, sin saltos de línea,
  * y con '?' en lo que la impresora no puede dibujar. Cada carácter resultante = 1 byte.
  */
@@ -37,15 +51,24 @@ export function normalizar(texto: string): string {
   return salida;
 }
 
-/** Codifica texto (ya normalizado o no) a bytes CP850. */
-export function codificarCP850(texto: string): Buffer {
+/**
+ * Codifica texto (ya normalizado o no) según la tabla de caracteres de la impresora:
+ * 16 = WPC1252; cualquier otra = CP850 (la que usaba el modo red).
+ */
+export function codificar(texto: string, codepage: number): Buffer {
+  const mapa = codepage === CODEPAGE_WPC1252 ? MAPA_CP1252 : MAPA_CP850;
   const t = normalizar(texto);
   const bytes: number[] = [];
   for (const ch of t) {
     const c = ch.codePointAt(0)!;
-    bytes.push(c >= 0x20 && c < 0x7f ? c : MAPA_CP850.get(ch) ?? 0x3f);
+    bytes.push(c >= 0x20 && c < 0x7f ? c : mapa.get(ch) ?? 0x3f);
   }
   return Buffer.from(bytes);
+}
+
+/** Codifica texto a bytes CP850 (se mantiene por compatibilidad). */
+export function codificarCP850(texto: string): Buffer {
+  return codificar(texto, 2);
 }
 
 /** Parte un texto en líneas de hasta `ancho` caracteres (por palabras; corta las palabras muy largas). */
@@ -88,7 +111,7 @@ export class EscPos {
 
   constructor(
     public readonly columnas: number,
-    codepage: number,
+    private readonly codepage: number,
   ) {
     this.partes.push(Buffer.from([ESC, 0x40])); // ESC @ : inicializar
     this.partes.push(Buffer.from([ESC, 0x74, codepage & 0xff])); // ESC t n : code page
@@ -120,7 +143,7 @@ export class EscPos {
   /** Una línea tal cual (sin wrap). Quien llama es responsable de que entre en el ancho. */
   linea(texto: string): this {
     const t = normalizar(texto);
-    this.partes.push(codificarCP850(t), Buffer.from([LF]));
+    this.partes.push(codificar(t, this.codepage), Buffer.from([LF]));
     // En el espejo, el doble ancho se representa con un espacio tras cada carácter.
     const base = this.esDoble ? [...t].map((c) => (c === ' ' ? '  ' : c + ' ')).join('') : t;
     const w = this.columnas;

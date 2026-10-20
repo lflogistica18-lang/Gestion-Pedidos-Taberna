@@ -1,45 +1,118 @@
-# Servidor de impresión — La Taberna
+# Impresora de La Taberna
 
-Programa que corre en una PC del local. Cada vez que la app crea un pedido, este programa lo recibe y **imprime el ticket automáticamente** en la comandera térmica (80 mm) por WiFi/cable de red. No necesita drivers.
+Un programa chiquito que se queda abierto en la compu del local. Cada vez que entra un pedido en la app, **imprime el ticket solo** en la impresora de tickets (la de papel de 80 mm).
 
-> **Importante:** la PC tiene que estar **prendida y con internet** durante todo el servicio. Si está apagada, los pedidos quedan en cola y se imprimen cuando vuelva.
+> **Importante:** la compu tiene que estar **prendida y con internet** durante todo el servicio, y la impresora **enchufada y prendida**. Si algo de eso falla, los pedidos no se pierden: quedan esperando y salen cuando vuelva todo.
 
-## 1. Requisitos
+---
 
-- Una PC (Windows, Mac o Linux) en la **misma red** que la impresora.
-- **Node.js LTS** instalado: descargarlo de <https://nodejs.org> (botón "LTS") e instalar con todo por defecto.
-- Impresora térmica ESC/POS con WiFi o Ethernet (puerto 9100).
+## Instalación (una sola vez, 10 minutos)
 
-## 2. Instalar
+Hace falta la compu con Windows 11 donde va a quedar la impresora, y el archivo **`ImpresoraTaberna.exe`** (te lo pasa quien armó el sistema).
 
-Abrir una terminal (en Windows: "Símbolo del sistema") dentro de esta carpeta `print-server` y ejecutar:
+1. **Enchufá la impresora** a la compu con el cable USB y prendela. Esperá un minuto a que Windows la reconozca. Para chequearlo: en Windows, buscá "Impresoras y escáneres"; la impresora tiene que aparecer en la lista.
+2. **Guardá `ImpresoraTaberna.exe` en una carpeta que no vayas a borrar**, por ejemplo en *Documentos*, dentro de una carpeta nueva llamada `Impresora Taberna`. (No lo dejes en *Descargas*: es fácil borrarlo sin querer.)
+3. **Doble clic en `ImpresoraTaberna.exe`.**
+   - Si Windows muestra un cartel azul **"Windows protegió su PC"**, es normal (el programa es nuevo y todavía no tiene firma de Microsoft). Tocá **"Más información"** y después **"Ejecutar de todas formas"**.
+4. Se abre una ventana negra que te hace **3 preguntas**:
+   1. **Email y contraseña** del usuario de impresión (te los dieron junto con el programa; al escribir la contraseña no se ve nada, es normal). El programa comprueba que anden antes de seguir.
+   2. **Qué impresora es**: te muestra una lista numerada. Escribí el número de la impresora del local (si hay una que parece la correcta, ya te la sugiere: alcanza con apretar Enter).
+   3. **Ticket de prueba**: sale un ticket con el nombre del local, con ñ y acentos. Si salió bien, respondé `s`. Si no salió o salió con símbolos raros, respondé `n` y podés reintentar o elegir otra impresora.
+5. Listo. La ventana queda abierta con el título **"Impresora La Taberna"** y dice **"Esperando pedidos…"**. Cada ticket que imprime queda anotado con la hora y el número de pedido. **No la cierres**; si te molesta, minimizala.
+
+El programa además queda configurado para **abrirse solo cada vez que se prende la compu**. No tenés que hacer nada más.
+
+### Activar la impresión automática en la app
+
+En la app de pedidos: **Configuración → Impresión → Modo de impresión** y elegí **"Print server en la compu"**. Después tocá **Guardar**. (Si dejás la otra opción, "Desde el celu (RawBT)", los tickets no salen por esta compu.)
+
+Para probar: hacé un pedido de prueba en la app. En unos segundos tiene que salir el ticket y aparecer una línea nueva en la ventana.
+
+---
+
+## Uso de todos los días
+
+- Prendés la compu → el programa se abre solo → prendés la impresora → listo.
+- Si la ventana se cierra o la compu se reinició, alcanza con abrir de nuevo `ImpresoraTaberna.exe` (o reiniciar la compu).
+- Conviene configurar Windows para que **no se suspenda solo** (Configuración → Sistema → Inicio/apagado y suspensión → "Nunca" cuando está enchufada).
+- Si se corta internet, el programa **reintenta solo** y retoma cuando vuelve. No hace falta tocar nada.
+
+## Si algo no anda
+
+| Qué pasa | Qué hacer |
+|---|---|
+| La ventana dice **"No encuentro la impresora 'POS-80'. ¿Está prendida y enchufada?"** | Revisá que la impresora esté prendida, con el cable USB firme y con papel. Los pedidos quedan esperando y salen solos cuando vuelva. Si le cambiaste el nombre en Windows, corré el programa con `--configurar` (ver abajo). |
+| Sale el ticket pero con **símbolos raros** en vez de ñ o acentos | Avisá a quien instaló el sistema (se cambia un número de configuración). |
+| La ventana dice **"No se pudo iniciar sesión (el email o la contraseña no coinciden)"** | Pasó algo con el usuario de impresión (le cambiaron la clave, por ejemplo). Corré `--configurar` y cargalo de nuevo. |
+| Dice **"no hay internet o no se llega al servidor"** | Revisá el WiFi/internet de la compu. Reintenta solo cada 30 segundos. |
+| Hice un pedido y **no sale nada y la ventana está en blanco/cerrada** | Abrí `ImpresoraTaberna.exe`. Si la ventana está abierta, mirá si en la app está elegido "Print server en la compu". |
+| Cambié de impresora o de compu | Corré el programa con `--configurar` en la compu nueva (o instalá todo de cero). |
+
+### Opciones especiales (para cuando hace falta)
+
+Se usan abriendo "Símbolo del sistema" en la carpeta del programa y escribiendo, por ejemplo, `ImpresoraTaberna.exe --configurar`:
+
+| Opción | Para qué |
+|---|---|
+| `--configurar` | Repetir las 3 preguntas (cambiar usuario o impresora). |
+| `--prueba` | Imprimir un ticket de prueba y terminar. |
+| `--impresoras` | Ver la lista de impresoras de la compu. |
+| `--quitar-inicio` | Que **deje** de abrirse solo al prender la compu. |
+| `--simular` | Probar sin impresora ni internet (no imprime; guarda el ticket en un archivo). |
+
+Los datos que guarda el programa (usuario, impresora elegida) quedan en `%APPDATA%\ImpresoraTaberna\config.json`. Ahí está la contraseña del usuario de impresión (que solo sirve para imprimir). Para "empezar de cero", borrá ese archivo y abrí el programa.
+
+---
+
+## Parte técnica
+
+### Cómo funciona
+
+Lee la cola `sgp.print_jobs` de Supabase con un usuario de rol `taberna` (por Realtime y, de respaldo, cada 60 segundos) y manda los bytes ESC/POS a la impresora. Hay dos formas de llegar a la impresora, elegidas con `TIPO_IMPRESORA`:
+
+- **`windows`** (el `.exe`): impresora instalada en Windows (USB) **por nombre**. Los bytes van al spooler como documento `RAW` (winspool: `OpenPrinter` / `StartDocPrinter` / `WritePrinter`), sin compartir la impresora. Se hace con `powershell.exe` (viene con Windows) y un `Add-Type` de una clase C#; no hay dependencias nativas. Tabla de caracteres por defecto: **16 (WPC1252)**. Si la impresora no existe, el pedido vuelve a la cola **sin gastar intentos** y se reintenta cada minuto.
+- **`red`** (Node, como antes): comandera con IP, TCP puerto 9100. Tabla por defecto: 2 (PC850).
+
+### Generar el `.exe`
+
+```
+npm install
+npm run exe
+```
+
+Deja `dist-exe/ImpresoraTaberna.exe` (Windows x64, ~90 MB: trae adentro el runtime, no hace falta instalar Node). Usa [Bun](https://bun.sh) (`bun build --compile`, viene como devDependency; se puede compilar desde Linux/WSL). La URL de Supabase y la clave **anon** (pública por diseño) se leen de `../.env` (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) al compilar y quedan embebidas; no se guardan en ningún archivo del repo. Alternativa: variables `SGP_SUPABASE_URL` y `SGP_SUPABASE_ANON_KEY`. El `.exe` no está firmado (de ahí el cartel de SmartScreen).
+
+Para pruebas se puede apuntar `TABERNA_CONFIG_DIR` a otra carpeta de datos, y `--simular` evita tocar la impresora e internet.
+
+### Modo red (sin `.exe`)
+
+Para una comandera con IP (WiFi/Ethernet), con Node.js LTS instalado en la PC:
 
 ```
 npm install
 npm run build
 ```
 
-## 3. Configurar el archivo `.env`
-
-1. Copiar `.env.example` y renombrar la copia a `.env`.
-2. Completar los valores:
+Copiar `.env.example` a `.env` y completar:
 
 | Variable | Qué poner |
 |---|---|
-| `SUPABASE_URL` | La URL del proyecto Supabase |
-| `SUPABASE_ANON_KEY` | La clave **anon** (nunca la service key) |
+| `SUPABASE_URL` / `SUPABASE_ANON_KEY` | URL del proyecto y clave **anon** (nunca la service key) |
 | `PRINT_EMAIL` / `PRINT_PASSWORD` | Usuario de impresión (ver abajo) |
-| `IMPRESORA_IP` | IP de la impresora (ver punto 4) |
-| `IMPRESORA_PUERTO` | `9100` (casi siempre) |
-| `COLUMNAS` | Respaldo: `48` (80 mm) o `32` (58 mm). Normalmente se toma de la app: **Configuración → Impresión → Ancho del papel** |
-| `NOMBRE_LOCAL` | Respaldo. Normalmente el nombre, la dirección, el teléfono y el pie del ticket se toman de **Configuración → Local / Impresión** en la app (se leen en cada ticket) |
-| `CODEPAGE` | `2` (si salen mal las tildes o la ñ, probar `0`, `16` o `19`) |
-| `SIMULAR` | `false`. Con `true` no imprime: muestra el ticket en pantalla y lo guarda en `simulados/` |
+| `TIPO_IMPRESORA` | `red` (por defecto) o `windows` |
+| `IMPRESORA_IP` / `IMPRESORA_PUERTO` | IP de la impresora y `9100` (modo red) |
+| `IMPRESORA_WINDOWS` | Nombre exacto en Windows (modo `windows`) |
+| `COLUMNAS` | Respaldo: `48` (80 mm) o `32` (58 mm). Normalmente sale de **Configuración → Impresión → Ancho del papel** |
+| `NOMBRE_LOCAL` | Respaldo. Nombre, dirección, teléfono y pie salen de la app en cada ticket |
+| `CODEPAGE` | `2` en red, `16` con impresora de Windows (si salen mal los acentos, probar `0`, `16` o `19`) |
+| `SIMULAR` | `true` = no imprime: muestra el ticket y lo guarda en `simulados/` |
+
+Arrancar: `iniciar.bat` (reinicia solo si se cae) o `npm start`. Hoja de prueba: `npm run prueba:prod`. La IP de la impresora se ve en su hoja de autotest (apagar, mantener FEED y prender); conviene reservarla en el router.
 
 ### Crear el usuario de impresión
 
-1. En Supabase: **Authentication → Users → Add user**. Crear un usuario con un email (ej. `impresion@taberna.local`) y una contraseña, marcando "Auto Confirm User".
-2. En **SQL Editor** ejecutar (cambiando el email por el que creaste):
+1. En Supabase: **Authentication → Users → Add user** (con "Auto Confirm User").
+2. En el **SQL Editor** (cambiando el email):
 
 ```sql
 UPDATE auth.users
@@ -47,41 +120,15 @@ SET raw_app_meta_data = coalesce(raw_app_meta_data,'{}'::jsonb) || '{"rol":"tabe
 WHERE email = 'impresion@taberna.local';
 ```
 
-3. Poner ese email y contraseña en `PRINT_EMAIL` y `PRINT_PASSWORD`.
+El asistente del `.exe` comprueba que el usuario tenga ese rol.
 
-## 4. Saber la IP de la impresora
+### Si no imprime (técnico)
 
-1. Apagar la impresora, **mantener apretado el botón FEED** y prenderla sin soltar.
-2. Imprime una hoja de autotest con la configuración de red: ahí figura la **IP**.
-3. **Fijar esa IP** para que no cambie: en el router, buscar "reserva de DHCP" / "IP estática" y asociar la IP a la impresora. Si cambia, el programa deja de imprimir.
+- En Supabase, tabla `print_jobs`, columna `ultimo_error`. Cada trabajo se intenta hasta 3 veces y queda en `error`; los fallos por impresora no encontrada (modo `windows`) no cuentan.
+- Reimprimir: desde la app, o poniendo el trabajo en `estado = 'pendiente'` e `intentos = 0`.
 
-## 5. Probar
+### Desarrollo
 
-```
-npm run prueba:prod
-```
-
-Debe salir una hoja de prueba con acentos y ñ ("ñandú, pingüino, ¿café?") y el corte de papel. Si no sale, ver el punto 7.
-
-## 6. Dejarlo funcionando solo
-
-- Para arrancar a mano: doble clic en `iniciar.bat`. Deja una ventana abierta (**no cerrarla**) y, si el programa se cae, lo reinicia solo a los 5 segundos.
-- Para que arranque cuando se prende la PC: apretar `Windows + R`, escribir `shell:startup` y Enter. En esa carpeta, crear un **acceso directo** a `iniciar.bat` (clic derecho en `iniciar.bat` → Crear acceso directo, y mover el acceso directo ahí).
-- Conviene configurar la PC para que no se suspenda sola.
-
-## 7. Si no imprime
-
-1. **Revisar la IP**: ¿sigue siendo la misma que en el `.env`? (hoja de autotest).
-2. **Misma red**: la PC y la impresora deben estar en el mismo WiFi/router.
-3. Que la impresora esté prendida, con papel y la tapa cerrada.
-4. Mirar la ventana del programa: los mensajes con ⚠️ explican el problema.
-5. En Supabase, tabla `print_jobs`, mirar la columna **`ultimo_error`** de los trabajos. Cada trabajo se intenta hasta 3 veces; si falla las 3 queda en estado `error`.
-6. **Reimprimir** desde la app (crea un nuevo trabajo de impresión), o en Supabase poner el trabajo en `estado = 'pendiente'` e `intentos = 0`.
-7. Si salen símbolos raros en lugar de tildes: cambiar `CODEPAGE` en el `.env` y reiniciar.
-8. Si el programa dice que no puede iniciar sesión, revisar `PRINT_EMAIL`, `PRINT_PASSWORD` y que se haya ejecutado el `UPDATE` del rol.
-
-## Desarrollo
-
-- `npm run dev` — corre con recarga sin compilar.
-- `SIMULAR=true npm run dev` — prueba sin impresora.
+- `npm run dev` — corre con recarga sin compilar. `SIMULAR=true npm run dev` — sin impresora.
 - `npx tsx src/demo.ts` — muestra un ticket de ejemplo en texto (48 y 32 columnas).
+- `npx tsx src/exe.ts --simular` — recorre el asistente sin imprimir (en Windows).

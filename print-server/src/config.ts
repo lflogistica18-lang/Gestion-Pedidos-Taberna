@@ -1,6 +1,14 @@
 import 'dotenv/config';
 
+/** 'red' = comandera con IP (puerto 9100). 'windows' = impresora instalada en Windows (USB), por nombre. */
+export type TipoImpresora = 'red' | 'windows';
+
 export interface ConfigImpresora {
+  tipo: TipoImpresora;
+  /** Nombre exacto de la impresora en Windows (solo tipo 'windows'). */
+  impresoraWindows: string;
+  /** Carpeta donde se guardan los tickets simulados (por defecto ./simulados). */
+  dirSimulados?: string;
   ip: string;
   puerto: number;
   columnas: number;
@@ -42,14 +50,9 @@ function salirSiHayErrores(errores: string[]): void {
 /** Lee y valida SOLO lo necesario para hablar con la impresora (lo usa la hoja de prueba). */
 export function cargarConfigImpresora(): ConfigImpresora {
   const errores: string[] = [];
-  const simular = ['true', '1', 'si', 'sí'].includes(texto('SIMULAR').toLowerCase());
-  const ip = texto('IMPRESORA_IP');
-  if (!ip && !simular) errores.push('Falta IMPRESORA_IP (la IP de la impresora, ej: 192.168.1.50)');
-  const puerto = entero('IMPRESORA_PUERTO', 9100, 1, 65535, errores);
-  const columnas = entero('COLUMNAS', 48, 16, 96, errores);
-  const codepage = entero('CODEPAGE', 2, 0, 255, errores);
+  const imp = validarImpresoraSinSalir(errores);
   salirSiHayErrores(errores);
-  return { ip, puerto, columnas, codepage, simular, nombreLocal: texto('NOMBRE_LOCAL') || 'La Taberna' };
+  return imp;
 }
 
 /** Lee y valida toda la configuración (servidor completo). */
@@ -71,10 +74,20 @@ export function cargarConfig(): Config {
 
 function validarImpresoraSinSalir(errores: string[]): ConfigImpresora {
   const simular = ['true', '1', 'si', 'sí'].includes(texto('SIMULAR').toLowerCase());
+  const tipoCrudo = texto('TIPO_IMPRESORA').toLowerCase() || 'red';
+  if (tipoCrudo !== 'red' && tipoCrudo !== 'windows') {
+    errores.push(`TIPO_IMPRESORA debe ser "red" o "windows" (valor actual: "${tipoCrudo}")`);
+  }
+  const tipo: TipoImpresora = tipoCrudo === 'windows' ? 'windows' : 'red';
   const ip = texto('IMPRESORA_IP');
-  if (!ip && !simular) errores.push('Falta IMPRESORA_IP (la IP de la impresora, ej: 192.168.1.50)');
+  const impresoraWindows = texto('IMPRESORA_WINDOWS');
+  if (tipo === 'red' && !ip && !simular) errores.push('Falta IMPRESORA_IP (la IP de la impresora, ej: 192.168.1.50)');
+  if (tipo === 'windows' && !impresoraWindows && !simular) {
+    errores.push('Falta IMPRESORA_WINDOWS (el nombre de la impresora en Windows, ej: POS-80)');
+  }
   const puerto = entero('IMPRESORA_PUERTO', 9100, 1, 65535, errores);
   const columnas = entero('COLUMNAS', 48, 16, 96, errores);
-  const codepage = entero('CODEPAGE', 2, 0, 255, errores);
-  return { ip, puerto, columnas, codepage, simular, nombreLocal: texto('NOMBRE_LOCAL') || 'La Taberna' };
+  // Por defecto: 16 (WPC1252) con impresora de Windows, 2 (PC850) en modo red.
+  const codepage = entero('CODEPAGE', tipo === 'windows' ? 16 : 2, 0, 255, errores);
+  return { tipo, impresoraWindows, ip, puerto, columnas, codepage, simular, nombreLocal: texto('NOMBRE_LOCAL') || 'La Taberna' };
 }

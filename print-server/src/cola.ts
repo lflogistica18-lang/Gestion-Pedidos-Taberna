@@ -1,7 +1,7 @@
 import { createClient, type RealtimeChannel } from '@supabase/supabase-js';
 import type { Config } from './config.js';
 import { armarTicket, ticketComoTexto, type OpcionesTicket, type Pedido } from './ticket.js';
-import { imprimir } from './impresora.js';
+import { imprimir, ImpresoraNoDisponible } from './impresora.js';
 
 const MAX_INTENTOS = 3;
 const REINTENTO_LOGIN_MS = 30_000;
@@ -21,8 +21,27 @@ function hora(): string {
     hour12: false,
   });
 }
+/** Por defecto escribe en consola; el .exe pasa su propia salida (sin emojis, en la ventana). */
+let salida: (linea: string) => void = (linea) => console.log(linea);
 function log(msg: string): void {
-  console.log(`[${hora()}] ${msg}`);
+  salida(`[${hora()}] ${msg}`);
+}
+
+/** Traduce los errores técnicos de inicio de sesión a algo que se entienda. */
+export function explicarErrorLogin(mensaje: string | undefined): string {
+  const m = (mensaje ?? '').toLowerCase();
+  if (m.includes('invalid login') || m.includes('invalid_credentials')) {
+    return 'el email o la contraseña no coinciden';
+  }
+  if (m.includes('fetch') || m.includes('network') || m.includes('econn') || m.includes('enotfound') || m.includes('timed out') || m.includes('unable to connect')) {
+    return 'no hay internet o no se llega al servidor';
+  }
+  return mensaje ?? 'sin sesión';
+}
+
+export interface InterfazCola {
+  /** Dónde escribir cada línea (por defecto, la consola). */
+  log?: (linea: string) => void;
 }
 function msgError(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
@@ -30,7 +49,8 @@ function msgError(e: unknown): string {
 const dormir = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 /** Arranca la cola. Devuelve una función para detenerla limpiamente. */
-export async function iniciarCola(cfg: Config): Promise<() => Promise<void>> {
+export async function iniciarCola(cfg: Config, ui: InterfazCola = {}): Promise<() => Promise<void>> {
+  if (ui.log) salida = ui.log;
   const supabase = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {
     db: { schema: 'sgp' },
     auth: { persistSession: false, autoRefreshToken: true },
@@ -46,17 +66,30 @@ export async function iniciarCola(cfg: Config): Promise<() => Promise<void>> {
   let cadena: Promise<void> = Promise.resolve();
 
   // ---------- Login ----------
+  /** Un intento de login. Si anda, deja la sesión lista también para el canal en tiempo real. */
+  async function intentarLogin(): Promise<string | null> {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: cfg.printEmail,
+        password: cfg.printPassword,
+      });
+      if (!error && data.session) {
+        await supabase.realtime.setAuth(data.session.access_token);
+        return null;
+      }
+      return explicarErrorLogin(error?.message);
+    } catch (e) {
+      return explicarErrorLogin(msgError(e));
+    }
+  }
+
   while (!detenido) {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: cfg.printEmail,
-      password: cfg.printPassword,
-    });
-    if (!error && data.session) {
+    const motivo = await intentarLogin();
+    if (!motivo) {
       log(`🔐 Sesión iniciada como ${cfg.printEmail}`);
-      await supabase.realtime.setAuth(data.session.access_token);
       break;
     }
-    log(`⚠️ No se pudo iniciar sesión (${error?.message ?? 'sin sesión'}). Reintento en 30 s`);
+    log(`⚠️ No se pudo iniciar sesión (${motivo}). Reintento en ${REINTENTO_LOGIN_MS / 1000} s`);
     await dormir(REINTENTO_LOGIN_MS);
   }
 
@@ -154,6 +187,13 @@ export async function iniciarCola(cfg: Config): Promise<() => Promise<void>> {
     try {
       await imprimir(armarTicket(p, opciones), ticketComoTexto(p, opciones), job.id, cfg);
     } catch (e) {
+      if (e instanceof ImpresoraNoDisponible) {
+        // Impresora apagada o desenchufada: no es culpa del pedido. Vuelve a la cola sin gastar
+        // intentos y se reprueba en el próximo repaso (cada minuto) hasta que la impresora vuelva.
+        log(`⚠️ ${e.message} El pedido #${p.order_number} queda esperando.`);
+        await actualizar(job.id, { estado: 'pendiente', ultimo_error: e.message }, 'No se pudo devolver el trabajo a la cola');
+        return;
+      }
       await fallar(job, msgError(e));
       return;
     }
@@ -178,8 +218,8 @@ export async function iniciarCola(cfg: Config): Promise<() => Promise<void>> {
       });
   }
 
-  async function procesarPendientes(): Promise<void> {
-    if (detenido) return;
+  async function procesarPendientes(): Promise<boolean> {
+    if (detenido) return true;
     const { data, error } = await supabase
       .from('print_jobs')
       .select('id')
@@ -187,10 +227,23 @@ export async function iniciarCola(cfg: Config): Promise<() => Promise<void>> {
       .is('deleted_at', null)
       .order('created_at', { ascending: true });
     if (error) {
-      log(`⚠️ Error consultando pendientes: ${error.message}`);
-      return;
+      log(`⚠️ Error consultando pendientes: ${explicarErrorLogin(error.message)}. Sigo intentando.`);
+      return false;
     }
     for (const fila of data ?? []) encolar(fila.id as string);
+    return true;
+  }
+
+  /** Después de un corte largo de internet la sesión puede vencerse: se vuelve a entrar sola. */
+  async function repasar(): Promise<void> {
+    await resetearTrabados();
+    if (!(await procesarPendientes())) {
+      const motivo = await intentarLogin();
+      if (!motivo) {
+        log('🔐 Sesión renovada');
+        await procesarPendientes();
+      }
+    }
   }
 
   // ---------- Realtime ----------
@@ -224,10 +277,11 @@ export async function iniciarCola(cfg: Config): Promise<() => Promise<void>> {
   await procesarPendientes();
   suscribir();
   timerSondeo = setInterval(() => {
-    void resetearTrabados().then(procesarPendientes);
+    void repasar().catch((e) => log(`⚠️ Error en el repaso periódico: ${msgError(e)}`));
   }, SONDEO_MS);
 
-  log(`🚀 Servidor de impresión listo${cfg.simular ? ' (MODO SIMULADO)' : ` → ${cfg.ip}:${cfg.puerto}`}`);
+  const destino = cfg.tipo === 'windows' ? `impresora de Windows '${cfg.impresoraWindows}'` : `${cfg.ip}:${cfg.puerto}`;
+  log(`🚀 Servidor de impresión listo${cfg.simular ? ' (MODO SIMULADO)' : ` → ${destino}`}`);
 
   return async () => {
     detenido = true;
