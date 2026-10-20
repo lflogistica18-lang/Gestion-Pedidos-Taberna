@@ -14,7 +14,7 @@
 ## DÓNDE QUEDAMOS — leer primero al retomar (maximo 40 lineas)
 
 **Fase actual:** 6 — Puesta en marcha en producción (todo el código listo; falta levantarlo).
-**Lo ultimo que se hizo (2026-10-19, rama `ccr-4f56b50e-9g3nw7`, último commit `fa162a1`):**
+**Lo ultimo que se hizo (2026-10-19, todo en `master` desde el PR #1, mergeado 2026-10-20):**
 auditoría Omni (53/100) + remediación; Cocina escondida y ticket automático; print server;
 estilo Panel naranja en todas las pantallas; pantalla Configuración; script único de base
 probado en Postgres local (encontró y arregló 2 bugs de la 010); compose detrás del proxy.
@@ -22,7 +22,7 @@ probado en Postgres local (encontró y arregló 2 bugs de la 010); compose detr�
 1. Supabase `zslsosunvsbxxnzeckpg`: crear usuario de la caja → correr
    `supabase/instalar_sgp_desde_cero.sql` (OK ×3) → Exposed schemas incluye `sgp`.
 2. DuckDNS: **mismo nombre** `pedidostaberna` → IP 187.77.247.24 (Lucas lo mantiene).
-3. VPS `/root/Gestion-Pedidos-Taberna`: checkout de la rama, `docker build -t sgp-taberna:latest`,
+3. VPS `/root/Gestion-Pedidos-Taberna`: `git pull` en `master`, `docker build -t sgp-taberna:latest`,
    `docker-compose up -d` (NUNCA `--force-recreate`), curl 127.0.0.1:8090 → 200.
 4. Proxy (`panel-lucas.duckdns.org`): host `pedidostaberna` → `sgp-taberna-front:80`, Let's
    Encrypt + Force SSL.
@@ -31,7 +31,6 @@ Lo puede hacer Lucas a mano o una sesión de Claude **en su compu** (desde la nu
 al VPS ni a Supabase).
 **Bloqueantes:** ninguno de código.
 **Pendientes del dueño:**
-- Decidir si la rama pasa a `master` por PR antes de deployar (hoy la guía usa la rama).
 - Comprar la comandera WiFi 80 mm (ESC/POS, USB+Ethernet+WiFi) e instalar RawBT en el celu.
 **Avisos:**
 - La base vieja de la Taberna estaba en `papelera_sgp` (limpieza 2026-10-07); los datos eran de
