@@ -31,7 +31,7 @@ Borra solo lo de la Taberna (`sgp` y `papelera_sgp`); no toca cotizador ni drops
 ssh root@187.77.247.24
 cd /root/Gestion-Pedidos-Taberna
 git fetch origin
-git checkout ccr-4f56b50e-9g3nw7        # o master, cuando se haga el merge
+git checkout master
 git pull
 cat .env | cut -d= -f1                   # tiene que listar VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY
 docker build --no-cache -t sgp-taberna:latest .
