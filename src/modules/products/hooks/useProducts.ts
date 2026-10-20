@@ -40,8 +40,8 @@ export function useProducts({ activeOnly }: UseProductsOptions = {}): UseProduct
       } else {
         setProducts(data ?? [])
       }
-    } catch (e: any) {
-      setError(e.message || 'Error de conexión')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error de conexión')
     } finally {
       setLoading(false)
     }

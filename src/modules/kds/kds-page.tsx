@@ -1,9 +1,10 @@
 import { useKdsOrders } from './hooks/useKdsOrders'
 import { KdsOrderCard } from './components/KdsOrderCard'
 import { EstadoCargando } from '@/shared/components/comunes/EstadoCargando'
+import { EstadoError } from '@/shared/components/comunes/EstadoError'
 
 export default function KdsPage() {
-  const { orders, loading, todayCount, refetch } = useKdsOrders()
+  const { orders, loading, error, todayCount, refetch } = useKdsOrders()
 
   const pending = orders.filter(o => o.status === 'pendiente')
   const cooking = orders.filter(o => o.status === 'en_preparacion')
@@ -24,6 +25,8 @@ export default function KdsPage() {
 
       {loading ? (
         <EstadoCargando mensaje="Cargando comandas..." />
+      ) : error ? (
+        <EstadoError mensaje={error} onReintentar={refetch} />
       ) : (
         <div className="kds-board">
           {/* Pendientes */}

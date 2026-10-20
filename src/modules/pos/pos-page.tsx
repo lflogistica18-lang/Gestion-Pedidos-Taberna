@@ -1,4 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { useReactToPrint } from 'react-to-print'
+import { Receipt } from './components/Receipt'
+import type { OrderWithItems } from './hooks/useActiveOrders'
 import { useProducts } from '@/modules/products/hooks/useProducts'
 import { useCategories } from '@/modules/products/hooks/useCategories'
 import { useCartStore } from './store/useCartStore'
@@ -7,28 +10,52 @@ import { useActiveOrders } from './hooks/useActiveOrders'
 import { ProductGrid } from './components/ProductGrid'
 import { CartPanel } from './components/CartPanel'
 import { ActiveOrdersPanel } from './components/ActiveOrdersPanel'
+import { ClipboardList, ShoppingCart } from 'lucide-react'
+import { EstadoError } from '@/shared/components/comunes/EstadoError'
+import { Boton, EncabezadoPagina, FiltrosPastilla, Modal, Pastilla, mostrarToast } from '@/shared/components/panel'
+import { BarraCarrito } from './components/BarraCarrito'
+import { useEncolarImpresion } from './hooks/useEncolarImpresion'
+import { useConfiguracion } from '@/shared/store/useConfiguracion'
+import { medioDePagoValido } from '@/shared/lib/config'
 
 export default function PosPage() {
-  const [activeCategory, setActiveCategory] = useState<string>('')
+  const [categoriaElegida, setCategoriaElegida] = useState<string>('')
+  const modoImpresion = useConfiguracion((s) => s.config.modo_impresion)
+  const mediosPago = useConfiguracion((s) => s.config.medios_pago)
   const [cartOpen, setCartOpen] = useState(false)
   const [ordersOpen, setOrdersOpen] = useState(false)
-  const [successMsg, setSuccessMsg] = useState<string | null>(null)
+
+  // Ticket para cocina: se imprime solo al confirmar cada pedido
+  const [pedidoAImprimir, setPedidoAImprimir] = useState<OrderWithItems | null>(null)
+  const ticketRef = useRef<HTMLDivElement>(null)
+  const imprimirTicket = useReactToPrint({
+    contentRef: ticketRef,
+    documentTitle: pedidoAImprimir ? `Ticket_Pedido_${pedidoAImprimir.order_number}` : 'Ticket',
+    onAfterPrint: () => setPedidoAImprimir(null),
+  })
+
+  // Se imprime recién cuando el ticket ya está montado en el DOM
+  useEffect(() => {
+    if (pedidoAImprimir) imprimirTicket()
+  }, [pedidoAImprimir, imprimirTicket])
 
   const { categories } = useCategories()
-  const { products, loading } = useProducts({ activeOnly: true })
+  const { products, loading, error: productsError, refetch: refetchProducts } = useProducts({ activeOnly: true })
   const { submitting, error, createOrder } = useCreateOrder()
-  const { activeCount } = useActiveOrders()
+  const { encolar } = useEncolarImpresion()
+  const {
+    orders: activeOrders,
+    loading: ordersLoading,
+    error: ordersError,
+    activeCount,
+    refetch: refetchOrders,
+  } = useActiveOrders()
 
-  // Seleccionar la primera categoría cuando cargan o cuando cambia la lista
-  // (ej: después de un rename, resetear para no quedar con nombre viejo)
-  useEffect(() => {
-    if (categories.length > 0) {
-      const exists = categories.some(c => c.name === activeCategory)
-      if (!activeCategory || !exists) {
-        setActiveCategory(categories[0].name)
-      }
-    }
-  }, [categories])
+  // Categoría activa derivada: si la elegida no existe (todavía no cargaron, o
+  // la renombraron) cae a la primera. Derivarla evita un setState dentro de un effect.
+  const activeCategory = categories.some(c => c.name === categoriaElegida)
+    ? categoriaElegida
+    : (categories[0]?.name ?? '')
 
   const items = useCartStore((s) => s.items)
   const orderType = useCartStore((s) => s.orderType)
@@ -43,101 +70,117 @@ export default function PosPage() {
   const filteredProducts = products.filter((p) => p.category === activeCategory)
 
   const handleConfirm = async () => {
-    const orderNumber = await createOrder({
+    const pedido = await createOrder({
       items,
       orderType,
-      paymentMethod,
+      // Si Configuración apagó el medio elegido, se cobra con el primero habilitado (lo que ve el carrito)
+      paymentMethod: medioDePagoValido(paymentMethod, mediosPago),
       notes,
       customerName,
       deliveryAddress,
       total: getTotal(),
     })
 
-    if (orderNumber) {
+    if (pedido) {
       clearCart()
       setCartOpen(false)
-      setSuccessMsg(`✅ Pedido #${orderNumber} creado`)
-      setTimeout(() => setSuccessMsg(null), 3500)
+
+      if (modoImpresion === 'servidor') {
+        // El pedido ya está guardado: si falla la cola, se avisa y se reimprime con 🖨️
+        const { error: colaErr } = await encolar(pedido.id)
+        if (colaErr) {
+          mostrarToast(`Pedido #${pedido.order_number} creado, pero no se mandó a imprimir: ${colaErr}. Reimprimí desde Pedidos.`, 'error')
+        } else {
+          mostrarToast(`Pedido #${pedido.order_number} creado — enviado a la comandera`, 'exito')
+        }
+      } else {
+        setPedidoAImprimir(pedido)
+        mostrarToast(`Pedido #${pedido.order_number} creado — imprimiendo ticket`, 'exito')
+      }
     }
   }
 
   const itemCount = getItemCount()
+  const total = getTotal()
+  const cantidadPorCategoria = (nombre: string) => products.filter((p) => p.category === nombre).length
 
   return (
-    <div className="pos-page">
-      {/* Toast de éxito */}
-      {successMsg && (
-        <div className="pos-toast" role="alert">
-          {successMsg}
+    <div className="flex min-h-full flex-col lg:h-full lg:flex-row">
+      {/* Ticket oculto — solo existe mientras se imprime */}
+      {pedidoAImprimir && (
+        <div style={{ display: 'none' }}>
+          <Receipt ref={ticketRef} order={pedidoAImprimir} />
         </div>
       )}
 
-      {/* Header */}
-      <header className="pos-header">
-        <h1 className="pos-header__title">Caja</h1>
-        <button
-          id="btn-pedidos-activos"
-          className={`pos-orders-btn ${activeCount > 0 ? 'pos-orders-btn--active' : ''}`}
-          onClick={() => setOrdersOpen(true)}
-          aria-label={`Ver pedidos activos: ${activeCount}`}
-        >
-          📋 Pedidos
-          {activeCount > 0 && (
-            <span className="pos-orders-btn__badge">{activeCount}</span>
+      <div className="flex min-w-0 flex-1 flex-col lg:overflow-y-auto">
+        <div className="flex-1 px-4 py-4 sm:px-6 sm:py-6">
+          <EncabezadoPagina
+            icono={<ShoppingCart size={22} />}
+            titulo="Caja"
+            detalle={`${filteredProducts.length} ${filteredProducts.length === 1 ? 'producto' : 'productos'}${activeCategory ? ` · ${activeCategory}` : ''}`}
+            acciones={
+              <>
+                {ordersError && <Pastilla tono="rojo">No se pudieron cargar los pedidos</Pastilla>}
+                <Boton
+                  onClick={() => setOrdersOpen(true)}
+                  aria-label={`Ver pedidos activos: ${activeCount}`}
+                >
+                  <ClipboardList size={16} />
+                  Pedidos
+                  {activeCount > 0 && <Pastilla tono="naranja">{activeCount}</Pastilla>}
+                </Boton>
+              </>
+            }
+            pestanas={
+              <FiltrosPastilla
+                etiqueta="Categorías"
+                value={activeCategory}
+                onChange={setCategoriaElegida}
+                opciones={categories.map(({ name }) => ({
+                  value: name,
+                  label: name,
+                  cantidad: loading ? undefined : cantidadPorCategoria(name),
+                }))}
+              />
+            }
+          />
+
+          {productsError ? (
+            <EstadoError mensaje={productsError} onReintentar={refetchProducts} />
+          ) : (
+            <ProductGrid products={filteredProducts} loading={loading} />
           )}
-        </button>
-      </header>
+        </div>
 
-      {/* Category tabs */}
-      <div className="pos-tabs" role="tablist">
-        {categories.map(({ name }) => (
-          <button
-            key={name}
-            role="tab"
-            aria-selected={activeCategory === name}
-            className={`pos-tab ${activeCategory === name ? 'pos-tab--active' : ''}`}
-            onClick={() => setActiveCategory(name)}
-          >
-            {name}
-          </button>
-        ))}
+        {itemCount > 0 && <BarraCarrito cantidad={itemCount} total={total} onAbrir={() => setCartOpen(true)} />}
       </div>
 
-      {/* Product grid */}
-      <div className="pos-products">
-        <ProductGrid products={filteredProducts} loading={loading} />
-      </div>
+      {/* Carrito fijo a la derecha desde lg */}
+      <aside
+        aria-label="Pedido en curso"
+        className="hidden w-[360px] shrink-0 border-l border-borde-sutil bg-bg-tarjeta lg:block"
+      >
+        <CartPanel variante="panel" submitting={submitting} error={error} onConfirm={handleConfirm} />
+      </aside>
 
-      {/* Cart floating bar */}
-      {itemCount > 0 && (
-        <button
-          id="btn-ver-carrito"
-          className="pos-cart-bar"
-          onClick={() => setCartOpen(true)}
-          aria-label={`Ver carrito: ${itemCount} ítems`}
-        >
-          <span className="pos-cart-bar__count">
-            🛒 {itemCount} ítem{itemCount !== 1 ? 's' : ''}
-          </span>
-          <span className="pos-cart-bar__total">
-            ${getTotal().toLocaleString('es-AR')} →
-          </span>
-        </button>
-      )}
-
-      {/* Cart Panel */}
-      <CartPanel
+      {/* Carrito como hoja inferior en celu y tablet parada */}
+      <Modal
         open={cartOpen}
-        submitting={submitting}
-        error={error}
-        onConfirm={handleConfirm}
         onClose={() => setCartOpen(false)}
-      />
+        title="Pedido"
+        subtitulo={`${itemCount} ${itemCount === 1 ? 'ítem' : 'ítems'}`}
+      >
+        <CartPanel variante="hoja" submitting={submitting} error={error} onConfirm={handleConfirm} />
+      </Modal>
 
-      {/* Active Orders Panel */}
       <ActiveOrdersPanel
         open={ordersOpen}
         onClose={() => setOrdersOpen(false)}
+        orders={activeOrders}
+        loading={ordersLoading}
+        error={ordersError}
+        refetch={refetchOrders}
       />
     </div>
   )

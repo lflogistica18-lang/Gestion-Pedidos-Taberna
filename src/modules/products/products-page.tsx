@@ -1,124 +1,28 @@
 import { useState, useMemo } from 'react'
+import { Package, Plus } from 'lucide-react'
+import { Boton, EncabezadoPagina } from '@/shared/components/panel'
+import { PestanasProductos, type PestanaProductos } from './components/PestanasProductos'
+import { PanelCategorias } from './components/PanelCategorias'
+import { FiltrosProductos } from './components/FiltrosProductos'
+import { COLUMNAS_PRODUCTOS } from './components/columnasProductos'
 import { useProducts } from './hooks/useProducts'
-import { useUpsertProduct, useToggleProduct } from './hooks/useUpsertProduct'
+import { useUpsertProduct, useToggleProduct, productSchema } from './hooks/useUpsertProduct'
 import { useCategories } from './hooks/useCategories'
 import { CrudManager } from '@/shared/components/comunes/CrudManager'
 import type { CampoSchema } from '@/shared/types/base'
 import type { Product } from '@/types/database.types'
 
-type Tab = 'activos' | 'inactivos' | 'categorias'
-
-// ─── Panel de gestión de categorías ─────────────────────────────
-function CategoriasPanel() {
-  const { categories, loading, createCategory, renameCategory, deleteCategory } = useCategories()
-
-  const [newName, setNewName] = useState('')
-  const [savingNew, setSavingNew] = useState(false)
-  const [editando, setEditando] = useState<string | null>(null)
-  const [editNombre, setEditNombre] = useState('')
-
-  const handleCrear = async () => {
-    if (!newName.trim()) return
-    setSavingNew(true)
-    await createCategory(newName.trim())
-    setSavingNew(false)
-    setNewName('')
-  }
-
-  const handleIniciarEdicion = (nombre: string) => {
-    setEditando(nombre)
-    setEditNombre(nombre)
-  }
-
-  const handleGuardarEdicion = async (viejo: string) => {
-    if (!editNombre.trim() || editNombre === viejo) {
-      setEditando(null)
-      return
-    }
-    const { error } = await renameCategory(viejo, editNombre.trim())
-    if (error) alert(error)
-    setEditando(null)
-    setEditNombre('')
-  }
-
-  const handleEliminar = async (nombre: string) => {
-    if (!window.confirm(`¿Eliminar la categoría "${nombre}"?\n\nSolo se puede eliminar si no tiene productos activos.`)) return
-    const { error } = await deleteCategory(nombre)
-    if (error) alert(error)
-  }
-
-  if (loading) return <p style={{ padding: '24px', color: '#9ca3af' }}>Cargando categorías...</p>
-
-  return (
-    <div className="cat-panel">
-      <h2 className="cat-panel__title">Categorías</h2>
-      <p className="cat-panel__subtitle">
-        Al renombrar, se actualiza automáticamente en todos los productos.
-      </p>
-
-      <div className="cat-panel__list">
-        {categories.length === 0 && (
-          <p style={{ color: '#9ca3af', padding: '16px 0' }}>No hay categorías aún.</p>
-        )}
-        {categories.map(cat => (
-          <div key={cat.name} className="cat-panel__item">
-            {editando === cat.name ? (
-              <div className="cat-panel__edit-row">
-                <input
-                  autoFocus
-                  className="orders-filters__input"
-                  style={{ flex: 1 }}
-                  value={editNombre}
-                  onChange={e => setEditNombre(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') handleGuardarEdicion(cat.name)
-                    if (e.key === 'Escape') setEditando(null)
-                  }}
-                />
-                <button onClick={() => handleGuardarEdicion(cat.name)} className="btn btn--primary btn--sm">Guardar</button>
-                <button onClick={() => setEditando(null)} className="btn btn--secondary btn--sm">Cancelar</button>
-              </div>
-            ) : (
-              <div className="cat-panel__view-row">
-                <span className="cat-panel__name">
-                  <span className="cat-panel__dot" />
-                  {cat.name}
-                </span>
-                <div className="cat-panel__actions">
-                  <button onClick={() => handleIniciarEdicion(cat.name)} className="btn btn--secondary btn--sm">✏️ Renombrar</button>
-                  <button onClick={() => handleEliminar(cat.name)} className="btn btn--danger-soft btn--sm">🗑️ Eliminar</button>
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      <div className="cat-panel__new">
-        <input
-          type="text"
-          placeholder="Nueva categoría (ej: Pizzas)…"
-          value={newName}
-          onChange={e => setNewName(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') handleCrear() }}
-          className="orders-filters__input"
-          style={{ flex: 1 }}
-        />
-        <button onClick={handleCrear} disabled={savingNew || !newName.trim()} className="btn btn--primary btn--sm">
-          {savingNew ? 'Guardando…' : '+ Agregar'}
-        </button>
-      </div>
-    </div>
-  )
-}
+type Tab = PestanaProductos
 
 // ─── Página principal de Productos ──────────────────────────────
 export default function ProductsPage() {
   const [tab, setTab] = useState<Tab>('activos')
   const [catFiltro, setCatFiltro] = useState<string>('todas')
+  const [busqueda, setBusqueda] = useState('')
+  const [creando, setCreando] = useState(false)
 
   const { products, loading, error, refetch } = useProducts({
-    activeOnly: tab === 'activos',
+    activeOnly: tab !== 'inactivos',
   })
   const { upsert } = useUpsertProduct()
   const { toggle } = useToggleProduct()
@@ -126,9 +30,11 @@ export default function ProductsPage() {
 
   // Filtrar productos por categoría seleccionada
   const productosFiltrados = useMemo(() => {
-    if (catFiltro === 'todas') return products
-    return products.filter(p => p.category === catFiltro)
-  }, [products, catFiltro])
+    const q = busqueda.trim().toLowerCase()
+    return products.filter(p =>
+      (catFiltro === 'todas' || p.category === catFiltro) &&
+      (q === '' || p.name.toLowerCase().includes(q)))
+  }, [products, catFiltro, busqueda])
 
   const campos: CampoSchema[] = [
     { nombre: 'name', etiqueta: 'Nombre', tipo: 'texto', obligatorio: true },
@@ -143,7 +49,7 @@ export default function ProductsPage() {
     { nombre: 'cost', etiqueta: 'Costo', tipo: 'numero', obligatorio: false, placeholder: 'Valor de costo (referencia)' }
   ]
 
-  const handleCrear = async (datos: Partial<Product>) => {
+  const handleCrear = async (datos: Partial<Product>): Promise<{ error: string | null }> => {
     try {
       const result = await upsert({
         name: datos.name || '',
@@ -154,12 +60,12 @@ export default function ProductsPage() {
       if (!result) return { error: 'Error al crear producto' }
       refetch()
       return { error: null }
-    } catch (e: any) {
-      return { error: e.message }
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : 'Error de conexión' }
     }
   }
 
-  const handleEditar = async (id: string, datos: Partial<Product>) => {
+  const handleEditar = async (id: string, datos: Partial<Product>): Promise<{ error: string | null }> => {
     try {
       const result = await upsert({
         name: datos.name || '',
@@ -170,103 +76,96 @@ export default function ProductsPage() {
       if (!result) return { error: 'Error al actualizar producto' }
       refetch()
       return { error: null }
-    } catch (e: any) {
-      return { error: e.message }
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : 'Error de conexión' }
     }
   }
 
-  const handleDesactivar = async (id: string) => {
+  const handleDesactivar = async (id: string): Promise<{ error: string | null }> => {
     try {
       const isActivating = tab === 'inactivos'
       const ok = await toggle(id, isActivating)
       if (!ok) return { error: 'Error al modificar estado' }
       refetch()
       return { error: null }
-    } catch (e: any) {
-      return { error: e.message }
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : 'Error de conexión' }
     }
   }
 
-  const tabs: { key: Tab; label: string }[] = [
-    { key: 'activos', label: '✅ Activos' },
-    { key: 'inactivos', label: '💤 Inactivos' },
-    { key: 'categorias', label: '🏷️ Categorías' },
-  ]
+  const cambiarTab = (t: Tab) => {
+    setTab(t)
+    setCatFiltro('todas')
+    setBusqueda('')
+    setCreando(false)
+  }
+
+  const conteoPorCategoria = useMemo(() => {
+    const r: Record<string, number> = {}
+    products.forEach(p => { r[p.category] = (r[p.category] ?? 0) + 1 })
+    return r
+  }, [products])
+
+  const detalle = tab === 'inactivos'
+    ? `${products.length} ${products.length === 1 ? 'producto inactivo' : 'productos inactivos'}`
+    : tab === 'categorias'
+      ? `${categories.length} ${categories.length === 1 ? 'categoría' : 'categorías'}`
+      : `${products.length} activos en ${categories.length} categorías`
 
   return (
-    <div>
-      {/* Barra de tabs principal */}
-      <div
-        className="pos-header"
-        style={{ position: 'sticky', top: 0, zIndex: 10, gap: '12px', flexWrap: 'wrap', marginBottom: '12px' }}
-      >
-        <div
-          style={{
-            display: 'flex', gap: '4px',
-            background: '#f3f4f6', borderRadius: '10px',
-            padding: '4px', border: '1px solid #e5e7eb',
-          }}
-        >
-          {tabs.map(t => (
-            <button
-              key={t.key}
-              onClick={() => { setTab(t.key); setCatFiltro('todas') }}
-              style={{
-                padding: '6px 16px', borderRadius: '8px', border: 'none',
-                cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem',
-                transition: 'all 200ms',
-                background: tab === t.key ? 'white' : 'transparent',
-                color: tab === t.key ? '#ea580c' : '#6b7280',
-                boxShadow: tab === t.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-              }}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-      </div>
+    <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6 sm:py-6">
+      <EncabezadoPagina
+        icono={<Package size={22} />}
+        titulo="Productos"
+        detalle={(loading || error) && tab !== 'categorias' ? undefined : detalle}
+        acciones={tab !== 'categorias' && (
+          <Boton variante="primario" onClick={() => setCreando(true)}>
+            <Plus size={16} />Nuevo producto
+          </Boton>
+        )}
+        pestanas={<PestanasProductos valor={tab} onCambiar={cambiarTab} />}
+      />
 
       {tab === 'categorias' ? (
-        <CategoriasPanel />
+        <PanelCategorias conteos={loading ? undefined : conteoPorCategoria} />
       ) : (
         <>
-          {/* Filtro por categoría — solo visible en activos/inactivos */}
-          {categories.length > 0 && (
-            <div style={{ padding: '0 16px 12px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-              <button
-                onClick={() => setCatFiltro('todas')}
-                className={`pos-tab ${catFiltro === 'todas' ? 'pos-tab--active' : ''}`}
-                style={{ fontSize: '0.8rem', padding: '5px 14px' }}
-              >
-                Todas
-              </button>
-              {categories.map(cat => (
-                <button
-                  key={cat.name}
-                  onClick={() => setCatFiltro(cat.name)}
-                  className={`pos-tab ${catFiltro === cat.name ? 'pos-tab--active' : ''}`}
-                  style={{ fontSize: '0.8rem', padding: '5px 14px' }}
-                >
-                  {cat.name}
-                </button>
-              ))}
-            </div>
-          )}
+          <FiltrosProductos
+            busqueda={busqueda}
+            onBusqueda={setBusqueda}
+            categoria={catFiltro}
+            onCategoria={setCatFiltro}
+            total={products.length}
+            opciones={categories.map(c => ({ nombre: c.name, cantidad: conteoPorCategoria[c.name] ?? 0 }))}
+          />
 
           <CrudManager<Product>
-            titulo={
-              tab === 'activos'
-                ? `Productos Activos${catFiltro !== 'todas' ? ` · ${catFiltro}` : ''}`
-                : `Productos Inactivos${catFiltro !== 'todas' ? ` · ${catFiltro}` : ''}`
-            }
+            nombreSingular="producto"
             datos={productosFiltrados}
             campos={campos}
+            columnas={COLUMNAS_PRODUCTOS}
             cargando={loading}
             error={error}
+            hayFiltro={busqueda.trim() !== '' || catFiltro !== 'todas'}
+            mensajeVacio={tab === 'inactivos' ? 'No hay productos inactivos' : undefined}
+            permitirCrear={tab !== 'inactivos'}
+            creando={creando}
+            onCerrarCrear={() => setCreando(false)}
+            onPedirCrear={() => setCreando(true)}
+            subtituloEditar={p => p.category}
             onCrear={handleCrear}
             onEditar={handleEditar}
             onDesactivar={handleDesactivar}
             onRecargar={refetch}
+            validar={(d) => {
+              const r = productSchema.safeParse({
+                name: d.name,
+                category: d.category,
+                price: Number(d.price),
+                cost: Number(d.cost ?? 0),
+              })
+              return r.success ? null : r.error.issues[0].message
+            }}
           />
         </>
       )}

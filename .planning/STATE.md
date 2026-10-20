@@ -1,25 +1,84 @@
+> **Vista derivada.** El estado que manda es `estado_proyecto.md` en la raíz (formato Omni v7):
+> si esto lo contradice, gana aquel.
+
 # Project State
 
-## Current Phase
-Phase 1: Foundation — Not Started
+## DÓNDE QUEDAMOS (2026-10-19)
+
+**Fase:** las 5 fases del roadmap están construidas y en producción (VPS, puerto 8090).
+Hoy el trabajo es **remediación de la auditoría Omni** + preparar la siguiente etapa.
+
+**Último hecho:** auditoría Omni v7.2 → 53/100 (`AUDITORIA-OMNI-2026-10-19.md`).
+Remediación aplicada en una sola pasada, sin probar en vivo:
+- Migración `010_seguridad_rls_y_columnas.sql`: RLS real con rol `app_metadata.rol = 'taberna'`,
+  sin `anon`, sin DELETE, columnas `products.cost/deleted_at`, índices, `renombrar_categoria()`.
+- `AuthGuard` exige el rol; errores visibles en Caja/Cocina/Reportes/Historial;
+  reportes excluyen papelera y cancelados; promedio de cocina arreglado; sin borrado físico;
+  un solo canal realtime; cero `any`; mobile 44px/16px; deps actualizadas; código muerto fuera.
+
+**⚠️ ANTES DE TODO — la base de la Taberna está en la papelera (dato del Omni, auditoría 2026-10-07):**
+- Las 5 tablas de `sgp` se movieron al schema `papelera_sgp` del proyecto Supabase `zslsosunvsbxxnzeckpg`
+  (el que comparte con dropshipping y cotizador). **Se borran definitivamente después del 2026-11-07.**
+- El contenedor del VPS está apagado (`docker compose down` en `/root/Gestion-Pedidos-Taberna`), el puerto 8090
+  cerrado al mundo y `pedidostaberna.duckdns.org` ya no resuelve (el host sigue en el proxy apuntando a IP:8090).
+- El SGP no está en `omni/proyectos/` (no es submódulo del Omni).
+- Para volver: restaurar a `sgp` (`ALTER TABLE papelera_sgp.<tabla> SET SCHEMA sgp;` × 5) o, mejor, llevarlo a un
+  proyecto Supabase propio. Recién después aplicar 010/011/012.
+
+**Próximo paso (cuando Lucas esté):**
+1. Aplicar `010` en el SQL editor de Supabase → tiene que devolver `OK`.
+   ⚠️ Antes, ajustar el `WHERE email ILIKE '%@sgc-taberna.com'` del paso 4 si los usuarios
+   usan otro dominio. Los usuarios tienen que **cerrar sesión y volver a entrar** para que el
+   JWT traiga el rol.
+2. Probar todo junto: login, crear pedido (local/delivery/directo), KDS, entregar, papelera,
+   restaurar, productos, categorías (renombrar), reportes con rango de fechas.
+3. Deploy (ver CLAUDE.md). El `.env` sigue versionado a propósito: sacarlo del repo rompe el
+   `git pull` del VPS; cuando se saque, antes copiar `.env` fuera y restaurarlo.
+
+**Cocina escondida (2026-10-19):** `COCINA_ACTIVA = false` en `src/shared/lib/config.ts`.
+Sin pestaña Cocina; al confirmar un pedido se imprime solo el ticket (ítems con precio, total,
+pago, cliente y dirección si hay) con el diálogo del navegador. La caja marca "Entregar" desde
+cualquier estado activo. El KDS sigue en `src/modules/kds/` para reactivarlo con `true`.
+
+**Siguiente etapa (pedida por Lucas):**
+- Conexión a **comandera** (impresora térmica): requiere print server local
+  (`node-thermal-printer`), ver CLAUDE.md "Stack Patterns".
+- **Mejora de UI** alineada con las apps nuevas (estilo Panel / tokens de tema del Omni,
+  `sistema/diseno/GUIA.md`). Hoy hay 58 colores hardcodeados en `.tsx` y ninguno tokenizado.
+- **Direcciones de pedidos**: hoy `orders.delivery_address` es texto libre; falta libreta de
+  direcciones por cliente.
+- **Pantalla Configuración** — HECHA 2026-10-19 (migración 012):
+  tabla `sgp.configuracion` + pantalla estilo Panel (submenú + tarjeta por sección + "Guardar cambios").
+  Secciones: Local (nombre, dirección, teléfono → ticket) · Impresión (modo navegador/servidor,
+  papel 58/80mm, pie del ticket) · Pantallas (Cocina sí/no) · Medios de pago ofrecidos en Caja.
+  Reemplaza las constantes de `src/shared/lib/config.ts` y el `.env` del print server donde aplique.
+- Evaluar mover el SGP a un proyecto Supabase propio (hoy comparte proyecto, schema `sgp`).
+
+**Bloqueantes:** ninguno de código. Pendiente del dueño: aplicar la migración y asignar rol.
+
+**Pendiente de auditoría no resuelto en esta pasada:** tokens de tema (va con la mejora de UI),
+`select('*')` en queries, fuente Inter desde Google Fonts (PWA sin internet pierde tipografía).
+
+---
 
 ## Project Reference
 See: .planning/PROJECT.md (updated 2026-04-12)
 **Core value:** Que ningún pedido se pierda y que al final del día se sepa exactamente cuánto se vendió y por qué método de pago.
-**Current focus:** Phase 1
 
 ## Phase Progress
 
 | Phase | Status | Started | Completed |
 |-------|--------|---------|-----------|
-| 1 | Not Started | — | — |
-| 2 | Not Started | — | — |
-| 3 | Not Started | — | — |
-| 4 | Not Started | — | — |
-| 5 | Not Started | — | — |
-
-## Active Context
-(Empty — populated during execution)
+| 1 Foundation | Done | 2026-04 | 2026-04 |
+| 2 Product Catalog | Done | 2026-04 | 2026-04 |
+| 3 POS Order Entry | Done | 2026-04 | 2026-04 |
+| 4 KDS Kitchen Display | Done | 2026-04 | 2026-04 |
+| 5 Reports & Polish | Done | 2026-04 | 2026-04-20 |
+| 6 Remediación Omni | In progress | 2026-10-19 | — |
 
 ## Decisions Log
-(Empty — populated during execution)
+- 2026-10-19 — Rol de acceso en `app_metadata.rol = 'taberna'` (no user_metadata). Proyecto
+  Supabase compartido → "está logueado" no alcanza como filtro.
+- 2026-10-19 — Papelera (`deleted_at`) y `cancelado` NO cuentan en reportes. Se elimina el
+  borrado físico de ventas; la papelera ya "resta de caja".
+- 2026-10-19 — `.env` queda versionado hasta que se cambie el deploy a `--build-arg`.

@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { supabase } from '@/shared/lib/supabase'
+import { useUpdateOrderStatus } from '@/modules/pos/hooks/useUpdateOrderStatus'
 import type { KdsOrder } from '../hooks/useKdsOrders'
+import { useMinutosDesde } from '@/shared/hooks/useMinutosDesde'
 
 interface KdsOrderCardProps {
   order: KdsOrder
@@ -9,28 +10,25 @@ interface KdsOrderCardProps {
 
 export function KdsOrderCard({ order, onUpdated }: KdsOrderCardProps) {
   const [updating, setUpdating] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const { updateStatus } = useUpdateOrderStatus()
 
-  const minutesAgo = Math.floor(
-    (Date.now() - new Date(order.created_at).getTime()) / 60000
-  )
+  const minutesAgo = useMinutosDesde(order.created_at)
 
   const isPending = order.status === 'pendiente'
 
   const handleNext = async () => {
     if (updating) return
     setUpdating(true)
-    try {
-      const nextStatus = isPending ? 'en_preparacion' : 'listo'
-      await supabase
-        .from('orders')
-        .update({ status: nextStatus })
-        .eq('id', order.id)
-      onUpdated()
-    } catch (e: any) {
-      console.error(e)
-    } finally {
-      setUpdating(false)
+    setErrorMsg(null)
+    const nextStatus = isPending ? 'en_preparacion' : 'listo'
+    const { error } = await updateStatus(order.id, nextStatus)
+    setUpdating(false)
+    if (error) {
+      setErrorMsg(error)
+      return
     }
+    onUpdated()
   }
 
   return (
@@ -70,6 +68,12 @@ export function KdsOrderCard({ order, onUpdated }: KdsOrderCardProps) {
       >
         {updating ? '⏳ Actualizando...' : isPending ? '👨‍🍳 Empezar a cocinar' : '✅ ¡Listo para entregar!'}
       </button>
+
+      {errorMsg && (
+        <div className="kds-card__notes" role="alert">
+          ⚠️ No se pudo actualizar: {errorMsg}
+        </div>
+      )}
     </div>
   )
 }

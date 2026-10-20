@@ -1,73 +1,46 @@
-# React + TypeScript + Vite
+# SGP — Sistema de Gestión de Pedidos Gastronómicos
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+PWA de gestión de ventas y producción para La Taberna (atención en local y delivery). Centraliza la toma de pedidos (POS), la comunicación con cocina mediante un panel digital en tiempo real (KDS) y registra todas las ventas para tener trazabilidad: cuánto se vendió y por qué método de pago. Pensada para tablets y celulares con WiFi.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Vite + React 19 + TypeScript, Tailwind CSS v4, Zustand, React Router v7, Supabase (PostgreSQL + Realtime + Auth), vite-plugin-pwa, Zod.
 
-## React Compiler
+## Desarrollo
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev      # servidor de desarrollo
+npm run build    # tsc -b + build de producción
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Variables de entorno
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Copiá `.env.example` a `.env` y completá con los datos de tu proyecto Supabase:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 ```
+VITE_SUPABASE_URL=https://TU-PROYECTO.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJ...
+```
+
+Vite las lee en tiempo de build (desde `.env` o desde variables de entorno / `ARG` de Docker).
+
+## Base de datos
+
+Las migraciones están en `supabase/migrations`. Aplicarlas en orden (por nombre de archivo) desde el SQL editor de Supabase.
+
+## Deploy (VPS)
+
+Servidor Ubuntu con docker-compose v1.29. En la carpeta del proyecto del VPS (con su `.env`):
+
+```bash
+git pull && \
+docker build --no-cache -t sgp-taberna:latest . && \
+docker-compose stop && \
+docker-compose rm -f && \
+docker-compose up -d
+```
+
+- El tag de la imagen debe ser exactamente `sgp-taberna:latest` (el que pide `docker-compose.yml`); otro tag deja corriendo la imagen vieja.
+- Nunca usar `--force-recreate`: falla con `KeyError: 'ContainerConfig'` en docker-compose v1.29.
+- El error "network has active endpoints" al hacer `down` es normal y no bloquea el `up -d`.

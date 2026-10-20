@@ -1,25 +1,30 @@
 // Estado vacio — cuando no hay datos para mostrar
 
+import type { ReactNode } from 'react'
+import { Inbox } from 'lucide-react'
+import { Boton } from '@/shared/components/panel'
+
 interface Props {
   mensaje: string
   accion?: {
     texto: string
     onClick: () => void
   }
+  /** Ícono propio; por defecto una bandeja vacía. */
+  icono?: ReactNode
 }
 
-export function EstadoVacio({ mensaje, accion }: Props) {
+export function EstadoVacio({ mensaje, accion, icono }: Props) {
   return (
-    <div className="flex flex-col items-center justify-center py-12 text-center">
-      <div className="text-gray-400 text-4xl mb-3">0</div>
-      <p className="text-gray-500 mb-4">{mensaje}</p>
+    <div className="flex flex-col items-center justify-center px-4 py-12 text-center">
+      <span className="mb-3 flex size-14 items-center justify-center rounded-full bg-superficie-2 text-texto-secundario" aria-hidden="true">
+        {icono ?? <Inbox size={26} />}
+      </span>
+      <p className="mb-4 text-texto-secundario">{mensaje}</p>
       {accion && (
-        <button
-          onClick={accion.onClick}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 min-h-[44px]"
-        >
+        <Boton variante="primario" onClick={accion.onClick}>
           {accion.texto}
-        </button>
+        </Boton>
       )}
     </div>
   )

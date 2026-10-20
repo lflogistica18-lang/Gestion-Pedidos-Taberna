@@ -6,26 +6,38 @@ export interface OrderWithItems extends Order {
   order_items: OrderItem[]
 }
 
+export interface UseActiveOrdersResult {
+  orders: OrderWithItems[]
+  loading: boolean
+  error: string | null
+  activeCount: number
+  refetch: () => Promise<void>
+}
+
 const ACTIVE_STATUSES = ['pendiente', 'en_preparacion', 'listo'] as const
 
-export function useActiveOrders() {
+export function useActiveOrders(): UseActiveOrdersResult {
   const [orders, setOrders] = useState<OrderWithItems[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const fetch = useCallback(async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error: err } = await supabase
         .from('orders')
         .select('*, order_items(*)')
         .is('deleted_at', null)
         .in('status', ACTIVE_STATUSES)
         .order('created_at', { ascending: true })
 
-      if (!error && data) {
-        setOrders(data as OrderWithItems[])
+      if (err) {
+        setError(err.message)
+      } else {
+        setError(null)
+        setOrders((data ?? []) as OrderWithItems[])
       }
-    } catch (e: any) {
-      console.error(e)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error de conexión')
     } finally {
       setLoading(false)
     }
@@ -55,5 +67,5 @@ export function useActiveOrders() {
 
   const activeCount = orders.length
 
-  return { orders, loading, activeCount, refetch: fetch }
+  return { orders, loading, error, activeCount, refetch: fetch }
 }

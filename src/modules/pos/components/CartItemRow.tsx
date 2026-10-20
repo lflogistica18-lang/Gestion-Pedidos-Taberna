@@ -1,5 +1,8 @@
+import { Trash2 } from 'lucide-react'
+import { fmtMonto, IconButton } from '@/shared/components/panel'
 import { useCartStore } from '../store/useCartStore'
 import type { CartItem } from '../store/useCartStore'
+import { ControlCantidad } from './ControlCantidad'
 
 interface CartItemRowProps {
   item: CartItem
@@ -10,37 +13,28 @@ export function CartItemRow({ item }: CartItemRowProps) {
   const removeItem = useCartStore((s) => s.removeItem)
 
   return (
-    <div className="cart-item">
-      <div className="cart-item__info">
-        <span className="cart-item__name">{item.productName}</span>
-        <span className="cart-item__price">
-          ${(item.unitPrice * item.quantity).toLocaleString('es-AR')}
+    <li className="rounded-xl border border-borde-sutil bg-bg-principal p-3">
+      <div className="flex items-start justify-between gap-3">
+        <span className="min-w-0 break-words text-sm font-medium text-texto-primario">{item.productName}</span>
+        <span className="shrink-0 text-sm font-semibold tabular-nums text-texto-primario">
+          {fmtMonto(item.unitPrice * item.quantity)}
         </span>
       </div>
-      <div className="cart-item__controls">
-        <button
-          className="cart-item__btn"
-          onClick={() => updateQuantity(item.productId, -1)}
-          aria-label={`Quitar uno de ${item.productName}`}
-        >
-          −
-        </button>
-        <span className="cart-item__qty">{item.quantity}</span>
-        <button
-          className="cart-item__btn"
-          onClick={() => updateQuantity(item.productId, +1)}
-          aria-label={`Agregar uno de ${item.productName}`}
-        >
-          +
-        </button>
-        <button
-          className="cart-item__remove"
+      <div className="mt-1 flex items-center justify-between">
+        <ControlCantidad
+          nombre={item.productName}
+          cantidad={item.quantity}
+          onRestar={() => updateQuantity(item.productId, -1)}
+          onSumar={() => updateQuantity(item.productId, +1)}
+        />
+        <IconButton
+          etiqueta={`Eliminar ${item.productName} del carrito`}
+          variante="peligro"
           onClick={() => removeItem(item.productId)}
-          aria-label={`Eliminar ${item.productName} del carrito`}
         >
-          🗑
-        </button>
+          <Trash2 size={18} />
+        </IconButton>
       </div>
-    </div>
+    </li>
   )
 }

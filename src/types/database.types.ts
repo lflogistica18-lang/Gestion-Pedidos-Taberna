@@ -1,7 +1,16 @@
 export type ProductCategory = string
 export type OrderStatus = 'pendiente' | 'en_preparacion' | 'listo' | 'entregado' | 'cancelado'
 export type OrderType = 'local' | 'delivery' | 'directo'
-export type PaymentMethod = 'efectivo' | 'transferencia'
+export type PaymentMethod = 'efectivo' | 'debito' | 'transferencia'
+
+export interface ProductCategoryRow {
+  id: string
+  name: string
+  sort_order: number
+  created_at: string
+  updated_at: string
+  deleted_at: string | null
+}
 
 export interface Product {
   id: string
