@@ -23,7 +23,8 @@ VITE_SUPABASE_URL=https://TU-PROYECTO.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJ...
 ```
 
-Vite las lee en tiempo de build (desde `.env` o desde variables de entorno / `ARG` de Docker).
+Vite las lee en tiempo de build (desde el `.env`, que entra a la imagen con `COPY . .`; el Dockerfile no declara `ARG`/`ENV`
+para ellas porque vacías pisarían al `.env`).
 
 ## Base de datos
 

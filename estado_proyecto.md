@@ -13,24 +13,24 @@
 
 ## DÓNDE QUEDAMOS — leer primero al retomar (maximo 40 lineas)
 
-**Fase actual:** 6 — Puesta en marcha en producción. Pasos 1 y 2 hechos; sigue el **paso 3 (VPS)**.
-**Lo ultimo que se hizo (2026-10-20, sesión en la nube guiando a Lucas):**
-- PR #1 mergeado: todo el código está en `master` (`0cc4710`). Se deploya desde `master`.
-- Paso 1 Supabase `zslsosunvsbxxnzeckpg` ✅: rol `taberna` dado a mano a la usuaria existente
-  **`jaqui@lataberna.com`** (no es `@sgc-taberna.com`, el WHERE del script no la toma); luego
-  `instalar_sgp_desde_cero.sql` corrido entero → verificación OK. Comprobado: rol_jaqui =
-  taberna, 1 fila en `sgp.configuracion`, 17 productos de ejemplo. `sgp` ya estaba en Exposed schemas.
-- Paso 2 DuckDNS ✅: `pedidostaberna.duckdns.org` → 187.77.247.24 (nslookup OK).
-**Proximo paso concreto (desde la compu, sesión local con la llave SSH):** `docs/PUESTA-EN-MARCHA.md`
-3. VPS: `ssh root@187.77.247.24` → `cd /root/Gestion-Pedidos-Taberna` → `git fetch origin &&
-   git checkout master && git pull` → `cat .env | cut -d= -f1` (VITE_SUPABASE_URL y
-   VITE_SUPABASE_ANON_KEY) → `docker build --no-cache -t sgp-taberna:latest .` →
-   `docker-compose stop; docker-compose rm -f; docker-compose up -d` (NUNCA `--force-recreate`)
-   → `curl 127.0.0.1:8090` → 200. Si el build falla, leer el error, corregir en el repo, push, repetir.
-4. Proxy (`panel-lucas.duckdns.org`): host `pedidostaberna` → `sgp-taberna-front:80`, Let's
-   Encrypt + Force SSL.
+**Fase actual:** 6 — Puesta en marcha en producción. Pasos 1, 2 y 3 hechos; sigue el **paso 4 (proxy)**.
+**Lo ultimo que se hizo (2026-10-20, sesión local con la llave SSH):**
+- Pasos 1 (Supabase, rol a `jaqui@lataberna.com`, script OK) y 2 (DuckDNS → 187.77.247.24) ✅ antes.
+- Paso 3 VPS ✅: `sgp-taberna-front` corre desde `master` (`65c8636`), `curl 127.0.0.1:8090` → 200,
+  está en `red-proxy` y el bundle trae la URL de Supabase. Hubo dos arreglos en el camino:
+  - `98c07ad` `react-is` como dependencia directa (recharts 3 lo pide como peer y el Dockerfile
+    instala con `--legacy-peer-deps`, que no instala peers → el build fallaba).
+  - `65c8636` sacadas las `ARG/ENV VITE_SUPABASE_*` del Dockerfile: sin `--build-arg` quedaban
+    vacías y pisaban el `.env` → el bundle salía sin URL ("Faltan variables" al abrir).
+- Paso 4: el host `pedidostaberna.duckdns.org` YA existe en NPM con SSL válido, pero apunta al
+  destino viejo `187.77.247.24:8090` → **502** (el 8090 ahora escucha solo en 127.0.0.1).
+  Desde NPM, `http://sgp-taberna-front:80` responde 200.
+**Proximo paso concreto:** `docs/PUESTA-EN-MARCHA.md`
+4. Panel `https://panel-lucas.duckdns.org` → Proxy Hosts → `pedidostaberna.duckdns.org` → Edit →
+   Forward Hostname `sgp-taberna-front`, Forward Port `80`, scheme `http` → Save. Abrir
+   `https://pedidostaberna.duckdns.org` → pantalla de login.
 5. Primer uso: entrar con jaqui, Configuración (local, papel 80 mm), productos reales, PWA, RawBT.
-Una sesión en la nube NO llega al VPS (sin llave, puerto 22 cerrado): el 3 y 4 van en la compu.
+Una sesión en la nube NO llega al VPS (sin llave, puerto 22 cerrado): deploys desde la compu.
 **Bloqueantes:** ninguno conocido.
 **Pendientes del dueño:**
 - Comprar la comandera WiFi 80 mm (ESC/POS, USB+Ethernet+WiFi) e instalar RawBT en el celu.
@@ -40,7 +40,7 @@ Una sesión en la nube NO llega al VPS (sin llave, puerto 22 cerrado): el 3 y 4 
   (el script solo cubre `@sgc-taberna.com`). Salir y volver a entrar para que el rol llegue al token.
 - El SQL Editor de Supabase solo muestra el resultado de la última sentencia.
 - `.env` sigue versionado (anon key pública por diseño); sacarlo exige ajustar el deploy.
-- Hasta el paso 2 todo se verificó con mocks; la app todavía no corrió contra la base real.
+- La app todavía no se probó en el navegador contra la base real (falta el paso 4).
 
 ---
 
@@ -53,7 +53,7 @@ Una sesión en la nube NO llega al VPS (sin llave, puerto 22 cerrado): el 3 y 4 
 | Impresión (ticket 80 mm, RawBT, print server) | hecho (sin hardware) | 2026-10-19 | `print-server/README.md` |
 | UI estilo Panel | hecho | 2026-10-19 | `docs/notas/estilo-panel.md` |
 | Configuración | hecho | 2026-10-19 | migración 012 |
-| 6 - Deploy producción | en curso (base y DNS hechos) | | `docs/PUESTA-EN-MARCHA.md` |
+| 6 - Deploy producción | en curso (base, DNS y VPS hechos; falta proxy) | | `docs/PUESTA-EN-MARCHA.md` |
 | 7 - Explicación (/omni-explicar) + operación | pendiente | | |
 
 ## Migraciones
