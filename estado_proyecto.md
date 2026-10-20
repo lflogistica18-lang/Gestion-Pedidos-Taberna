@@ -1,7 +1,7 @@
 # Estado del Proyecto
 
 ## Proyecto: SGP — Gestión de Pedidos La Taberna
-## Ultima actualizacion: 2026-10-20
+## Ultima actualizacion: 2026-10-20 (tarde)
 ## Version Omni: v7.2
 ## Starter: no aplica (proyecto anterior al Omni, sin backend; ver CLAUDE.md "Omni")
 
@@ -13,24 +13,26 @@
 
 ## DÓNDE QUEDAMOS — leer primero al retomar (maximo 40 lineas)
 
-**Fase actual:** 6 — Puesta en marcha: pasos 1–4 hechos, la app anda en producción. Sigue el
-**paso 5 (primer uso)** y después la **Fase 7: cambios de Lucas** (lista abajo).
-**Lo ultimo que se hizo (2026-10-20, sesión local con la llave SSH):**
-- Pasos 1 (Supabase, rol a `jaqui@lataberna.com`) y 2 (DuckDNS → 187.77.247.24) ✅ antes.
-- Paso 3 VPS ✅: `sgp-taberna-front` corre desde `master`, en `red-proxy`, bundle con la URL de
-  Supabase. Dos arreglos en el camino: `98c07ad` `react-is` como dependencia directa (recharts 3
-  lo pide como peer y el Dockerfile usa `--legacy-peer-deps`) y `65c8636` sin `ARG/ENV
-  VITE_SUPABASE_*` en el Dockerfile (vacías pisaban el `.env` → "Faltan variables" al abrir).
-- Paso 4 Proxy ✅: Lucas apuntó el host de NPM a `sgp-taberna-front:80` (estaba en el viejo
-  `187.77.247.24:8090` → 502). `https://pedidostaberna.duckdns.org` → 200 y "cargó perfecto".
-- Impresora que YA tiene el local: **Nictom IT03**, 80 mm, cortador automático, con cable. No hay
-  ficha pública: falta ver atrás si tiene puerto de red (RJ45) o solo USB.
+**Fase actual:** 7 — Cambios de Lucas: tanda 1 (menú, Pedido +, Caja) EN PRODUCCIÓN `d0eddb3`.
+Sigue: logo (cuando Lucas lo pase), margen (charlar), y en paralelo el primer uso (paso 5).
+**Lo ultimo que se hizo (2026-10-20, sesión local):**
+- Menú: Caja (`/reports`, inicio) → Pedido + (`/pos`) → Cocina → Historial → Productos. Rutas URL
+  iguales; login y `/` redirigen a `/reports`.
+- Pedido +: lista compacta (`FilaProducto`, 49 px, + de 44×44), buscador sin acentos, sin
+  "Directa" en el selector (los `directo` viejos se siguen mostrando). 9 filas visibles a 390×844.
+- Caja: tendencia en el banner (Hoy = acumulado por hora; varios días = por día), refresco cada
+  60 s si el período incluye hoy, "Qué días se vende más" (opción B elegida por Lucas: barras
+  Lun→Dom con monto, promedio por día de las últimas 8 semanas). "Más vendidos" sin gráfico.
+- QA con Chromium + Supabase mockeado (`capturas-fase7/`, no versionado). Deploy con copia de la
+  imagen anterior: vuelta atrás = `docker tag sgp-taberna:anterior-65c8636 sgp-taberna:latest` + up -d.
+- "Batería de consulta": Lucas dijo que lo olvidemos.
+- Ojo: el VPS levanta con `docker compose` (plugin v2), no `docker-compose` v1 como dice CLAUDE.md.
 **Proximo paso concreto:**
-1. Impresora: con RJ45 → al router, autotest (FEED al prender) para la IP, RawBT red 9100. Solo
-   USB → RawBT por USB con adaptador OTG desde el celu (el `print-server` hoy solo habla por red).
-   En los dos casos NO hace falta comprar la comandera WiFi.
-2. Primer uso: Configuración (local, papel 80 mm), productos reales, instalar la PWA en el celu.
-3. Fase 7: arrancar por la lista "Pedidos de Lucas" (abajo). Charlar primero el margen.
+1. Logo: Lucas lo pega en el chat → reemplazar `public/logo-taberna.png` y redeploy; el botón
+   en Configuración → Local (migración 013 + Storage) va después.
+2. Charlar el margen (un % para todo o por categoría).
+3. Impresora IT03 y primer uso (ver Pendientes del dueño).
+4. Deuda: `useDashboardStats` trae como máximo 1000 pedidos por consulta (paginar).
 **Bloqueantes:** ninguno conocido.
 **Pendientes del dueño:**
 - Mirar la parte de atrás de la IT03 (RJ45 o USB) e instalar RawBT en el celu.
@@ -46,7 +48,7 @@
 
 ## Pedidos de Lucas (2026-10-20) — Fase 7, para la próxima sesión
 
-Anotados tal como los dijo, después de ver la app andando. Nada de esto está hecho.
+Anotados tal como los dijo. **Hecho 2026-10-20 (`d0eddb3`): menú, pantalla principal y Pedido +.** Queda Configuración (margen y logo).
 
 **Menú y orden de pantallas** (hoy: Caja, Productos, Historial, Reportes, Configuración):
 1. **Reporte primero**: es lo primero que se mira, y de ahí para abajo. Nombre: "Caja" o "Flujo
@@ -91,7 +93,7 @@ Anotados tal como los dijo, después de ver la app andando. Nada de esto está h
 | UI estilo Panel | hecho | 2026-10-19 | `docs/notas/estilo-panel.md` |
 | Configuración | hecho | 2026-10-19 | migración 012 |
 | 6 - Deploy producción | hecho (falta primer uso) | 2026-10-20 | `docs/PUESTA-EN-MARCHA.md` |
-| 7 - Cambios de Lucas (menú, reporte, lista de productos, logo, margen) | pendiente | | "Pedidos de Lucas" arriba |
+| 7 - Cambios de Lucas (menú, reporte, lista de productos, logo, margen) | en curso (menú, Caja y Pedido + en prod) | | "Pedidos de Lucas" arriba |
 | 8 - Explicación (/omni-explicar) + operación | pendiente | | |
 
 ## Migraciones
