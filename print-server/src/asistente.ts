@@ -60,8 +60,8 @@ async function pedirUsuario(opc: OpcionesAsistente): Promise<{ email: string; pa
   decir('PASO 1 de 3 — Usuario de impresión');
   decir('   Es el usuario que te dieron para este programa (no es el de la app de pedidos).');
   for (;;) {
-    const email = await preguntar('   Email', opc.previa?.email);
-    const password = await preguntarClave('   Contraseña (no se ve mientras escribís)');
+    const email = (await preguntar('   Email', opc.previa?.email)).toLowerCase();
+    const password = await preguntarClave('   Contraseña');
     if (!email || !password) {
       decir('   Faltó el email o la contraseña. Probemos de nuevo.\n');
       continue;

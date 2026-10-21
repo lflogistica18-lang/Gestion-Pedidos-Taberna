@@ -4,16 +4,6 @@
  * cuando la entrada viene por tubería, que es como se prueba).
  */
 import readline from 'node:readline';
-import { Writable } from 'node:stream';
-
-let silenciado = false;
-const salidaSilenciable = new Writable({
-  write(chunk, _enc, cb) {
-    if (!silenciado) process.stdout.write(chunk);
-    cb();
-  },
-});
-
 let rl: readline.Interface | null = null;
 const lineas: string[] = [];
 let esperando: { ok: (l: string) => void; fallo: (e: Error) => void } | null = null;
@@ -23,7 +13,7 @@ function iniciar(): readline.Interface {
   if (rl) return rl;
   rl = readline.createInterface({
     input: process.stdin,
-    output: salidaSilenciable,
+    output: process.stdout,
     terminal: Boolean(process.stdin.isTTY),
   });
   rl.on('line', (l) => {
@@ -64,17 +54,14 @@ export async function preguntar(texto: string, porDefecto?: string): Promise<str
   return r || porDefecto || '';
 }
 
-/** Contraseña: no se muestra lo que se escribe (si la consola lo permite). */
+/**
+ * Contraseña: se muestra mientras se escribe. Ocultarla con readline silenciado fallaba en la
+ * consola de Windows (Bun): llegaba con el Enter pegado o vacía. La compu es del local y se
+ * escribe una sola vez; se limpia el fin de línea por si la consola manda \r.
+ */
 export async function preguntarClave(texto: string): Promise<string> {
   process.stdout.write(texto + ': ');
-  const ocultar = Boolean(process.stdin.isTTY);
-  silenciado = ocultar;
-  try {
-    return await leerLinea();
-  } finally {
-    silenciado = false;
-    if (ocultar) process.stdout.write('\n');
-  }
+  return (await leerLinea()).replace(/[\r\n]+$/, '');
 }
 
 /** Pregunta de sí/no. Devuelve true para "s". */
