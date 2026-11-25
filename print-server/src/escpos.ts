@@ -103,11 +103,33 @@ export function envolver(texto: string, ancho: number): string[] {
 
 export type Alineacion = 'izq' | 'centro' | 'der';
 
+/** Un tramo de texto con un mismo formato dentro de una línea impresa. */
+export interface Segmento {
+  texto: string;
+  /** Doble alto (GS ! 0x01): no cambia las columnas. */
+  alto: boolean;
+  /** Doble ancho (GS ! 0x10): divide las columnas por 2. */
+  ancho: boolean;
+  negrita: boolean;
+}
+
+/** Una línea del ticket tal como sale en papel (para espejo y simulación gráfica). */
+export interface LineaModelo {
+  segmentos: Segmento[];
+  alineacion: Alineacion;
+}
+
 export class EscPos {
   private partes: Buffer[] = [];
   private espejo: string[] = [];
+  private modelo: LineaModelo[] = [];
   private alineacion: Alineacion = 'izq';
-  private esDoble = false;
+  // Formato "declarado" (el que pidió quien arma el ticket) y formato real de la impresora.
+  private esAlto = false;
+  private esAncho = false;
+  private esNegrita = false;
+  private hwTam = 0;
+  private hwNeg = false;
 
   constructor(
     public readonly columnas: number,
@@ -117,9 +139,9 @@ export class EscPos {
     this.partes.push(Buffer.from([ESC, 0x74, codepage & 0xff])); // ESC t n : code page
   }
 
-  /** Ancho útil en caracteres con el tamaño actual (el doble tamaño ocupa la mitad). */
+  /** Ancho útil en caracteres con el tamaño actual (el doble ancho ocupa la mitad; el doble alto no cambia nada). */
   get ancho(): number {
-    return this.esDoble ? Math.floor(this.columnas / 2) : this.columnas;
+    return this.esAncho ? Math.floor(this.columnas / 2) : this.columnas;
   }
 
   alinear(a: Alineacion): this {
@@ -130,22 +152,69 @@ export class EscPos {
   }
 
   negrita(activa: boolean): this {
-    this.partes.push(Buffer.from([ESC, 0x45, activa ? 1 : 0])); // ESC E n
+    this.esNegrita = activa;
+    this.aplicar(this.esAlto, this.esAncho, activa);
     return this;
   }
 
+  /** Doble alto y doble ancho a la vez (como siempre). */
   doble(activo: boolean): this {
-    this.esDoble = activo;
-    this.partes.push(Buffer.from([GS, 0x21, activo ? 0x11 : 0x00])); // GS ! n
+    return this.tamano(activo, activo);
+  }
+
+  /** Tamaño por separado: alto (más alto, mismas columnas) y ancho (más ancho, mitad de columnas). */
+  tamano(alto: boolean, ancho: boolean): this {
+    this.esAlto = alto;
+    this.esAncho = ancho;
+    this.aplicar(alto, ancho, this.esNegrita);
     return this;
+  }
+
+  /** Doble alto solo. */
+  alto(activo: boolean): this {
+    return this.tamano(activo, false);
+  }
+
+  private aplicar(alto: boolean, ancho: boolean, negrita: boolean): void {
+    const n = (alto ? 0x01 : 0) | (ancho ? 0x10 : 0);
+    if (n !== this.hwTam) {
+      this.partes.push(Buffer.from([GS, 0x21, n])); // GS ! n
+      this.hwTam = n;
+    }
+    if (negrita !== this.hwNeg) {
+      this.partes.push(Buffer.from([ESC, 0x45, negrita ? 1 : 0])); // ESC E n
+      this.hwNeg = negrita;
+    }
   }
 
   /** Una línea tal cual (sin wrap). Quien llama es responsable de que entre en el ancho. */
   linea(texto: string): this {
-    const t = normalizar(texto);
-    this.partes.push(codificar(t, this.codepage), Buffer.from([LF]));
-    // En el espejo, el doble ancho se representa con un espacio tras cada carácter.
-    const base = this.esDoble ? [...t].map((c) => (c === ' ' ? '  ' : c + ' ')).join('') : t;
+    return this.segmentos([{ texto, alto: this.esAlto, ancho: this.esAncho, negrita: this.esNegrita }]);
+  }
+
+  /**
+   * Una línea con varios formatos (por ejemplo producto en doble alto y precio en normal).
+   * Al terminar la impresora vuelve al formato declarado.
+   */
+  segmentos(segs: Segmento[]): this {
+    const limpios = segs.map((s) => ({ ...s, texto: normalizar(s.texto) }));
+    for (const s of limpios) {
+      this.aplicar(s.alto, s.ancho, s.negrita);
+      this.partes.push(codificar(s.texto, this.codepage));
+    }
+    this.partes.push(Buffer.from([LF]));
+    this.aplicar(this.esAlto, this.esAncho, this.esNegrita);
+    this.modelo.push({ segmentos: limpios, alineacion: this.alineacion });
+
+    // Espejo en texto: doble ancho = espacio tras cada letra; doble alto = MAYÚSCULAS.
+    const base = limpios
+      .map((s) => {
+        let t = s.texto;
+        if (s.alto && !s.ancho) t = t.toUpperCase();
+        if (s.ancho) t = [...t].map((c) => (c === ' ' ? '  ' : c + ' ')).join('');
+        return t;
+      })
+      .join('');
     const w = this.columnas;
     let visible = base;
     if (this.alineacion === 'centro') visible = ' '.repeat(Math.max(0, Math.floor((w - base.length) / 2))) + base;
@@ -184,13 +253,17 @@ export class EscPos {
 
   feed(n: number): this {
     this.partes.push(Buffer.from([ESC, 0x64, n & 0xff])); // ESC d n
-    for (let i = 0; i < n; i++) this.espejo.push('');
+    for (let i = 0; i < n; i++) {
+      this.espejo.push('');
+      this.modelo.push({ segmentos: [], alineacion: 'izq' });
+    }
     return this;
   }
 
   cortar(): this {
     this.partes.push(Buffer.from([GS, 0x56, 66, 0])); // GS V 66 0 : feed + corte parcial
     this.espejo.push('[ ---- corte ---- ]');
+    this.modelo.push({ segmentos: [{ texto: '[ ---- corte ---- ]', alto: false, ancho: false, negrita: false }], alineacion: 'centro' });
     return this;
   }
 
@@ -200,5 +273,10 @@ export class EscPos {
 
   comoTexto(): string {
     return this.espejo.join('\n');
+  }
+
+  /** Líneas con su formato (texto, tamaño, negrita, alineación), para dibujar cómo sale en papel. */
+  lineas(): LineaModelo[] {
+    return this.modelo.map((l) => ({ alineacion: l.alineacion, segmentos: l.segmentos.map((s) => ({ ...s })) }));
   }
 }

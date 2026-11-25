@@ -1,4 +1,4 @@
-import { EscPos, envolver } from './escpos.js';
+import { EscPos, envolver, normalizar } from './escpos.js';
 
 export interface ItemPedido {
   product_name: string;
@@ -19,6 +19,9 @@ export interface Pedido {
   delivery_address?: string | null;
   created_at: string;
   order_items?: ItemPedido[] | null;
+  /** Cantidad de veces que se editó el pedido (0 o ausente = original). */
+  ediciones?: number | null;
+  editado_at?: string | null;
 }
 
 export interface OpcionesTicket {
@@ -72,8 +75,44 @@ export function formatoFecha(iso: string): string {
   return `${p('day')}/${p('month')}/${p('year')} ${p('hour')}:${p('minute')}`;
 }
 
+/** hh:mm en hora de Buenos Aires. */
+export function formatoHora(iso: string): string {
+  const f = formatoFecha(iso);
+  return f === iso ? iso : f.slice(11);
+}
+
+/**
+ * Producto en doble alto + negrita: "<cant> x <nombre>" envuelto (las líneas siguientes con sangría)
+ * y el precio en tamaño normal a la derecha de la última línea (o en una línea propia si no entra).
+ */
+function producto(e: EscPos, cantidad: number, nombre: string, precio: string): void {
+  const ancho = e.ancho;
+  const prefijo = `${cantidad} x `;
+  const sangria = ' '.repeat(prefijo.length);
+  const partes = envolver(nombre, Math.max(1, ancho - prefijo.length));
+  const lineas = partes.map((t, i) => (i === 0 ? prefijo : sangria) + t);
+  const ultima = lineas[lineas.length - 1];
+  const p = normalizar(precio).trim();
+  const fmt = (texto: string, alto: boolean, negrita: boolean) => ({ texto, alto, ancho: false, negrita });
+  lineas.slice(0, -1).forEach((l) => e.segmentos([fmt(l, true, true)]));
+  if (ultima.length + 1 + p.length <= ancho) {
+    e.segmentos([fmt(ultima, true, true), fmt(' '.repeat(ancho - ultima.length - p.length), false, false), fmt(p, false, false)]);
+  } else {
+    e.segmentos([fmt(ultima, true, true)]);
+    e.segmentos([fmt(' '.repeat(Math.max(0, ancho - p.length)) + p, false, false)]);
+  }
+}
+
 function construir(pedido: Pedido, op: OpcionesTicket): EscPos {
   const e = new EscPos(op.columnas, op.codepage);
+
+  if ((pedido.ediciones ?? 0) > 0) {
+    e.separador();
+    e.alinear('centro').tamano(true, true).negrita(true).texto('PEDIDO MODIFICADO').negrita(false).tamano(false, false);
+    if (pedido.editado_at) e.texto(`Reemplaza al ticket anterior - ${formatoHora(pedido.editado_at)}`);
+    else e.texto('Reemplaza al ticket anterior');
+    e.alinear('izq').separador();
+  }
 
   e.alinear('centro').negrita(true).texto(op.nombreLocal).negrita(false);
   if (op.direccion?.trim()) e.texto(op.direccion);
@@ -81,26 +120,32 @@ function construir(pedido: Pedido, op: OpcionesTicket): EscPos {
   e.doble(true).texto(`PEDIDO #${pedido.order_number}`).doble(false);
   e.alinear('izq');
   e.linea(formatoFecha(pedido.created_at));
-  e.negrita(true).linea(`Tipo: ${TIPOS[pedido.type] ?? pedido.type}`).negrita(false);
+  e.alto(true).negrita(true).texto(`Tipo: ${TIPOS[pedido.type] ?? pedido.type}`).negrita(false).alto(false);
   e.linea(`Pago: ${PAGOS[pedido.payment_method] ?? pedido.payment_method}`);
-  if (pedido.customer_name?.trim()) e.texto(`Cliente: ${pedido.customer_name}`);
+  if (pedido.customer_name?.trim()) {
+    e.alto(true).negrita(true).texto(`Cliente: ${pedido.customer_name}`).negrita(false).alto(false);
+  }
   if (pedido.delivery_address?.trim()) {
-    e.negrita(true).texto(`Dirección: ${pedido.delivery_address}`).negrita(false);
+    e.alto(true).negrita(true).texto(`Dirección: ${pedido.delivery_address}`).negrita(false).alto(false);
   }
   e.separador();
 
-  for (const it of pedido.order_items ?? []) {
-    e.fila(`${it.quantity} x ${it.product_name}`, formatoPlata(it.subtotal));
+  const items = pedido.order_items ?? [];
+  items.forEach((it, i) => {
+    producto(e, it.quantity, it.product_name, formatoPlata(it.subtotal));
     if (it.quantity > 1) e.linea(`    ${formatoPlata(it.unit_price)} c/u`);
     if (it.notes?.trim()) {
-      envolver(it.notes, op.columnas - 6).forEach((l, i) => e.linea((i === 0 ? '    > ' : '      ') + l));
+      e.alto(true);
+      envolver(it.notes, e.ancho - 6).forEach((l, j) => e.linea((j === 0 ? '    > ' : '      ') + l));
+      e.alto(false);
     }
-  }
+    if (i < items.length - 1) e.linea('');
+  });
   e.separador();
 
   if (pedido.notes?.trim()) {
     e.negrita(true).linea('NOTAS:').negrita(false);
-    e.texto(pedido.notes);
+    e.alto(true).texto(pedido.notes).alto(false);
     e.feed(1);
   }
 
@@ -122,4 +167,9 @@ export function armarTicket(pedido: Pedido, opciones: OpcionesTicket): Buffer {
 /** Mismo ticket, como texto legible (modo simulado y verificación). */
 export function ticketComoTexto(pedido: Pedido, opciones: OpcionesTicket): string {
   return construir(pedido, opciones).comoTexto();
+}
+
+/** Líneas con formato (tamaño, negrita, alineación) del mismo ticket: para dibujar cómo sale en papel. */
+export function ticketComoLineas(pedido: Pedido, opciones: OpcionesTicket) {
+  return construir(pedido, opciones).lineas();
 }
