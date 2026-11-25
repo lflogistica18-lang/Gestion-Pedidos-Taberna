@@ -15,8 +15,8 @@ export function CartItemRow({ item }: CartItemRowProps) {
   return (
     <li className="rounded-xl border border-borde-sutil bg-bg-principal p-3">
       <div className="flex items-start justify-between gap-3">
-        <span className="min-w-0 break-words text-sm font-medium text-texto-primario">{item.productName}</span>
-        <span className="shrink-0 text-sm font-semibold tabular-nums text-texto-primario">
+        <span className="min-w-0 break-words text-sm font-medium text-texto-primario md:text-base">{item.productName}</span>
+        <span className="shrink-0 text-sm font-semibold tabular-nums md:text-base text-texto-primario">
           {fmtMonto(item.unitPrice * item.quantity)}
         </span>
       </div>
@@ -30,6 +30,7 @@ export function CartItemRow({ item }: CartItemRowProps) {
         <IconButton
           etiqueta={`Eliminar ${item.productName} del carrito`}
           variante="peligro"
+          className="md:min-h-12 md:min-w-12"
           onClick={() => removeItem(item.productId)}
         >
           <Trash2 size={18} />

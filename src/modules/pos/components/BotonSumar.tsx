@@ -8,9 +8,9 @@ export function BotonSumar({ nombre, onClick }: { nombre: string; onClick: () =>
       etiqueta={`Agregar ${nombre}`}
       variante="primario"
       onClick={onClick}
-      className="border border-acento-primario/40 text-acento-primario"
+      className="border border-acento-primario/40 text-acento-primario md:min-h-13 md:min-w-13"
     >
-      <Plus size={18} />
+      <Plus size={18} className="md:size-6" />
     </IconButton>
   )
 }

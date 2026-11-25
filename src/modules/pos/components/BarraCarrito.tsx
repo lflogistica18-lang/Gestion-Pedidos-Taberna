@@ -6,10 +6,10 @@ interface BarraCarritoProps {
   onAbrir: () => void
 }
 
-/** Barra pegada al fondo del contenido en celu y tablet parada; desde lg el carrito va al costado. */
+/** Barra pegada al fondo del contenido en celu; desde md el carrito va al costado. */
 export function BarraCarrito({ cantidad, total, onAbrir }: BarraCarritoProps) {
   return (
-    <div className="sticky bottom-0 z-10 border-t border-borde-sutil bg-bg-tarjeta px-4 py-3 shadow-tarjeta sm:px-6 lg:hidden">
+    <div className="sticky bottom-0 z-10 border-t border-borde-sutil bg-bg-tarjeta px-4 py-3 shadow-tarjeta sm:px-6 md:hidden">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm text-texto-secundario">

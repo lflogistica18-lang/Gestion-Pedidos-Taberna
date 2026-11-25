@@ -1,0 +1,14 @@
+Dibujos de las categorías de Pedido +
+
+Origen: Fluent Emoji (estilo "Color", SVG), de Microsoft.
+https://github.com/microsoft/fluentui-emoji
+Licencia: MIT. Copyright (c) Microsoft Corporation.
+
+Se permite usar, copiar, modificar y distribuir estos archivos, siempre que se conserve este aviso de
+copyright y de licencia. El software se entrega "tal cual", sin garantía de ningún tipo.
+
+Texto completo de la licencia MIT: https://github.com/microsoft/fluentui-emoji/blob/main/LICENSE
+
+Archivos: empanada, bebida, postre, pasta, milanesa, hamburguesa, papas, ensalada, sandwich, sandwich-milanesa,
+tortilla, guiso, tarta, combo, vianda, carnes, arrollado, adicional (Salt), pizza, cafe, helado, cerveza, vino,
+sopa, desayuno, generico. Renombrados al castellano; el contenido no se modificó.

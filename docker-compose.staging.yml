@@ -1,0 +1,27 @@
+# docker-compose.staging.yml — SGP La Taberna, copia de PRUEBA en el VPS.
+#
+# Vive en /root/Gestion-Pedidos-Taberna-staging (otra carpeta, otra imagen, otro contenedor):
+# no toca la app que usa el local. El proxy (NPM) le llega por la red `red-proxy`:
+# destino en el panel `sgp-taberna-staging:80`. Dominio: pedidostaberna-staging.duckdns.org
+#
+# OJO: usa la MISMA base que producción (schema sgp). Un pedido cargado acá es un pedido real:
+# después de probar, mandarlo a la papelera.
+#
+# Build y arranque (desde la carpeta de staging):
+#   docker build --no-cache -t sgp-taberna:staging .
+#   docker compose -f docker-compose.staging.yml up -d
+name: sgp-taberna-staging
+
+services:
+  taberna-frontend-staging:
+    container_name: sgp-taberna-staging
+    image: sgp-taberna:staging
+    ports:
+      - "127.0.0.1:8092:80"
+    networks:
+      - red-proxy
+    restart: unless-stopped
+
+networks:
+  red-proxy:
+    external: true

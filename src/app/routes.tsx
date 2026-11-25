@@ -1,7 +1,8 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { createBrowserRouter } from 'react-router-dom'
 import { Layout } from '@/shared/components/Layout'
 import { AuthGuard } from '@/shared/components/AuthGuard'
 import { RutaCocina } from './RutaCocina'
+import { RutaAdmin, RutaInicio } from './RutaAdmin'
 import LoginPage from '@/modules/auth/LoginPage'
 import PosPage from '@/modules/pos/pos-page'
 import ProductsPage from '@/modules/products/products-page'
@@ -24,13 +25,13 @@ export const router = createBrowserRouter([
       </AuthGuard>
     ),
     children: [
-      { index: true, element: <Navigate to="/reports" replace /> },
+      { index: true, element: <RutaInicio /> },
       { path: 'pos', element: <PosPage /> },
-      { path: 'kds', element: <RutaCocina /> },
-      { path: 'products', element: <ProductsPage /> },
+      { path: 'kds', element: <RutaAdmin><RutaCocina /></RutaAdmin> },
+      { path: 'products', element: <RutaAdmin><ProductsPage /></RutaAdmin> },
       { path: 'orders', element: <OrdersPage /> },
-      { path: 'reports', element: <ReportsPage /> },
-      { path: 'config', element: <ConfigPage /> },
+      { path: 'reports', element: <RutaAdmin><ReportsPage /></RutaAdmin> },
+      { path: 'config', element: <RutaAdmin><ConfigPage /></RutaAdmin> },
     ],
   },
 ])

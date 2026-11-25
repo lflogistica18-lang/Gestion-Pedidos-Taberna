@@ -13,8 +13,15 @@
 
 ## DÓNDE QUEDAMOS — leer primero al retomar (maximo 40 lineas)
 
-**Fase actual:** 7 cerrando → 8 (UI tablet y roles, a charlar). Impresión: sin print server; **RawBT + comandera (WiFi recomendada)**.
-**Sesión local 2026-11-25 — rama `impresion-por-aparato` (SIN SUBIR a prod, espera OK y horario de Lucas):**
+**Fase actual:** 8 EN STAGING (rama `fase8-tablet-y-rol`): rol solo pedidos, menú recogible, Pedido + para tablet. Impresión: sin print server; **RawBT + comandera (WiFi recomendada)**.
+**Fase 8 (2026-11-25, sin Merge):** tarjetas de categoría con dibujo (Fluent Emoji en `public/iconos-categorias/`, mapeo por
+palabra clave en `pos/lib/iconoCategoria.ts`, muestra en `/iconos-categorias/muestra.html`), resumen a la derecha desde md,
+menú lateral recogible (`useMenu`), rol `taberna_pedidos` (front + **migración 013 APLICADA en prod 2026-11-25**, verificación OK y RLS probada por rol; rollback escrito). QA Chromium
+mockeado OK (`qa-fase8.mjs`). Staging: `/root/Gestion-Pedidos-Taberna-staging`, `sgp-taberna-staging`, 8092,
+`pedidostaberna-staging.duckdns.org` (MISMA base que prod: pedido de prueba = pedido real). Falta: OK de Lucas para la 013 y
+crear el usuario solo pedidos; modo RawBT directo (cuando haya impresora); logo; margen.
+**Sesión local 2026-11-25 — EN PRODUCCIÓN `88d71ff` (PR #2), junto con el ticket de 22 px. Vuelta atrás:
+`docker tag sgp-taberna:anterior-d0eddb3 sgp-taberna:latest` + `docker compose up -d`. master solo por PR (hook).**
 - Opción por aparato "¿Este aparato imprime?" (Configuración → Impresión, `localStorage`, por defecto sí).
   En "No" (celu/tablet): confirmar y 🖨️ dejan el ticket en `sgp.print_jobs` sin abrir el diálogo. La compu
   (que también toma pedidos) ve la franja "Para imprimir (N)" en toda la app, imprime y marca `impreso`.
@@ -37,8 +44,8 @@
   22 px negrita; notas en 22 px sin negrita; columnas 12/66/22 %; 58 mm → 18 px. El resto sin tocar.
   Captura `ticket-prueba-22px.png` (no versionada). Los nombres largos (49 letras) ocupan 4–5 renglones.
 **Proximo paso concreto:**
-1. Con OK y horario de Lucas: merge de `impresion-por-aparato` a master y deploy (ticket 22 px + impresión
-   por aparato), con copia de la imagen anterior. Después: poner "No" en celu y tablet y probar un pedido real.
+1. En el local: poner "No" en celu y tablet (Configuración → Impresión) y probar un pedido real; mirar que la
+   franja "Para imprimir" aparezca en la compu y cómo se lee el ticket de 22 px en papel.
 2. Llega la comandera Bluetooth (80 mm, ESC/POS) → RawBT en el celu de ella, emparejar, probar
    un pedido (modo `navegador`, ya activo).
 3. El print server queda retirado: no arreglar `cola.ts` salvo que se pida. Para reactivarlo:
@@ -144,6 +151,7 @@ Anotados tal como los dijo. **Hecho 2026-10-20 (`d0eddb3`): menú, pantalla prin
 | 010 | RLS por rol `taberna`, sin anon ni DELETE, columnas faltantes, `renombrar_categoria` | sí (vía script, 2026-10-20) |
 | 011 | Cola de impresión `print_jobs` | sí (vía script, 2026-10-20) |
 | 012 | `configuracion` (una fila) | sí (vía script, 2026-10-20) |
+| 013 | Rol `taberna_pedidos` (`es_personal`, `es_solo_pedidos`, 13 policies) | sí (2026-11-25, `supabase-sql.sh -f`) |
 | `instalar_sgp_desde_cero.sql` | 001–012 + seed en una transacción | **sí** (2026-10-20, verificación OK) |
 
 ## Deploy (datos)

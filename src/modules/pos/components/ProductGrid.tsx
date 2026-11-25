@@ -13,8 +13,8 @@ interface ProductGridProps {
   mensajeVacio: string
 }
 
-// El carrito vive al costado desde lg: la lista pasa a 2 columnas recién desde 1200 px.
-const CLASES_LISTA = '-mb-px [&>li]:border-b [&>li]:border-borde-sutil min-[1200px]:grid min-[1200px]:grid-cols-2 min-[1200px]:[&>li:nth-child(odd)]:border-r'
+// El carrito vive al costado desde md y las filas son más grandes: 2 columnas recién desde 1536 px.
+const CLASES_LISTA = '-mb-px [&>li]:border-b [&>li]:border-borde-sutil 2xl:grid 2xl:grid-cols-2 2xl:[&>li:nth-child(odd)]:border-r'
 
 interface Grupo {
   categoria: string
@@ -48,7 +48,7 @@ export function ProductGrid({ products, loading, agrupar, mensajeVacio }: Produc
         aria-label="Cargando productos"
       >
         {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="flex h-12 items-center justify-between px-3">
+          <div key={i} className="flex h-12 items-center justify-between px-3 md:h-16 md:px-5">
             <div className="space-y-1.5">
               <div className="h-3 w-32 animate-pulse rounded bg-superficie-2" />
               <div className="h-2.5 w-14 animate-pulse rounded bg-superficie-2" />
@@ -75,7 +75,7 @@ export function ProductGrid({ products, loading, agrupar, mensajeVacio }: Produc
       {grupos.map((g) => (
         <section key={g.categoria || 'todos'} aria-label={g.categoria || undefined} className="overflow-hidden [&:not(:first-child)]:border-t [&:not(:first-child)]:border-borde-sutil">
           {agrupar && (
-            <h3 className="border-b border-borde-sutil bg-superficie-2 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-texto-secundario">
+            <h3 className="border-b border-borde-sutil bg-superficie-2 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-texto-secundario md:px-5 md:py-2 md:text-sm">
               {g.categoria}
             </h3>
           )}
