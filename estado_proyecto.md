@@ -13,6 +13,12 @@
 
 ## DÓNDE QUEDAMOS — leer primero al retomar (maximo 40 lineas)
 
+**Rama `para-imprimir-confirmar` (2026-11-25, espera Merge y deploy):** (1) al cerrarse el cuadro de imprimir la app pregunta
+"¿Salió el ticket?" (franja y pedidos tomados en la compu; No/cerrar = queda pendiente en `print_jobs`); pedido anulado sale de
+"Para imprimir". (2) PWA se actualiza sola (`shared/lib/actualizarApp.ts`: chequeo al volver y cada 30 min, recarga sola), carrito
+en `sessionStorage` (`sgp.carrito`), manifest `orientation: any`, nginx sin caché en index/sw y assets inmutables (probado en
+staging con `nginx -t`). (3) Celu: al elegir categoría se esconden las pastillas y queda cabecera compacta con "Todas" (Pedido + y
+Productos). QA Chromium OK. Deuda anotada: producto desactivado puede quedar en un carrito guardado; `clearCart` no vuelve a "Local".
 **Fase actual:** 8 EN PRODUCCIÓN `70b7ec0` (PR #3, 2026-11-25; vuelta atrás: `docker tag sgp-taberna:anterior-88d71ff
 sgp-taberna:latest` + up -d, y `013_*.rollback.sql`): rol solo pedidos, menú recogible, Pedido + para tablet. Staging
 quedó apagado (`sgp-taberna-staging`, sin dominio). FALTA: crear el usuario solo pedidos (Lucas pasa el mail), que
@@ -20,7 +26,7 @@ Lucas mire los dibujos (`/iconos-categorias/muestra.html`; "Medias tartas" dudos
 **EN PRODUCCIÓN `7919dbf` (PR #4, 2026-11-25; vuelta atrás: `docker tag sgp-taberna:anterior-70b7ec0 sgp-taberna:latest` + up -d):** Productos con tarjetas de categoría desde md
 (piezas movidas a `shared/components/categorias/` y `shared/lib/iconoCategoria.ts`); resumen del pedido con más contraste,
 opción B elegida por Lucas (ítem fondo naranja suave + cantidad en círculo naranja; Local/Delivery y pago en naranja lleno).
-QA Chromium mockeado OK. **Rama `iconos-propios` (espera Merge y deploy):** 18 dibujos propios generados con Gemini solo desde
+QA Chromium mockeado OK. **Íconos propios EN PRODUCCIÓN `76f9d64` (PR #5, 2026-11-25; vuelta atrás: imagen `sgp-taberna:anterior-7919dbf`):** 18 dibujos propios generados con Gemini solo desde
 texto (USD 0,60), en `public/iconos-categorias/*.png`; estilo, prompts y cómo sumar uno en `docs/ICONOS-CATEGORIAS.md`. Los SVG
 Fluent reemplazados quedaron sin usar (borrarlos lo hace Lucas: `rm` denegado). `Iconos a ver/` = capturas de bancos pagos,
 solo referencia, ignoradas en git. Pendiente: alta de producto con categoría preelegida (pide prop en CrudManager).

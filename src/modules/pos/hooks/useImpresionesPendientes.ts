@@ -53,7 +53,10 @@ export function useImpresionesPendientes(
         setError(err.message)
         return
       }
-      const lista = ((data ?? []) as unknown as TrabajoPendiente[]).filter((j) => j.orders)
+      // Un pedido anulado (papelera o cancelado) ya no se imprime: sale de la lista
+      const lista = ((data ?? []) as unknown as TrabajoPendiente[]).filter(
+        (j) => j.orders && !j.orders.deleted_at && j.orders.status !== 'cancelado',
+      )
       setError(null)
       setDatos(lista)
 
@@ -79,6 +82,8 @@ export function useImpresionesPendientes(
     const canal = supabase
       .channel(nombre)
       .on('postgres_changes', { event: '*', schema: 'sgp', table: 'print_jobs' }, () => { void traer() })
+      // Si se anula un pedido, la lista se entera al instante (no hay evento en print_jobs)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'sgp', table: 'orders' }, () => { void traer() })
       .subscribe()
 
     const intervalo = setInterval(() => {
