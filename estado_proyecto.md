@@ -13,8 +13,11 @@
 
 ## DÓNDE QUEDAMOS — leer primero al retomar (maximo 40 lineas)
 
-**Fase actual:** 8 EN STAGING (rama `fase8-tablet-y-rol`): rol solo pedidos, menú recogible, Pedido + para tablet. Impresión: sin print server; **RawBT + comandera (WiFi recomendada)**.
-**Fase 8 (2026-11-25, sin Merge):** tarjetas de categoría con dibujo (Fluent Emoji en `public/iconos-categorias/`, mapeo por
+**Fase actual:** 8 EN PRODUCCIÓN `70b7ec0` (PR #3, 2026-11-25; vuelta atrás: `docker tag sgp-taberna:anterior-88d71ff
+sgp-taberna:latest` + up -d, y `013_*.rollback.sql`): rol solo pedidos, menú recogible, Pedido + para tablet. Staging
+quedó apagado (`sgp-taberna-staging`, sin dominio). FALTA: crear el usuario solo pedidos (Lucas pasa el mail), que
+Lucas mire los dibujos (`/iconos-categorias/muestra.html`; "Medias tartas" dudoso) y la prueba real en el local. Impresión: sin print server; **RawBT + comandera (WiFi recomendada)**.
+**Fase 8 (2026-11-25):** tarjetas de categoría con dibujo (Fluent Emoji en `public/iconos-categorias/`, mapeo por
 palabra clave en `pos/lib/iconoCategoria.ts`, muestra en `/iconos-categorias/muestra.html`), resumen a la derecha desde md,
 menú lateral recogible (`useMenu`), rol `taberna_pedidos` (front + **migración 013 APLICADA en prod 2026-11-25**, verificación OK y RLS probada por rol; rollback escrito). QA Chromium
 mockeado OK (`qa-fase8.mjs`). Staging: `/root/Gestion-Pedidos-Taberna-staging`, `sgp-taberna-staging`, 8092,
