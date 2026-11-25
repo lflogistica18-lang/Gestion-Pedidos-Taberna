@@ -13,11 +13,10 @@
 
 ## DÓNDE QUEDAMOS — leer primero al retomar (maximo 40 lineas)
 
-**Rama `editar-y-anular-pedido` (2026-11-25, espera OK de Lucas para la 014 + Merge + deploy):** desde Pedidos se puede EDITAR
+**Editar y anular EN PRODUCCIÓN `3a32a63` (PR #7, 2026-11-25; vuelta atrás: imagen `sgp-taberna:anterior-b821d7c` y `014_*.rollback.sql`):** desde Pedidos se puede EDITAR
 (mismo pedido y número; carga el carrito en modo "Editando el pedido #N", botón "Guardar cambios") y ANULAR con motivo (queda
 `anulado_por` y `motivo_anulacion`). Los dos roles; solo pedidos no anula un entregado. Todo por RPC `sgp.editar_pedido` /
-`sgp.anular_pedido` (SECURITY DEFINER, precio lo pone la base, historial en `sgp.order_edits` solo admin). **Migración 014 SIN
-APLICAR**: ensayada en prod dentro de BEGIN…ROLLBACK con `supabase/pruebas/014_prueba_rls.sql`, 22/22 OK. Ticket de pedido
+`sgp.anular_pedido` (SECURITY DEFINER, precio lo pone la base, historial en `sgp.order_edits` solo admin). **Migración 014 APLICADA en prod 2026-11-25 (verificación OK)**; antes ensayada en prod dentro de BEGIN…ROLLBACK con `supabase/pruebas/014_prueba_rls.sql`, 22/22 OK. Ticket de pedido
 editado sale con "*** PEDIDO MODIFICADO ***" (permiso de Lucas para tocar `Receipt.tsx`). QA Chromium mockeado OK. Orden de
 salida: aplicar 014 → Merge → deploy. Sin probar: ticket modificado en papel, impresión real.
 **EN PRODUCCIÓN `b821d7c` (PR #6, 2026-11-25; vuelta atrás: imagen `sgp-taberna:anterior-76f9d64`):** (1) al cerrarse el cuadro de imprimir la app pregunta
@@ -175,6 +174,7 @@ Anotados tal como los dijo. **Hecho 2026-10-20 (`d0eddb3`): menú, pantalla prin
 | 011 | Cola de impresión `print_jobs` | sí (vía script, 2026-10-20) |
 | 012 | `configuracion` (una fila) | sí (vía script, 2026-10-20) |
 | 013 | Rol `taberna_pedidos` (`es_personal`, `es_solo_pedidos`, 13 policies) | sí (2026-11-25, `supabase-sql.sh -f`) |
+| 014 | Editar y anular pedido (`editar_pedido`, `anular_pedido`, `order_edits`, 4 columnas en `orders`) | sí (2026-11-25, `supabase-sql.sh -f`) |
 | `instalar_sgp_desde_cero.sql` | 001–012 + seed en una transacción | **sí** (2026-10-20, verificación OK) |
 
 ## Deploy (datos)
