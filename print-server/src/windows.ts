@@ -183,10 +183,16 @@ export async function enviarRawWindows(buffer: Buffer, nombre: string): Promise<
 // Arranque automático (carpeta Inicio del usuario)
 // ---------------------------------------------------------------------------
 
-/** Crea (o actualiza) el acceso directo en shell:startup que abre este programa al prender la compu. */
-export async function crearAccesoInicio(exe: string): Promise<string> {
+const PS_CARPETA_INICIO = `$d = if ($env:TABERNA_CARPETA_INICIO) { $env:TABERNA_CARPETA_INICIO } else { [Environment]::GetFolderPath('Startup') }`;
+const TIMEOUT_RELEVO_MS = 15_000;
+
+/**
+ * Crea (o actualiza) el acceso directo en shell:startup que abre este programa al prender la compu.
+ * `carpetaInicio` permite probarlo contra una carpeta temporal (por defecto, la carpeta Inicio real).
+ */
+export async function crearAccesoInicio(exe: string, carpetaInicio = ''): Promise<string> {
   const r = await ps(
-    `$d = [Environment]::GetFolderPath('Startup')
+    `${PS_CARPETA_INICIO}
 $ruta = Join-Path $d $env:TABERNA_NOMBRE
 $w = New-Object -ComObject WScript.Shell
 $l = $w.CreateShortcut($ruta)
@@ -195,10 +201,74 @@ $l.WorkingDirectory = Split-Path -Parent $env:TABERNA_EXE
 $l.Description = 'Impresora La Taberna'
 $l.Save()
 $ruta`,
-    { TABERNA_EXE: exe, TABERNA_NOMBRE: NOMBRE_ACCESO },
+    { TABERNA_EXE: exe, TABERNA_NOMBRE: NOMBRE_ACCESO, TABERNA_CARPETA_INICIO: carpetaInicio },
+    TIMEOUT_RELEVO_MS,
   );
   if (r.code !== 0) throw new Error(`No pude crear el acceso directo de inicio. ${r.stderr.trim()}`.trim());
   return r.stdout.trim();
+}
+
+// ---------------------------------------------------------------------------
+// Relevo: el .exe nuevo desplaza al viejo (ver relevo.ts)
+// ---------------------------------------------------------------------------
+
+/**
+ * Cierra todo proceso cuyo nombre empiece con `patron` y cuyo PID no sea `pidPropio`.
+ * Devuelve cuántos cerró.
+ */
+export async function cerrarOtrasInstancias(pidPropio: number, patron = 'ImpresoraTaberna'): Promise<number> {
+  const r = await ps(
+    `$yo = [int]$env:TABERNA_PID
+$otros = @(Get-Process | Where-Object { $_.Name -like ($env:TABERNA_PATRON + '*') -and $_.Id -ne $yo })
+foreach ($p in $otros) { try { Stop-Process -Id $p.Id -Force -ErrorAction Stop } catch { } }
+foreach ($p in $otros) { try { $null = $p.WaitForExit(5000) } catch { } }
+@($otros | Where-Object { try { $_.HasExited } catch { $false } }).Count`,
+    { TABERNA_PID: String(pidPropio), TABERNA_PATRON: patron },
+    TIMEOUT_RELEVO_MS,
+  );
+  if (r.code !== 0) throw new Error(`No pude revisar los programas abiertos. ${r.stderr.trim()}`.trim());
+  return Number(r.stdout.trim().split(/\r?\n/).pop()) || 0;
+}
+
+/** Destino del acceso directo de inicio, o null si el acceso directo no existe. */
+export async function leerDestinoAccesoInicio(carpetaInicio = ''): Promise<string | null> {
+  const r = await ps(
+    `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+${PS_CARPETA_INICIO}
+$ruta = Join-Path $d $env:TABERNA_NOMBRE
+if (Test-Path -LiteralPath $ruta) { 'SI|' + (New-Object -ComObject WScript.Shell).CreateShortcut($ruta).TargetPath } else { 'NO' }`,
+    { TABERNA_NOMBRE: NOMBRE_ACCESO, TABERNA_CARPETA_INICIO: carpetaInicio },
+    TIMEOUT_RELEVO_MS,
+  );
+  if (r.code !== 0) throw new Error(`No pude leer el acceso directo de inicio. ${r.stderr.trim()}`.trim());
+  const linea = r.stdout.trim().split(/\r?\n/).pop() ?? '';
+  return linea.startsWith('SI|') ? linea.slice(3) : null;
+}
+
+/**
+ * Renombra un .exe agregando -VIEJO-NO-ABRIR antes de la extensión (con número si ese nombre ya existe).
+ * Devuelve la ruta nueva, o null si el archivo no existía.
+ */
+export async function renombrarComoViejo(ruta: string): Promise<string | null> {
+  const r = await ps(
+    `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$o = $env:TABERNA_RUTA
+if (Test-Path -LiteralPath $o -PathType Leaf) {
+  $dir = Split-Path -Parent $o
+  $base = [IO.Path]::GetFileNameWithoutExtension($o)
+  $ext = [IO.Path]::GetExtension($o)
+  $n = Join-Path $dir ($base + '-VIEJO-NO-ABRIR' + $ext)
+  $i = 2
+  while (Test-Path -LiteralPath $n) { $n = Join-Path $dir ($base + '-VIEJO-NO-ABRIR-' + $i + $ext); $i++ }
+  Rename-Item -LiteralPath $o -NewName (Split-Path -Leaf $n) -ErrorAction Stop
+  'OK|' + $n
+} else { 'NO' }`,
+    { TABERNA_RUTA: ruta },
+    TIMEOUT_RELEVO_MS,
+  );
+  if (r.code !== 0) throw new Error(`No pude renombrar el programa anterior. ${r.stderr.trim()}`.trim());
+  const linea = r.stdout.trim().split(/\r?\n/).pop() ?? '';
+  return linea.startsWith('OK|') ? linea.slice(3) : null;
 }
 
 /** Borra el acceso directo de arranque automático. Devuelve true si existía. */

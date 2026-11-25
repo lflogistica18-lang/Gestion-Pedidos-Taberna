@@ -22,6 +22,10 @@ Hace falta la compu con Windows 11 donde va a quedar la impresora, y el archivo 
 
 El programa además queda configurado para **abrirse solo cada vez que se prende la compu**. No tenés que hacer nada más.
 
+### Actualizar el programita
+
+Para pasar a una versión nueva: **descargá el `ImpresoraTaberna.exe` nuevo y hacé doble clic**. No hace falta cerrar ni borrar nada. Al abrirse, el nuevo cierra solo al anterior si estaba abierto, cambia el arranque automático para que al prender la compu se abra el nuevo, y renombra el archivo viejo agregándole `-VIEJO-NO-ABRIR` (queda guardado en su carpeta; ya no hace falta abrirlo). Si algún paso no se puede hacer, la ventana lo avisa en una línea y el programa sigue igual. Los datos (usuario, impresora) se conservan.
+
 ### Activar la impresión automática en la app
 
 En la app de pedidos: **Configuración → Impresión → Modo de impresión** y elegí **"Print server en la compu"**. Después tocá **Guardar**. (Si dejás la otra opción, "Desde el celu (RawBT)", los tickets no salen por esta compu.)
@@ -44,7 +48,7 @@ Para probar: hacé un pedido de prueba en la app. En unos segundos tiene que sal
 | La ventana dice **"No encuentro la impresora 'POS-80'. ¿Está prendida y enchufada?"** | Revisá que la impresora esté prendida, con el cable USB firme y con papel. Los pedidos quedan esperando y salen solos cuando vuelva. Si le cambiaste el nombre en Windows, corré el programa con `--configurar` (ver abajo). |
 | Sale el ticket pero con **símbolos raros** en vez de ñ o acentos | Avisá a quien instaló el sistema (se cambia un número de configuración). |
 | La ventana dice **"No se pudo iniciar sesión (el email o la contraseña no coinciden)"** | Pasó algo con el usuario de impresión (le cambiaron la clave, por ejemplo). Corré `--configurar` y cargalo de nuevo. |
-| Dice **"no hay internet o no se llega al servidor"** | Revisá el WiFi/internet de la compu. Reintenta solo cada 30 segundos. |
+| Dice **"no hay internet o no se llega al servidor"** | Revisá el WiFi/internet de la compu. Reintenta solo, cada vez más espaciado (5 s, 10 s, 20 s... hasta 5 minutos), y avisa una sola vez; cuando vuelve internet imprime lo que haya quedado esperando (puede tardar hasta 5 minutos en notarlo). |
 | Hice un pedido y **no sale nada y la ventana está en blanco/cerrada** | Abrí `ImpresoraTaberna.exe`. Si la ventana está abierta, mirá si en la app está elegido "Print server en la compu". |
 | Cambié de impresora o de compu | Corré el programa con `--configurar` en la compu nueva (o instalá todo de cero). |
 
@@ -68,10 +72,24 @@ Los datos que guarda el programa (usuario, impresora elegida) quedan en `%APPDAT
 
 ### Cómo funciona
 
-Lee la cola `sgp.print_jobs` de Supabase con un usuario de rol `taberna` (por Realtime y, de respaldo, cada 60 segundos) y manda los bytes ESC/POS a la impresora. Hay dos formas de llegar a la impresora, elegidas con `TIPO_IMPRESORA`:
+Lee la cola `sgp.print_jobs` de Supabase con un usuario de rol `taberna` (preguntando cada 4 segundos; **sin Realtime**, ver más abajo) y manda los bytes ESC/POS a la impresora. Hay dos formas de llegar a la impresora, elegidas con `TIPO_IMPRESORA`:
 
-- **`windows`** (el `.exe`): impresora instalada en Windows (USB) **por nombre**. Los bytes van al spooler como documento `RAW` (winspool: `OpenPrinter` / `StartDocPrinter` / `WritePrinter`), sin compartir la impresora. Se hace con `powershell.exe` (viene con Windows) y un `Add-Type` de una clase C#; no hay dependencias nativas. Tabla de caracteres por defecto: **16 (WPC1252)**. Si la impresora no existe, el pedido vuelve a la cola **sin gastar intentos** y se reintenta cada minuto.
+- **`windows`** (el `.exe`): impresora instalada en Windows (USB) **por nombre**. Los bytes van al spooler como documento `RAW` (winspool: `OpenPrinter` / `StartDocPrinter` / `WritePrinter`), sin compartir la impresora. Se hace con `powershell.exe` (viene con Windows) y un `Add-Type` de una clase C#; no hay dependencias nativas. Tabla de caracteres por defecto: **16 (WPC1252)**. Si la impresora no existe, el pedido vuelve a la cola **sin gastar intentos** y se reintenta en la próxima vuelta del sondeo (cada 4 segundos).
 - **`red`** (Node, como antes): comandera con IP, TCP puerto 9100. Tabla por defecto: 2 (PC850).
+
+### Por qué no usa tiempo real
+
+Fecha de la decisión: **2026-11-25**. El 2026-11-21 este programa se retiró porque su bucle de reconexión tiró la base (que es compartida y gratuita con otros sistemas). La causa: al fallar el canal de Realtime, el reintento cerraba el canal viejo, y ese cierre disparaba **otro** reintento; el canal nuevo, al conectar, ponía el contador de espera en cero, así que quedaba para siempre un ciclo de suscribir y desuscribir cada ~5 s, sumado al rejoin automático de supabase-js y a un login por minuto sin tope.
+
+Ahora el programa **no usa Realtime**: no hay canales, ni websocket, ni `setInterval`. Hay un único ciclo (`src/sondeo.ts`) que termina una vuelta y recién ahí programa la siguiente:
+
+- Vuelta normal: cada 4 s, una consulta de pendientes (los trabajos trabados se revisan como mucho una vez por minuto).
+- Si falla: espera 5, 10, 20, 40, 60, 120 y 300 s (tope), y se queda en 300 s hasta que una vuelta salga bien; recién ahí vuelve a 4 s.
+- Re-login solo si el error es de sesión, como mucho una vez por minuto y con la misma espera creciente. El login inicial espera 30, 60, 120 y 300 s.
+- Impresora apagada: pausa creciente de 30, 60, 120 y 300 s (tope) en la que no se toma ningún trabajo ni se consulta la base; se resetea con el primer ticket que sale bien. Avisa una vez al entrar y una al volver.
+- La ventana avisa una vez al empezar a fallar y una vez al recuperarse, no en cada vuelta.
+
+Pruebas con reloj simulado: `npm test` (con la base caída 1 hora hace unos 18 pedidos en total, no cientos).
 
 ### Generar el `.exe`
 
