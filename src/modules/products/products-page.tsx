@@ -33,10 +33,11 @@ export default function ProductsPage() {
   const esTablet = useEsTablet()
 
   const buscando = busqueda.trim() !== ''
-  // Desde md: con texto en el buscador se busca en todas las categorías, sin tarjetas
-  const categoriaActiva = esTablet && buscando ? 'todas' : catFiltro
+  // Con texto en el buscador se busca en todas las categorías (sin tarjetas ni cabecera)
+  const categoriaActiva = buscando ? 'todas' : catFiltro
   const tarjetas = esTablet && !buscando && catFiltro === 'todas' && !error
-  const cabecera = esTablet && !buscando && catFiltro !== 'todas'
+  // Tablet/compu: cabecera grande; celular: cabecera compacta en lugar de las pastillas
+  const cabecera = !buscando && catFiltro !== 'todas'
 
   // Filtrar productos por categoría seleccionada
   const productosFiltrados = useMemo(() => {
@@ -160,7 +161,14 @@ export default function ProductsPage() {
             />
           )}
           {cabecera && (
-            <CabeceraCategoria nombre={catFiltro} cantidad={productosFiltrados.length} onVolver={() => setCatFiltro('todas')} />
+            <>
+              <div className="hidden md:block">
+                <CabeceraCategoria nombre={catFiltro} cantidad={productosFiltrados.length} onVolver={() => setCatFiltro('todas')} />
+              </div>
+              <div className="md:hidden">
+                <CabeceraCategoria compacta nombre={catFiltro} cantidad={productosFiltrados.length} onVolver={() => setCatFiltro('todas')} />
+              </div>
+            </>
           )}
 
           {/* Con tarjetas la lista no se ve, pero el formulario de alta tiene que poder abrirse */}

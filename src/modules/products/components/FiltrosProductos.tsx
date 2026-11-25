@@ -29,7 +29,8 @@ export function FiltrosProductos({ busqueda, onBusqueda, categoria, onCategoria,
         />
       </div>
       {opciones.length > 0 && (
-        <div className={pastillasSoloCelu ? 'md:hidden' : undefined}>
+        // Con una categoría elegida (sin búsqueda) se quitan: queda la cabecera compacta con "Todas"
+        <div className={categoria !== 'todas' && busqueda.trim() === '' ? 'hidden' : pastillasSoloCelu ? 'md:hidden' : undefined}>
         <FiltrosPastilla
           etiqueta="Categoría"
           value={categoria}

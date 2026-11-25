@@ -62,9 +62,15 @@ export function CatalogoPos({ products, categories, loading, activeCategory, onE
         </div>
       )}
       {verCabecera && (
-        <div className="hidden md:block">
-          <CabeceraCategoria nombre={activeCategory} cantidad={filtrados.length} onVolver={() => onElegirCategoria('')} />
-        </div>
+        <>
+          <div className="hidden md:block">
+            <CabeceraCategoria nombre={activeCategory} cantidad={filtrados.length} onVolver={() => onElegirCategoria('')} />
+          </div>
+          {/* Celular: cabecera de una fila en lugar de las pastillas */}
+          <div className="md:hidden">
+            <CabeceraCategoria compacta nombre={activeCategory} cantidad={filtrados.length} onVolver={() => onElegirCategoria('')} />
+          </div>
+        </>
       )}
       {/* En tablet la lista se oculta mientras se ven las tarjetas */}
       <div className={verTarjetas ? 'md:hidden' : undefined}>

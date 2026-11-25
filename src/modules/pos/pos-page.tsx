@@ -127,7 +127,8 @@ export default function PosPage() {
               <div className="flex flex-col gap-2 sm:gap-3">
                 <BuscadorProductos value={busqueda} onChange={setBusqueda} />
                 {/* Pastillas solo en celular; en tablet se elige con tarjetas grandes */}
-                <div className="md:hidden">
+                {/* Con una categoría elegida (sin búsqueda) se quitan: queda la cabecera compacta con "Todas" */}
+                <div className={activeCategory && busqueda.trim() === '' ? 'hidden' : 'md:hidden'}>
                   <FiltrosPastilla
                     etiqueta="Categorías"
                     contadorDesdeSm
