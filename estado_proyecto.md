@@ -13,7 +13,14 @@
 
 ## DÓNDE QUEDAMOS — leer primero al retomar (maximo 40 lineas)
 
-**Rama `para-imprimir-confirmar` (2026-11-25, espera Merge y deploy):** (1) al cerrarse el cuadro de imprimir la app pregunta
+**Rama `editar-y-anular-pedido` (2026-11-25, espera OK de Lucas para la 014 + Merge + deploy):** desde Pedidos se puede EDITAR
+(mismo pedido y número; carga el carrito en modo "Editando el pedido #N", botón "Guardar cambios") y ANULAR con motivo (queda
+`anulado_por` y `motivo_anulacion`). Los dos roles; solo pedidos no anula un entregado. Todo por RPC `sgp.editar_pedido` /
+`sgp.anular_pedido` (SECURITY DEFINER, precio lo pone la base, historial en `sgp.order_edits` solo admin). **Migración 014 SIN
+APLICAR**: ensayada en prod dentro de BEGIN…ROLLBACK con `supabase/pruebas/014_prueba_rls.sql`, 22/22 OK. Ticket de pedido
+editado sale con "*** PEDIDO MODIFICADO ***" (permiso de Lucas para tocar `Receipt.tsx`). QA Chromium mockeado OK. Orden de
+salida: aplicar 014 → Merge → deploy. Sin probar: ticket modificado en papel, impresión real.
+**EN PRODUCCIÓN `b821d7c` (PR #6, 2026-11-25; vuelta atrás: imagen `sgp-taberna:anterior-76f9d64`):** (1) al cerrarse el cuadro de imprimir la app pregunta
 "¿Salió el ticket?" (franja y pedidos tomados en la compu; No/cerrar = queda pendiente en `print_jobs`); pedido anulado sale de
 "Para imprimir". (2) PWA se actualiza sola (`shared/lib/actualizarApp.ts`: chequeo al volver y cada 30 min, recarga sola), carrito
 en `sessionStorage` (`sgp.carrito`), manifest `orientation: any`, nginx sin caché en index/sw y assets inmutables (probado en

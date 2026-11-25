@@ -4,7 +4,7 @@ import type { OrderWithItems } from './hooks/useActiveOrders'
 import { useProducts } from '@/modules/products/hooks/useProducts'
 import { useCategories } from '@/modules/products/hooks/useCategories'
 import { useCartStore } from './store/useCartStore'
-import { useCreateOrder } from './hooks/useCreateOrder'
+import { useEnviarPedido } from './hooks/useEnviarPedido'
 import { useActiveOrders } from './hooks/useActiveOrders'
 import { CatalogoPos } from './components/CatalogoPos'
 import { BuscadorProductos } from './components/BuscadorProductos'
@@ -12,29 +12,22 @@ import { CartPanel } from './components/CartPanel'
 import { ActiveOrdersPanel } from './components/ActiveOrdersPanel'
 import { ClipboardList, PlusCircle } from 'lucide-react'
 import { EstadoError } from '@/shared/components/comunes/EstadoError'
-import { Boton, EncabezadoPagina, FiltrosPastilla, Modal, Pastilla, mostrarToast } from '@/shared/components/panel'
+import { Boton, EncabezadoPagina, FiltrosPastilla, Modal, Pastilla } from '@/shared/components/panel'
 import { BarraCarrito } from './components/BarraCarrito'
-import { useEncolarImpresion } from './hooks/useEncolarImpresion'
-import { useConfiguracion } from '@/shared/store/useConfiguracion'
-import { useAparato } from '@/shared/store/useAparato'
-import { medioDePagoValido } from '@/shared/lib/config'
+import { AvisoEditandoPedido } from './components/AvisoEditandoPedido'
+import { ModalReemplazarCarrito } from './components/ModalReemplazarCarrito'
 
 export default function PosPage() {
   const [categoriaElegida, setCategoriaElegida] = useState<string>('')
-  const modoImpresion = useConfiguracion((s) => s.config.modo_impresion)
-  const imprimeAca = useAparato((s) => s.imprimeAca)
-  const mediosPago = useConfiguracion((s) => s.config.medios_pago)
   const [busqueda, setBusqueda] = useState('')
   const [cartOpen, setCartOpen] = useState(false)
   const [ordersOpen, setOrdersOpen] = useState(false)
 
-  // Ticket para cocina: se imprime solo al confirmar cada pedido (PROVISORIO-WIFI)
-  const [pedidoAImprimir, setPedidoAImprimir] = useState<OrderWithItems | null>(null)
+  // Pedido a medio cargar que se pisaría al tocar "Editar" en otro (pide confirmación)
+  const [pedidoPorEditar, setPedidoPorEditar] = useState<OrderWithItems | null>(null)
 
   const { categories } = useCategories()
   const { products, loading, error: productsError, refetch: refetchProducts } = useProducts({ activeOnly: true })
-  const { submitting, error, createOrder } = useCreateOrder()
-  const { encolar } = useEncolarImpresion()
   const {
     orders: activeOrders,
     loading: ordersLoading,
@@ -47,53 +40,27 @@ export default function PosPage() {
   // cae a todas. Derivarla evita un setState dentro de un effect.
   const activeCategory = categories.some(c => c.name === categoriaElegida) ? categoriaElegida : ''
 
-  const items = useCartStore((s) => s.items)
-  const orderType = useCartStore((s) => s.orderType)
-  const paymentMethod = useCartStore((s) => s.paymentMethod)
-  const notes = useCartStore((s) => s.notes)
-  const customerName = useCartStore((s) => s.customerName)
-  const deliveryAddress = useCartStore((s) => s.deliveryAddress)
+  const editando = useCartStore((s) => s.editando)
+  const cargarPedido = useCartStore((s) => s.cargarPedido)
   const getTotal = useCartStore((s) => s.getTotal)
   const getItemCount = useCartStore((s) => s.getItemCount)
-  const clearCart = useCartStore((s) => s.clearCart)
 
-  const handleConfirm = async () => {
-    const pedido = await createOrder({
-      items,
-      orderType,
-      // Si Configuración apagó el medio elegido, se cobra con el primero habilitado (lo que ve el carrito)
-      paymentMethod: medioDePagoValido(paymentMethod, mediosPago),
-      notes,
-      customerName,
-      deliveryAddress,
-      total: getTotal(),
-    })
+  const { submitting, error, confirmar, pedidoAImprimir, soltarPedidoAImprimir } = useEnviarPedido({
+    alTerminar: () => setCartOpen(false),
+    refrescarPedidos: () => void refetchOrders(),
+  })
 
-    if (pedido) {
-      clearCart()
-      setCartOpen(false)
-
-      if (modoImpresion === 'servidor') {
-        // El pedido ya está guardado: si falla la cola, se avisa y se reimprime con 🖨️
-        const { error: colaErr } = await encolar(pedido.id)
-        if (colaErr) {
-          mostrarToast(`Pedido #${pedido.order_number} creado, pero no se mandó a imprimir: ${colaErr}. Reimprimí desde Pedidos.`, 'error')
-        } else {
-          mostrarToast(`Pedido #${pedido.order_number} creado — enviado a la comandera`, 'exito')
-        }
-      } else if (!imprimeAca) {
-        // PROVISORIO-WIFI: sacar esta rama (celu/tablet que no imprimen) cuando haya impresora WiFi
-        const { error: colaErr } = await encolar(pedido.id)
-        if (colaErr) {
-          mostrarToast(`Pedido #${pedido.order_number} creado, pero no quedó para imprimir: ${colaErr}. Reimprimí desde Pedidos.`, 'error')
-        } else {
-          mostrarToast(`Pedido #${pedido.order_number} creado — queda para imprimir en la compu`, 'exito')
-        }
-      } else {
-        setPedidoAImprimir(pedido)
-        mostrarToast(`Pedido #${pedido.order_number} creado — imprimiendo ticket`, 'exito')
-      }
-    }
+  // Editar un pedido desde "Pedidos": el carrito pasa a ser ese pedido (mismo número)
+  const empezarEdicion = (order: OrderWithItems) => {
+    cargarPedido(order)
+    setPedidoPorEditar(null)
+    setOrdersOpen(false)
+  }
+  const pedirEditar = (order: OrderWithItems) => {
+    const { items: enCurso, editando: enEdicion } = useCartStore.getState()
+    if (enEdicion?.orderId === order.id) setOrdersOpen(false) // ya lo está editando: no se pisan sus cambios
+    else if (enCurso.length > 0) setPedidoPorEditar(order)
+    else empezarEdicion(order)
   }
 
   const itemCount = getItemCount()
@@ -102,10 +69,11 @@ export default function PosPage() {
 
   return (
     <div className="flex min-h-full flex-col md:h-full md:flex-row">
-      <TicketPedidoPropio pedido={pedidoAImprimir} alTerminarDialogo={() => setPedidoAImprimir(null)} />
+      <TicketPedidoPropio pedido={pedidoAImprimir} alTerminarDialogo={soltarPedidoAImprimir} />
 
       <div className="flex min-w-0 flex-1 flex-col md:overflow-y-auto">
         <div className="flex-1 px-4 py-3 sm:px-6 sm:py-6">
+          <AvisoEditandoPedido className="mb-3" />
           <EncabezadoPagina
             icono={<PlusCircle size={22} />}
             titulo="Pedido +"
@@ -170,17 +138,17 @@ export default function PosPage() {
         aria-label="Pedido en curso"
         className="hidden w-80 shrink-0 border-l border-borde-sutil bg-bg-tarjeta md:block lg:w-[360px]"
       >
-        <CartPanel variante="panel" submitting={submitting} error={error} onConfirm={handleConfirm} />
+        <CartPanel variante="panel" submitting={submitting} error={error} onConfirm={() => void confirmar()} />
       </aside>
 
       {/* Carrito como hoja inferior solo en celu */}
       <Modal
         open={cartOpen}
         onClose={() => setCartOpen(false)}
-        title="Pedido"
+        title={editando ? `Pedido #${editando.orderNumber}` : 'Pedido'}
         subtitulo={`${itemCount} ${itemCount === 1 ? 'ítem' : 'ítems'}`}
       >
-        <CartPanel variante="hoja" submitting={submitting} error={error} onConfirm={handleConfirm} />
+        <CartPanel variante="hoja" submitting={submitting} error={error} onConfirm={() => void confirmar()} />
       </Modal>
 
       <ActiveOrdersPanel
@@ -190,6 +158,13 @@ export default function PosPage() {
         loading={ordersLoading}
         error={ordersError}
         refetch={refetchOrders}
+        onEditar={pedirEditar}
+      />
+
+      <ModalReemplazarCarrito
+        numeroPedido={pedidoPorEditar?.order_number ?? null}
+        onConfirmar={() => pedidoPorEditar && empezarEdicion(pedidoPorEditar)}
+        onCancelar={() => setPedidoPorEditar(null)}
       />
     </div>
   )

@@ -26,8 +26,24 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(({ order }, ref)
   const dFormat = dateObj.toLocaleDateString('es-AR')
   const tFormat = dateObj.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
 
+  // Pedido editado (por dato, no por prop: sale marcado también al reimprimir)
+  const modificado = (order.ediciones ?? 0) > 0
+  const horaEdicion = order.editado_at
+    ? new Date(order.editado_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false })
+    : null
+
   return (
     <div ref={ref} className={`print-receipt ${config.papel_mm === 58 ? 'print-receipt--58' : ''}`}>
+      {modificado && (
+        <div className="print-receipt__header">
+          <div className="print-receipt__divider">--------------------------------</div>
+          <p className="print-receipt__modificado">*** PEDIDO MODIFICADO ***</p>
+          <p className="print-receipt__local">
+            Reemplaza al ticket anterior{horaEdicion && ` · ${horaEdicion}`}
+          </p>
+          <div className="print-receipt__divider">--------------------------------</div>
+        </div>
+      )}
       <div className="print-receipt__header">
         <h2 className="print-receipt__title">{config.nombre_local}</h2>
         {config.direccion && <p className="print-receipt__local">{config.direccion}</p>}

@@ -344,6 +344,15 @@ body { background: var(--color-bg-principal); color: var(--color-texto-primario)
     margin: 0 0 8px 0;
   }
 
+  /* Ticket de un pedido editado: tamaño del número de pedido, parte en dos renglones si el papel es angosto */
+  .print-receipt__modificado {
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+    text-transform: uppercase;
+    margin: 0 0 3px 0;
+  }
+
   .print-receipt__unit {
     display: block;
     font-size: 10px;

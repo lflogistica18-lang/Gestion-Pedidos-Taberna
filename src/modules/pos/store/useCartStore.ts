@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type { Product, OrderType, PaymentMethod } from '@/types/database.types'
+import type { OrderWithItems } from '../hooks/useActiveOrders'
 
 export interface CartItem {
   productId: string
@@ -9,8 +10,15 @@ export interface CartItem {
   quantity: number
 }
 
+/** Pedido que se está modificando desde el carrito (null = pedido nuevo). */
+export interface PedidoEnEdicion {
+  orderId: string
+  orderNumber: number
+}
+
 interface CartStore {
   // Estado
+  editando: PedidoEnEdicion | null
   items: CartItem[]
   orderType: OrderType
   paymentMethod: PaymentMethod
@@ -23,6 +31,10 @@ interface CartStore {
   removeItem: (productId: string) => void
   updateQuantity: (productId: string, delta: number) => void
   clearCart: () => void
+
+  // Modo edición: el carrito pasa a ser el pedido existente
+  cargarPedido: (order: OrderWithItems) => void
+  salirDeEdicion: () => void
 
   // Checkout
   setOrderType: (type: OrderType) => void
@@ -39,6 +51,7 @@ interface CartStore {
 export const useCartStore = create<CartStore>()(
   persist(
     (set, get) => ({
+  editando: null,
   items: [],
   orderType: 'local',
   paymentMethod: 'efectivo',
@@ -88,7 +101,24 @@ export const useCartStore = create<CartStore>()(
     })
   },
 
-  clearCart: () => set({ items: [], notes: '', customerName: '', deliveryAddress: '' }),
+  clearCart: () => set({ items: [], notes: '', customerName: '', deliveryAddress: '', editando: null }),
+
+  cargarPedido: (order) =>
+    set({
+      editando: { orderId: order.id, orderNumber: order.order_number },
+      items: order.order_items.flatMap((l) =>
+        l.product_id
+          ? [{ productId: l.product_id, productName: l.product_name, unitPrice: l.unit_price, quantity: l.quantity }]
+          : [],
+      ),
+      orderType: order.type,
+      paymentMethod: order.payment_method,
+      notes: order.notes ?? '',
+      customerName: order.customer_name ?? '',
+      deliveryAddress: order.delivery_address ?? '',
+    }),
+
+  salirDeEdicion: () => set({ items: [], notes: '', customerName: '', deliveryAddress: '', editando: null }),
 
   setOrderType: (orderType) => set({ orderType }),
   setPaymentMethod: (paymentMethod) => set({ paymentMethod }),
@@ -107,6 +137,7 @@ export const useCartStore = create<CartStore>()(
       name: 'sgp.carrito',
       storage: createJSONStorage(() => sessionStorage),
       partialize: (s) => ({
+        editando: s.editando,
         items: s.items,
         orderType: s.orderType,
         paymentMethod: s.paymentMethod,

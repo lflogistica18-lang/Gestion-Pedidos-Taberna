@@ -37,6 +37,11 @@ export interface Order {
   created_at: string
   updated_at: string
   deleted_at: string | null
+  // Migración 014: anulación con motivo y marca de edición
+  anulado_por?: string | null
+  motivo_anulacion?: string | null
+  editado_at?: string | null
+  ediciones?: number
 }
 
 export interface OrderItem {
