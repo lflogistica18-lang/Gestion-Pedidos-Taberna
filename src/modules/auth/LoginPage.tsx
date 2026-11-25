@@ -31,13 +31,14 @@ export default function LoginPage() {
       }
     } else {
       // Login exitoso → redirigir
-      navigate('/reports', { replace: true })
+      // El índice manda a cada rol a su pantalla (admin: Caja, solo pedidos: Pedido +)
+      navigate('/', { replace: true })
     }
   }
 
   // Si ya está autenticado, redirigir directo
   if (authLoading) return null
-  if (isAuthenticated) return <Navigate to="/reports" replace />
+  if (isAuthenticated) return <Navigate to="/" replace />
 
   return (
     <div className="flex min-h-dvh items-center justify-center bg-bg-principal p-4">

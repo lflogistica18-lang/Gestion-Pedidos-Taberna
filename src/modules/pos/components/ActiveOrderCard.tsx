@@ -9,6 +9,7 @@ import { cn } from '@/shared/lib/cn'
 import { useMinutosDesde } from '@/shared/hooks/useMinutosDesde'
 import { useConfiguracion } from '@/shared/store/useConfiguracion'
 import { useAparato } from '@/shared/store/useAparato'
+import { useAuth } from '@/modules/auth/hooks/useAuth'
 import { useEncolarImpresion } from '../hooks/useEncolarImpresion'
 
 const ESTADOS: Record<string, { label: string; tono: TonoPastilla }> = {
@@ -43,6 +44,7 @@ export function ActiveOrderCard({ order, updating, onDeliver, onDelete }: Active
   const tipo = TIPOS[order.type] ?? { label: order.type, icono: UtensilsCrossed }
   const IconoTipo = tipo.icono
   const isReady = order.status === 'listo'
+  const { esAdmin } = useAuth()
   const cocinaActiva = useConfiguracion((s) => s.config.cocina_activa)
   const modoImpresion = useConfiguracion((s) => s.config.modo_impresion)
   const imprimeAca = useAparato((s) => s.imprimeAca)
@@ -135,6 +137,8 @@ export function ActiveOrderCard({ order, updating, onDeliver, onDelete }: Active
         <IconButton etiqueta="Reimprimir" onClick={handlePrint} disabled={updating || encolando}>
           <Printer size={18} />
         </IconButton>
+        {/* Mandar a la papelera: solo el admin (la base también lo niega al rol solo pedidos) */}
+        {esAdmin && (
         <IconButton
           etiqueta="Enviar a la papelera"
           variante="peligro"
@@ -147,6 +151,7 @@ export function ActiveOrderCard({ order, updating, onDeliver, onDelete }: Active
         >
           <Trash2 size={18} />
         </IconButton>
+        )}
         {/* Solo cajero marca entregado (con cocina: cuando está listo) */}
         {puedeEntregar && (
           <Boton variante="primario" className="sm:min-h-11" onClick={() => onDeliver(order.id)} disabled={updating}>

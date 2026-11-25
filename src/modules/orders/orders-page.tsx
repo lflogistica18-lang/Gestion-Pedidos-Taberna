@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { ClipboardList } from 'lucide-react'
+import { useAuth } from '@/modules/auth/hooks/useAuth'
 import { useAdminOrders } from './hooks/useAdminOrders'
 import { Boton, EncabezadoPagina, fmtMonto } from '@/shared/components/panel'
 import { EstadoCargando } from '@/shared/components/comunes/EstadoCargando'
@@ -12,6 +13,7 @@ import { PestanasHistorial, type PestanaHistorial } from './components/PestanasH
 import { ESTADOS_EN_CURSO, toDateStr } from './components/formato'
 
 export default function OrdersPage() {
+  const { esAdmin } = useAuth()
   const [tab, setTab] = useState<PestanaHistorial>('historial')
   const { orders, loading, error, refetch, enviarAPapelera, restaurarDePapelera, hayMas, cargandoMas, cargarMas } = useAdminOrders()
 
@@ -85,14 +87,15 @@ export default function OrdersPage() {
         icono={<ClipboardList size={22} />}
         titulo="Historial"
         detalle={detalle}
-        pestanas={
+        // La papelera y restaurar son del admin: el rol solo pedidos no ve la pestaña
+        pestanas={!esAdmin ? undefined : (
           <PestanasHistorial
             value={tab}
             onChange={setTab}
             cantidadHistorial={cantidadHistorial}
             cantidadPapelera={cantidadPapelera}
           />
-        }
+        )}
       />
 
       <FiltrosHistorial

@@ -17,13 +17,13 @@ export function FilaProducto({ product, cantidad, onAgregar, onRestar }: FilaPro
   return (
     <li
       className={cn(
-        'flex min-h-12 items-center gap-2 border-l-4 py-0.5 pl-3 pr-2 transition-colors',
+        'flex min-h-12 items-center gap-2 border-l-4 py-0.5 pl-3 pr-2 transition-colors md:min-h-16 md:gap-4 md:py-2 md:pl-5 md:pr-4',
         enCarrito ? 'border-acento-primario bg-tono-naranja-fondo' : 'border-transparent',
       )}
     >
       <div className="min-w-0 flex-1">
-        <p className="line-clamp-2 break-words text-sm font-semibold leading-tight text-texto-primario">{product.name}</p>
-        <p className="text-xs tabular-nums text-texto-secundario">{fmtMonto(product.price)}</p>
+        <p className="line-clamp-2 break-words text-sm font-semibold leading-tight text-texto-primario md:text-lg">{product.name}</p>
+        <p className="text-xs tabular-nums text-texto-secundario md:text-base">{fmtMonto(product.price)}</p>
       </div>
       {enCarrito ? (
         <ControlCantidad nombre={product.name} cantidad={cantidad} onRestar={onRestar} onSumar={onAgregar} className="shrink-0" />

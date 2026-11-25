@@ -1,6 +1,6 @@
 import { Navigate } from 'react-router-dom'
 import { Lock } from 'lucide-react'
-import { useAuth, ROL_APP } from '@/modules/auth/hooks/useAuth'
+import { useAuth, ROL_ADMIN, ROL_PEDIDOS } from '@/modules/auth/hooks/useAuth'
 import { Boton } from './panel'
 
 interface AuthGuardProps {
@@ -36,7 +36,9 @@ export function AuthGuard({ children }: AuthGuardProps) {
           <h1 className="mt-4 text-xl font-bold text-texto-primario">Sin acceso</h1>
           <p className="mt-2 break-words text-sm text-texto-secundario">
             El usuario <b className="text-texto-primario">{user?.email}</b> no tiene habilitado el acceso a La Taberna.
-            Pedile al administrador que le asigne el rol <code className="rounded bg-superficie-2 px-1 py-0.5 text-texto-primario">{ROL_APP}</code>.
+            Pedile al administrador que le asigne el rol{' '}
+            <code className="rounded bg-superficie-2 px-1 py-0.5 text-texto-primario">{ROL_ADMIN}</code> o{' '}
+            <code className="rounded bg-superficie-2 px-1 py-0.5 text-texto-primario">{ROL_PEDIDOS}</code>.
           </p>
           <Boton variante="contorneado" className="mt-6 w-full" onClick={signOut}>
             Salir

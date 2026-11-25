@@ -13,7 +13,13 @@
 
 ## DÓNDE QUEDAMOS — leer primero al retomar (maximo 40 lineas)
 
-**Fase actual:** 7 cerrando → 8 (UI tablet y roles, a charlar). Impresión: sin print server; **RawBT + comandera (WiFi recomendada)**.
+**Fase actual:** 8 EN STAGING (rama `fase8-tablet-y-rol`): rol solo pedidos, menú recogible, Pedido + para tablet. Impresión: sin print server; **RawBT + comandera (WiFi recomendada)**.
+**Fase 8 (2026-11-25, sin Merge):** tarjetas de categoría con dibujo (Fluent Emoji en `public/iconos-categorias/`, mapeo por
+palabra clave en `pos/lib/iconoCategoria.ts`, muestra en `/iconos-categorias/muestra.html`), resumen a la derecha desde md,
+menú lateral recogible (`useMenu`), rol `taberna_pedidos` (front + **migración 013 SIN APLICAR**, con rollback). QA Chromium
+mockeado OK (`qa-fase8.mjs`). Staging: `/root/Gestion-Pedidos-Taberna-staging`, `sgp-taberna-staging`, 8092,
+`pedidostaberna-staging.duckdns.org` (MISMA base que prod: pedido de prueba = pedido real). Falta: OK de Lucas para la 013 y
+crear el usuario solo pedidos; modo RawBT directo (cuando haya impresora); logo; margen.
 **Sesión local 2026-11-25 — EN PRODUCCIÓN `88d71ff` (PR #2), junto con el ticket de 22 px. Vuelta atrás:
 `docker tag sgp-taberna:anterior-d0eddb3 sgp-taberna:latest` + `docker compose up -d`. master solo por PR (hook).**
 - Opción por aparato "¿Este aparato imprime?" (Configuración → Impresión, `localStorage`, por defecto sí).

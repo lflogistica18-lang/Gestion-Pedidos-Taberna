@@ -13,10 +13,10 @@ const ORDER_TYPES: { value: OrderType; label: string }[] = [
 ]
 
 // El control segmentado de la pieza es chico; en la caja se estira y sube a 44 px.
-const CLASES_SEGMENTADO = 'flex w-full [&>button]:min-h-11 [&>button]:flex-1 [&>button]:text-sm'
+const CLASES_SEGMENTADO = 'flex w-full [&>button]:min-h-11 [&>button]:flex-1 [&>button]:text-sm md:[&>button]:min-h-12 md:[&>button]:text-base'
 
 interface CartPanelProps {
-  /** `panel`: columna fija de lg (el pie queda abajo). `hoja`: dentro del Modal de celu. */
+  /** `panel`: columna fija desde md (el pie queda abajo). `hoja`: dentro del Modal de celu. */
   variante: 'panel' | 'hoja'
   submitting: boolean
   error: string | null
@@ -121,12 +121,12 @@ export function CartPanel({ variante, submitting, error, onConfirm }: CartPanelP
     <div className="space-y-3">
       {esPanel && aviso}
       <div className="flex items-baseline justify-between">
-        <span className="text-base font-medium text-texto-secundario">Total</span>
-        <span className="text-2xl font-bold tabular-nums text-texto-primario">{fmtMonto(getTotal())}</span>
+        <span className="text-base font-medium text-texto-secundario md:text-lg">Total</span>
+        <span className="text-2xl font-bold tabular-nums text-texto-primario md:text-3xl">{fmtMonto(getTotal())}</span>
       </div>
       <Boton
         variante="primario"
-        className="w-full sm:min-h-11"
+        className="w-full sm:min-h-11 md:min-h-14 md:text-lg"
         onClick={onConfirm}
         disabled={submitting || items.length === 0}
       >
@@ -137,7 +137,7 @@ export function CartPanel({ variante, submitting, error, onConfirm }: CartPanelP
   )
 
   const limpiar = (
-    <Boton compacto onClick={clearCart} disabled={items.length === 0}>
+    <Boton compacto className="md:min-h-12" onClick={clearCart} disabled={items.length === 0}>
       <Trash2 size={14} />
       Limpiar
     </Boton>
@@ -148,8 +148,8 @@ export function CartPanel({ variante, submitting, error, onConfirm }: CartPanelP
       <div className="flex h-full min-h-0 flex-col">
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-borde-sutil px-4 py-3">
           <div>
-            <h2 className="text-base font-semibold text-texto-primario">Pedido</h2>
-            <p className="text-sm text-texto-secundario">{cantidad} {cantidad === 1 ? 'ítem' : 'ítems'}</p>
+            <h2 className="text-base font-semibold text-texto-primario md:text-xl">Pedido</h2>
+            <p className="text-sm text-texto-secundario md:text-base">{cantidad} {cantidad === 1 ? 'ítem' : 'ítems'}</p>
           </div>
           {limpiar}
         </div>

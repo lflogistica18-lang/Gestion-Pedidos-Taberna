@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { LogOut, Settings } from 'lucide-react'
 import { cn } from '@/shared/lib/cn'
+import { useAuth } from '@/modules/auth/hooks/useAuth'
 import { useConfirmarSalida } from './useConfirmarSalida'
 
 interface MenuUsuarioProps {
@@ -15,6 +16,7 @@ export function MenuUsuario({ email, onSalir }: MenuUsuarioProps) {
   const [abierto, setAbierto] = useState(false)
   const contenedor = useRef<HTMLDivElement>(null)
   const { armado, alTocar } = useConfirmarSalida(onSalir)
+  const { esAdmin } = useAuth()
   const inicial = (email.trim()[0] ?? '?').toUpperCase()
 
   // Se cierra al tocar afuera o con Escape.
@@ -60,6 +62,7 @@ export function MenuUsuario({ email, onSalir }: MenuUsuarioProps) {
           </div>
           <div className="border-t border-borde-sutil pt-1.5">
             {/* En el celu Configuración no entra en la barra de abajo: se llega desde acá */}
+            {esAdmin && (
             <Link
               to="/config"
               role="menuitem"
@@ -69,6 +72,7 @@ export function MenuUsuario({ email, onSalir }: MenuUsuarioProps) {
               <Settings size={16} aria-hidden="true" className="text-texto-secundario" />
               Configuración
             </Link>
+            )}
             <button
               type="button"
               role="menuitem"

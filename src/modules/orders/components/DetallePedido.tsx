@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Clock, ListOrdered, Tag } from 'lucide-react'
+import { useAuth } from '@/modules/auth/hooks/useAuth'
 import { AvisoEstado, Boton, Modal, TarjetaDato, TarjetaDatoMini, fmtMonto, mostrarToast } from '@/shared/components/panel'
 import type { OrderConDetalle, UseAdminOrdersResult } from '../hooks/useAdminOrders'
 import { ESTADO_PEDIDO, ETIQUETA_PAGO, ETIQUETA_TIPO, fmtFechaCompleta, fmtHora } from './formato'
@@ -13,6 +14,7 @@ interface Props {
 
 export function DetallePedido({ pedido, onCerrar, enviarAPapelera, restaurarDePapelera }: Props) {
   const [trabajando, setTrabajando] = useState(false)
+  const { esAdmin } = useAuth()
   if (!pedido) return null
 
   const enPapelera = !!pedido.deleted_at
@@ -52,7 +54,7 @@ export function DetallePedido({ pedido, onCerrar, enviarAPapelera, restaurarDePa
         {cancelado && <AvisoEstado tono="rojo" titulo="Pedido cancelado" />}
         {enPapelera && (
           <AvisoEstado tono="ambar" titulo="En la papelera">
-            No cuenta en los reportes. Podés restaurarlo.
+            No cuenta en los reportes.{esAdmin && ' Podés restaurarlo.'}
           </AvisoEstado>
         )}
 
@@ -112,7 +114,8 @@ export function DetallePedido({ pedido, onCerrar, enviarAPapelera, restaurarDePa
 
         <div className="flex flex-col-reverse gap-2 border-t border-borde-sutil pt-4 sm:flex-row sm:justify-end">
           <Boton onClick={onCerrar}>Cerrar</Boton>
-          {enPapelera ? (
+          {/* Papelera, cancelar y restaurar: solo el admin (la base también lo niega) */}
+          {!esAdmin ? null : enPapelera ? (
             <Boton variante="primario" disabled={trabajando} onClick={() => void ejecutar(restaurarDePapelera, `Pedido #${pedido.order_number} restaurado`)}>
               {trabajando ? 'Restaurando…' : 'Restaurar'}
             </Boton>

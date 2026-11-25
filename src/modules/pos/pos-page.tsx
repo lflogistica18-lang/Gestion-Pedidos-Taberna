@@ -7,22 +7,18 @@ import { useCategories } from '@/modules/products/hooks/useCategories'
 import { useCartStore } from './store/useCartStore'
 import { useCreateOrder } from './hooks/useCreateOrder'
 import { useActiveOrders } from './hooks/useActiveOrders'
-import { ProductGrid } from './components/ProductGrid'
+import { CatalogoPos } from './components/CatalogoPos'
+import { BuscadorProductos } from './components/BuscadorProductos'
 import { CartPanel } from './components/CartPanel'
 import { ActiveOrdersPanel } from './components/ActiveOrdersPanel'
-import { ClipboardList, PlusCircle, Search, X } from 'lucide-react'
+import { ClipboardList, PlusCircle } from 'lucide-react'
 import { EstadoError } from '@/shared/components/comunes/EstadoError'
-import { Boton, EncabezadoPagina, Entrada, FiltrosPastilla, IconButton, Modal, Pastilla, mostrarToast } from '@/shared/components/panel'
+import { Boton, EncabezadoPagina, FiltrosPastilla, Modal, Pastilla, mostrarToast } from '@/shared/components/panel'
 import { BarraCarrito } from './components/BarraCarrito'
 import { useEncolarImpresion } from './hooks/useEncolarImpresion'
 import { useConfiguracion } from '@/shared/store/useConfiguracion'
 import { useAparato } from '@/shared/store/useAparato'
 import { medioDePagoValido } from '@/shared/lib/config'
-
-/** Minúsculas y sin acentos, para buscar sin distinguir. */
-function normalizar(texto: string): string {
-  return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
-}
 
 export default function PosPage() {
   const [categoriaElegida, setCategoriaElegida] = useState<string>('')
@@ -73,13 +69,6 @@ export default function PosPage() {
   const getItemCount = useCartStore((s) => s.getItemCount)
   const clearCart = useCartStore((s) => s.clearCart)
 
-  // Con texto en el buscador se busca en todas las categorías
-  const textoBusqueda = normalizar(busqueda.trim())
-  const buscando = textoBusqueda !== ''
-  const filteredProducts = products.filter((p) =>
-    buscando ? normalizar(p.name).includes(textoBusqueda) : !activeCategory || p.category === activeCategory,
-  )
-
   const handleConfirm = async () => {
     const pedido = await createOrder({
       items,
@@ -124,7 +113,7 @@ export default function PosPage() {
   const cantidadPorCategoria = (nombre: string) => products.filter((p) => p.category === nombre).length
 
   return (
-    <div className="flex min-h-full flex-col lg:h-full lg:flex-row">
+    <div className="flex min-h-full flex-col md:h-full md:flex-row">
       {/* Ticket oculto — solo existe mientras se imprime */}
       {pedidoAImprimir && (
         <div style={{ display: 'none' }}>
@@ -132,7 +121,7 @@ export default function PosPage() {
         </div>
       )}
 
-      <div className="flex min-w-0 flex-1 flex-col lg:overflow-y-auto">
+      <div className="flex min-w-0 flex-1 flex-col md:overflow-y-auto">
         <div className="flex-1 px-4 py-3 sm:px-6 sm:py-6">
           <EncabezadoPagina
             icono={<PlusCircle size={22} />}
@@ -153,41 +142,24 @@ export default function PosPage() {
             }
             pestanas={
               <div className="flex flex-col gap-2 sm:gap-3">
-              <div className="relative">
-                <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-texto-secundario" aria-hidden="true" />
-                <Entrada
-                  type="search"
-                  aria-label="Buscar producto"
-                  placeholder="Buscar producto…"
-                  value={busqueda}
-                  onChange={(e) => setBusqueda(e.target.value)}
-                  autoComplete="off"
-                  className="w-full pl-10 pr-12 [&::-webkit-search-cancel-button]:appearance-none"
-                />
-                {busqueda && (
-                  <IconButton
-                    etiqueta="Borrar búsqueda"
-                    onClick={() => setBusqueda('')}
-                    className="absolute right-0 top-1/2 -translate-y-1/2"
-                  >
-                    <X size={18} />
-                  </IconButton>
-                )}
-              </div>
-                <FiltrosPastilla
-                  etiqueta="Categorías"
-                contadorDesdeSm
-                  value={activeCategory}
-                  onChange={setCategoriaElegida}
-                  opciones={[
-                    { value: '', label: 'Todas', cantidad: loading ? undefined : products.length },
-                    ...categories.map(({ name }) => ({
-                      value: name,
-                      label: name,
-                      cantidad: loading ? undefined : cantidadPorCategoria(name),
-                    })),
-                  ]}
-                />
+                <BuscadorProductos value={busqueda} onChange={setBusqueda} />
+                {/* Pastillas solo en celular; en tablet se elige con tarjetas grandes */}
+                <div className="md:hidden">
+                  <FiltrosPastilla
+                    etiqueta="Categorías"
+                    contadorDesdeSm
+                    value={activeCategory}
+                    onChange={setCategoriaElegida}
+                    opciones={[
+                      { value: '', label: 'Todas', cantidad: loading ? undefined : products.length },
+                      ...categories.map(({ name }) => ({
+                        value: name,
+                        label: name,
+                        cantidad: loading ? undefined : cantidadPorCategoria(name),
+                      })),
+                    ]}
+                  />
+                </div>
               </div>
             }
           />
@@ -195,11 +167,13 @@ export default function PosPage() {
           {productsError ? (
             <EstadoError mensaje={productsError} onReintentar={refetchProducts} />
           ) : (
-            <ProductGrid
-              products={filteredProducts}
+            <CatalogoPos
+              products={products}
+              categories={categories}
               loading={loading}
-              agrupar={buscando || !activeCategory}
-              mensajeVacio={buscando ? 'No hay productos que coincidan con la búsqueda' : 'No hay productos en esta categoría'}
+              activeCategory={activeCategory}
+              onElegirCategoria={setCategoriaElegida}
+              busqueda={busqueda}
             />
           )}
         </div>
@@ -207,15 +181,15 @@ export default function PosPage() {
         {itemCount > 0 && <BarraCarrito cantidad={itemCount} total={total} onAbrir={() => setCartOpen(true)} />}
       </div>
 
-      {/* Carrito fijo a la derecha desde lg */}
+      {/* Carrito fijo a la derecha desde md */}
       <aside
         aria-label="Pedido en curso"
-        className="hidden w-[360px] shrink-0 border-l border-borde-sutil bg-bg-tarjeta lg:block"
+        className="hidden w-80 shrink-0 border-l border-borde-sutil bg-bg-tarjeta md:block lg:w-[360px]"
       >
         <CartPanel variante="panel" submitting={submitting} error={error} onConfirm={handleConfirm} />
       </aside>
 
-      {/* Carrito como hoja inferior en celu y tablet parada */}
+      {/* Carrito como hoja inferior solo en celu */}
       <Modal
         open={cartOpen}
         onClose={() => setCartOpen(false)}
