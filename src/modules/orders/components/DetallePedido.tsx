@@ -58,6 +58,16 @@ export function DetallePedido({ pedido, onCerrar, enviarAPapelera, restaurarDePa
           </AvisoEstado>
         )}
 
+        {pedido.motivo_anulacion && (
+          <AvisoEstado tono="ambar" titulo={`Anulado por ${pedido.anulado_por ?? 'desconocido'} — ${pedido.motivo_anulacion}`} />
+        )}
+        {!!pedido.ediciones && pedido.ediciones > 0 && (
+          <AvisoEstado
+            tono="neutro"
+            titulo={`Editado ${pedido.ediciones} ${pedido.ediciones === 1 ? 'vez' : 'veces'}${pedido.editado_at ? ` (última: ${fmtFechaCompleta(pedido.editado_at)})` : ''}`}
+          />
+        )}
+
         <TarjetaDato etiqueta="Total" valor={fmtMonto(pedido.total)} detalle={ETIQUETA_PAGO[pedido.payment_method]} />
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">

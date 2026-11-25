@@ -3,6 +3,7 @@ import { AreaTexto, AvisoEstado, Boton, Campo, ControlSegmentado, Entrada, fmtMo
 import { EstadoVacio } from '@/shared/components/comunes/EstadoVacio'
 import { useCartStore } from '../store/useCartStore'
 import { CartItemRow } from './CartItemRow'
+import { AvisoEditandoPedido } from './AvisoEditandoPedido'
 import type { OrderType } from '@/types/database.types'
 import { useConfiguracion } from '@/shared/store/useConfiguracion'
 import { ETIQUETAS_PAGO, medioDePagoValido } from '@/shared/lib/config'
@@ -26,6 +27,7 @@ interface CartPanelProps {
 /** Contenido del carrito: se usa igual en el panel derecho y en la hoja del celu. */
 export function CartPanel({ variante, submitting, error, onConfirm }: CartPanelProps) {
   const items = useCartStore((s) => s.items)
+  const editando = useCartStore((s) => s.editando)
   const orderType = useCartStore((s) => s.orderType)
   const paymentMethod = useCartStore((s) => s.paymentMethod)
   const notes = useCartStore((s) => s.notes)
@@ -115,7 +117,9 @@ export function CartPanel({ variante, submitting, error, onConfirm }: CartPanelP
     </div>
   )
 
-  const aviso = error && <AvisoEstado tono="rojo" titulo="No se pudo confirmar el pedido">{error}</AvisoEstado>
+  const aviso = error && (
+    <AvisoEstado tono="rojo" titulo={editando ? 'No se pudieron guardar los cambios' : 'No se pudo confirmar el pedido'}>{error}</AvisoEstado>
+  )
 
   // En la hoja del celu el pie va pegado abajo: solo total y botón, para no tapar
   // los campos. El aviso de error queda al final del formulario.
@@ -133,7 +137,7 @@ export function CartPanel({ variante, submitting, error, onConfirm }: CartPanelP
         disabled={submitting || items.length === 0}
       >
         <Check size={16} />
-        {submitting ? 'Procesando...' : 'Confirmar pedido'}
+        {submitting ? (editando ? 'Guardando...' : 'Procesando...') : editando ? 'Guardar cambios' : 'Confirmar pedido'}
       </Boton>
     </div>
   )
@@ -150,7 +154,7 @@ export function CartPanel({ variante, submitting, error, onConfirm }: CartPanelP
       <div className="flex h-full min-h-0 flex-col">
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-borde-sutil px-4 py-3">
           <div>
-            <h2 className="text-base font-semibold text-texto-primario md:text-xl">Pedido</h2>
+            <h2 className="text-base font-semibold text-texto-primario md:text-xl">{editando ? `Pedido #${editando.orderNumber}` : 'Pedido'}</h2>
             <p className="mt-0.5 flex items-center gap-2 text-sm text-texto-secundario md:text-base">
               <span className="inline-flex min-w-7 items-center justify-center rounded-full bg-acento-primario px-2 py-0.5 text-sm font-bold tabular-nums text-sobre-acento md:text-base">{cantidad}</span>
               {cantidad === 1 ? 'ítem' : 'ítems'}
@@ -166,6 +170,7 @@ export function CartPanel({ variante, submitting, error, onConfirm }: CartPanelP
 
   return (
     <div>
+      <AvisoEditandoPedido className="mb-3" />
       <div className="mb-3 flex justify-end">{limpiar}</div>
       {cuerpo}
       {aviso && <div className="mt-4">{aviso}</div>}

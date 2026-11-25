@@ -13,6 +13,8 @@ interface ActiveOrdersPanelProps {
   loading: boolean
   error: string | null
   refetch: () => void
+  /** Tocaron "Editar" en un pedido: la pantalla carga ese pedido en el carrito. */
+  onEditar: (order: OrderWithItems) => void
 }
 
 const STATUS_ORDER = ['listo', 'en_preparacion', 'pendiente'] as const
@@ -23,16 +25,11 @@ const GRUPOS: Record<(typeof STATUS_ORDER)[number], { titulo: string; icono: Luc
   pendiente: { titulo: 'Pendientes', icono: Clock },
 }
 
-export function ActiveOrdersPanel({ open, onClose, orders, loading, error, refetch }: ActiveOrdersPanelProps) {
-  const { updatingId, updateStatus, deleteOrder } = useUpdateOrderStatus()
+export function ActiveOrdersPanel({ open, onClose, orders, loading, error, refetch, onEditar }: ActiveOrdersPanelProps) {
+  const { updatingId, updateStatus } = useUpdateOrderStatus()
 
   const handleDeliver = async (orderId: string) => {
     const { error: err } = await updateStatus(orderId, 'entregado')
-    if (err) mostrarToast('No se pudo actualizar el pedido: ' + err, 'error')
-  }
-
-  const handleDelete = async (orderId: string) => {
-    const { error: err } = await deleteOrder(orderId)
     if (err) mostrarToast('No se pudo actualizar el pedido: ' + err, 'error')
   }
 
@@ -65,7 +62,8 @@ export function ActiveOrdersPanel({ open, onClose, orders, loading, error, refet
                     order={order}
                     updating={updatingId === order.id}
                     onDeliver={handleDeliver}
-                    onDelete={handleDelete}
+                    onEditar={onEditar}
+                    onAnulado={refetch}
                   />
                 ))}
               </section>

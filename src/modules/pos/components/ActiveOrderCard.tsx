@@ -1,5 +1,5 @@
-import { useRef } from 'react'
-import { Bike, Check, Clock, Printer, Store, Trash2, UtensilsCrossed, type LucideIcon } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { Bike, Check, Clock, Pencil, Printer, Store, Trash2, UtensilsCrossed, type LucideIcon } from 'lucide-react'
 import { useReactToPrint } from 'react-to-print'
 import type { OrderWithItems } from '../hooks/useActiveOrders'
 import { Receipt } from './Receipt'
@@ -11,6 +11,7 @@ import { useConfiguracion } from '@/shared/store/useConfiguracion'
 import { useAparato } from '@/shared/store/useAparato'
 import { useAuth } from '@/modules/auth/hooks/useAuth'
 import { useEncolarImpresion } from '../hooks/useEncolarImpresion'
+import { AnularPedidoModal } from './AnularPedidoModal'
 
 const ESTADOS: Record<string, { label: string; tono: TonoPastilla }> = {
   pendiente: { label: 'Pendiente', tono: 'ambar' },
@@ -36,20 +37,27 @@ interface ActiveOrderCardProps {
   order: OrderWithItems
   updating: boolean
   onDeliver: (orderId: string) => void
-  onDelete: (orderId: string) => void
+  /** Tocaron "Editar": la pantalla carga el pedido en el carrito. */
+  onEditar: (order: OrderWithItems) => void
+  /** Ya se anuló: refrescar la lista. */
+  onAnulado: () => void
 }
 
-export function ActiveOrderCard({ order, updating, onDeliver, onDelete }: ActiveOrderCardProps) {
+export function ActiveOrderCard({ order, updating, onDeliver, onEditar, onAnulado }: ActiveOrderCardProps) {
   const estado = ESTADOS[order.status] ?? { label: order.status, tono: 'neutro' as const }
   const tipo = TIPOS[order.type] ?? { label: order.type, icono: UtensilsCrossed }
   const IconoTipo = tipo.icono
   const isReady = order.status === 'listo'
   const { esAdmin } = useAuth()
+  const [anulando, setAnulando] = useState(false)
   const cocinaActiva = useConfiguracion((s) => s.config.cocina_activa)
   const modoImpresion = useConfiguracion((s) => s.config.modo_impresion)
   const imprimeAca = useAparato((s) => s.imprimeAca)
   // Sin pantalla de cocina nadie marca "listo": la caja entrega desde cualquier estado activo
   const puedeEntregar = cocinaActiva ? isReady : order.status !== 'entregado' && order.status !== 'cancelado'
+  // Editar vale mientras no esté entregado; anular también, salvo un entregado para el rol solo pedidos
+  const puedeEditar = order.status !== 'entregado' && order.status !== 'cancelado'
+  const puedeAnular = order.status !== 'cancelado' && (order.status !== 'entregado' || esAdmin)
 
   const minutesAgo = useMinutosDesde(order.created_at)
 
@@ -137,20 +145,17 @@ export function ActiveOrderCard({ order, updating, onDeliver, onDelete }: Active
         <IconButton etiqueta="Reimprimir" onClick={handlePrint} disabled={updating || encolando}>
           <Printer size={18} />
         </IconButton>
-        {/* Mandar a la papelera: solo el admin (la base también lo niega al rol solo pedidos) */}
-        {esAdmin && (
-        <IconButton
-          etiqueta="Enviar a la papelera"
-          variante="peligro"
-          onClick={() => {
-            if (window.confirm('¿Estás seguro de eliminar este pedido?')) {
-              onDelete(order.id)
-            }
-          }}
-          disabled={updating}
-        >
-          <Trash2 size={18} />
-        </IconButton>
+        {puedeAnular && (
+          <Boton className="text-tono-rojo-texto sm:min-h-11" onClick={() => setAnulando(true)} disabled={updating} aria-label={`Anular el pedido #${order.order_number}`}>
+            <Trash2 size={16} />
+            Anular
+          </Boton>
+        )}
+        {puedeEditar && (
+          <Boton className="sm:min-h-11" onClick={() => onEditar(order)} disabled={updating} aria-label={`Editar el pedido #${order.order_number}`}>
+            <Pencil size={16} />
+            Editar
+          </Boton>
         )}
         {/* Solo cajero marca entregado (con cocina: cuando está listo) */}
         {puedeEntregar && (
@@ -160,6 +165,14 @@ export function ActiveOrderCard({ order, updating, onDeliver, onDelete }: Active
           </Boton>
         )}
       </div>
+
+      <AnularPedidoModal
+        open={anulando}
+        orderId={order.id}
+        orderNumber={order.order_number}
+        onClose={() => setAnulando(false)}
+        onAnulado={onAnulado}
+      />
     </article>
   )
 }
