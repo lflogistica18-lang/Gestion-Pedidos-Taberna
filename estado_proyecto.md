@@ -13,6 +13,11 @@
 
 ## DÓNDE QUEDAMOS — leer primero al retomar (maximo 40 lineas)
 
+**Rama `local-por-defecto-y-direccion` (2026-11-25, URGENTE, espera Merge y deploy):** ARREGLO de una regresión que entró con
+`3a32a63`: `pos-page.tsx` dejó de suscribirse a los ítems del carrito y en el celu la barra "Ver pedido" no aparecía al sumar
+productos (no se podía confirmar un pedido nuevo desde el celu sin recargar). Además: cada pedido nuevo arranca en Local
+(`clearCart` y `salirDeEdicion`), y un Delivery no se confirma sin nombre y dirección (botón apagado + texto de qué falta).
+QA Chromium OK tras el arreglo. Lección: el QA de "editar" no probó cargar un pedido NUEVO en celu; sumarlo siempre a la regresión.
 **Editar y anular EN PRODUCCIÓN `3a32a63` (PR #7, 2026-11-25; vuelta atrás: imagen `sgp-taberna:anterior-b821d7c` y `014_*.rollback.sql`):** desde Pedidos se puede EDITAR
 (mismo pedido y número; carga el carrito en modo "Editando el pedido #N", botón "Guardar cambios") y ANULAR con motivo (queda
 `anulado_por` y `motivo_anulacion`). Los dos roles; solo pedidos no anula un entregado. Todo por RPC `sgp.editar_pedido` /

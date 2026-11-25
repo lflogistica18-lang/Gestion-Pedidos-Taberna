@@ -101,7 +101,8 @@ export const useCartStore = create<CartStore>()(
     })
   },
 
-  clearCart: () => set({ items: [], notes: '', customerName: '', deliveryAddress: '', editando: null }),
+  // Cada pedido nuevo arranca en Local: si es delivery, se elige a mano
+  clearCart: () => set({ items: [], orderType: 'local', notes: '', customerName: '', deliveryAddress: '', editando: null }),
 
   cargarPedido: (order) =>
     set({
@@ -118,7 +119,7 @@ export const useCartStore = create<CartStore>()(
       deliveryAddress: order.delivery_address ?? '',
     }),
 
-  salirDeEdicion: () => set({ items: [], notes: '', customerName: '', deliveryAddress: '', editando: null }),
+  salirDeEdicion: () => set({ items: [], orderType: 'local', notes: '', customerName: '', deliveryAddress: '', editando: null }),
 
   setOrderType: (orderType) => set({ orderType }),
   setPaymentMethod: (paymentMethod) => set({ paymentMethod }),

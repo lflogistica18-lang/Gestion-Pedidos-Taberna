@@ -117,6 +117,13 @@ export function CartPanel({ variante, submitting, error, onConfirm }: CartPanelP
     </div>
   )
 
+  // Un delivery no se puede confirmar sin a quién ni a dónde llevarlo
+  const faltaDelivery =
+    orderType !== 'delivery' ? null
+      : !customerName.trim() ? 'Falta el nombre del cliente'
+        : !deliveryAddress.trim() ? 'Falta la dirección de entrega'
+          : null
+
   const aviso = error && (
     <AvisoEstado tono="rojo" titulo={editando ? 'No se pudieron guardar los cambios' : 'No se pudo confirmar el pedido'}>{error}</AvisoEstado>
   )
@@ -130,11 +137,14 @@ export function CartPanel({ variante, submitting, error, onConfirm }: CartPanelP
         <span className="text-base font-medium text-texto-secundario md:text-lg">Total</span>
         <span className="text-2xl font-bold tabular-nums text-texto-primario md:text-3xl">{fmtMonto(getTotal())}</span>
       </div>
+      {items.length > 0 && faltaDelivery && (
+        <p role="status" className="text-sm font-semibold text-tono-ambar-texto md:text-base">{faltaDelivery}</p>
+      )}
       <Boton
         variante="primario"
         className="w-full sm:min-h-11 md:min-h-14 md:text-lg"
         onClick={onConfirm}
-        disabled={submitting || items.length === 0}
+        disabled={submitting || items.length === 0 || faltaDelivery !== null}
       >
         <Check size={16} />
         {submitting ? (editando ? 'Guardando...' : 'Procesando...') : editando ? 'Guardar cambios' : 'Confirmar pedido'}

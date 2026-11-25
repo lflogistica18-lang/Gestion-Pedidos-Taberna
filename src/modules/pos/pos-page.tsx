@@ -42,8 +42,9 @@ export default function PosPage() {
 
   const editando = useCartStore((s) => s.editando)
   const cargarPedido = useCartStore((s) => s.cargarPedido)
-  const getTotal = useCartStore((s) => s.getTotal)
-  const getItemCount = useCartStore((s) => s.getItemCount)
+  // Suscripción a los ítems: sin esto la barra "Ver pedido" del celu no se entera de que se sumó algo
+  const itemCount = useCartStore((s) => s.items.reduce((n, i) => n + i.quantity, 0))
+  const total = useCartStore((s) => s.items.reduce((n, i) => n + i.unitPrice * i.quantity, 0))
 
   const { submitting, error, confirmar, pedidoAImprimir, soltarPedidoAImprimir } = useEnviarPedido({
     alTerminar: () => setCartOpen(false),
@@ -63,8 +64,6 @@ export default function PosPage() {
     else empezarEdicion(order)
   }
 
-  const itemCount = getItemCount()
-  const total = getTotal()
   const cantidadPorCategoria = (nombre: string) => products.filter((p) => p.category === nombre).length
 
   return (
