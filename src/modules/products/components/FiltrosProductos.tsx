@@ -10,9 +10,11 @@ interface Props {
   /** Categorías con la cantidad de productos de la pestaña. */
   opciones: { nombre: string; cantidad: number }[]
   total: number
+  /** Desde md las categorías se eligen con tarjetas: las pastillas quedan solo en el celu. */
+  pastillasSoloCelu?: boolean
 }
 
-export function FiltrosProductos({ busqueda, onBusqueda, categoria, onCategoria, opciones, total }: Props) {
+export function FiltrosProductos({ busqueda, onBusqueda, categoria, onCategoria, opciones, total, pastillasSoloCelu }: Props) {
   return (
     <div className="mb-4 space-y-3">
       <div className="relative">
@@ -27,6 +29,7 @@ export function FiltrosProductos({ busqueda, onBusqueda, categoria, onCategoria,
         />
       </div>
       {opciones.length > 0 && (
+        <div className={pastillasSoloCelu ? 'md:hidden' : undefined}>
         <FiltrosPastilla
           etiqueta="Categoría"
           value={categoria}
@@ -36,6 +39,7 @@ export function FiltrosProductos({ busqueda, onBusqueda, categoria, onCategoria,
             ...opciones.map(o => ({ value: o.nombre, label: o.nombre, cantidad: o.cantidad })),
           ]}
         />
+        </div>
       )}
     </div>
   )

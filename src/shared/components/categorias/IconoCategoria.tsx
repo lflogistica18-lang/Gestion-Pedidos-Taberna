@@ -1,4 +1,4 @@
-import { iconoCategoria } from '../lib/iconoCategoria'
+import { iconoCategoria } from '@/shared/lib/iconoCategoria'
 
 interface IconoCategoriaProps {
   nombre: string

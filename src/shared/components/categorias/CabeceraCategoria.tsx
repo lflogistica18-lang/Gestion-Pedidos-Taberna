@@ -1,6 +1,6 @@
 import { ArrowLeft } from 'lucide-react'
 import { Boton } from '@/shared/components/panel'
-import { capitalizar } from '../lib/iconoCategoria'
+import { capitalizar } from '@/shared/lib/iconoCategoria'
 import { IconoCategoria } from './IconoCategoria'
 
 interface CabeceraCategoriaProps {
