@@ -14,7 +14,15 @@
 ## DÓNDE QUEDAMOS — leer primero al retomar (maximo 40 lineas)
 
 **Fase actual:** 7 cerrando → 8 (UI tablet y roles, a charlar). Impresión: sin print server; **RawBT + comandera (WiFi recomendada)**.
-**Lo ultimo que se hizo (2026-11-21/25, sesión en la nube):**
+**Sesión local 2026-11-25 — rama `impresion-por-aparato` (SIN SUBIR a prod, espera OK y horario de Lucas):**
+- Opción por aparato "¿Este aparato imprime?" (Configuración → Impresión, `localStorage`, por defecto sí).
+  En "No" (celu/tablet): confirmar y 🖨️ dejan el ticket en `sgp.print_jobs` sin abrir el diálogo. La compu
+  (que también toma pedidos) ve la franja "Para imprimir (N)" en toda la app, imprime y marca `impreso`.
+  Sin migración. Provisorio: se saca con `grep PROVISORIO-WIFI` cuando impriman celu y tablet.
+- QA Chromium con Supabase mockeado: 5 casos OK. Sin probar: aviso por realtime/beep, franja a 390 px, papel real.
+- Decidido por Lucas: ticket 22 px tal cual; rol solo pedidos y barra recogible OK; pantalla tablet con el
+  resumen a la derecha; una impresora WiFi en cocina para empezar (dos = "copia para caja" más adelante).
+**Antes (2026-11-21/25, sesión en la nube):**
 - **Caída de Supabase (20/11 → 21/11):** el proyecto compartido (`Sales Chatbot RAG`) quedó "No
   saludable" (base, login, REST). Causa: `ImpresoraTaberna.exe` (UA `Bun/1.4.3`) hacía ~13 consultas
   por minuto: ~9.000 de ~9.500 pedidos HTTP diarios. Bug en `print-server/src/cola.ts`: `suscribir()`
@@ -29,8 +37,8 @@
   22 px negrita; notas en 22 px sin negrita; columnas 12/66/22 %; 58 mm → 18 px. El resto sin tocar.
   Captura `ticket-prueba-22px.png` (no versionada). Los nombres largos (49 letras) ocupan 4–5 renglones.
 **Proximo paso concreto:**
-1. Lucas decide sobre el ticket: 22 px tal cual / acortar nombres largos en Productos (lo recomendado)
-   / bajar a 18 px. Después, deploy desde su compu (comando de CLAUDE.md).
+1. Con OK y horario de Lucas: merge de `impresion-por-aparato` a master y deploy (ticket 22 px + impresión
+   por aparato), con copia de la imagen anterior. Después: poner "No" en celu y tablet y probar un pedido real.
 2. Llega la comandera Bluetooth (80 mm, ESC/POS) → RawBT en el celu de ella, emparejar, probar
    un pedido (modo `navegador`, ya activo).
 3. El print server queda retirado: no arreglar `cola.ts` salvo que se pida. Para reactivarlo:

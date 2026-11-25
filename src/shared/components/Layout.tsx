@@ -13,6 +13,7 @@ import { BarraSuperior } from './BarraSuperior'
 import { MenuLateral } from './MenuLateral'
 import { NavBar } from './NavBar'
 import { ContenedorToasts } from './panel'
+import { AvisoParaImprimir } from '@/modules/pos/components/AvisoParaImprimir'
 
 export function Layout() {
   const { user, signOut } = useAuth()
@@ -29,6 +30,8 @@ export function Layout() {
       <MenuLateral email={email} onSalir={signOut} />
       <div className="flex min-w-0 flex-1 flex-col">
         <BarraSuperior email={email} onSalir={signOut} />
+        {/* PROVISORIO-WIFI: sacar el aviso cuando haya impresora WiFi */}
+        <AvisoParaImprimir />
         {/* `relative` contiene los textos sr-only de los gráficos, que si no estiran el scroll */}
         <main className="relative min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-bg-principal [-webkit-overflow-scrolling:touch]">
           <Outlet />
