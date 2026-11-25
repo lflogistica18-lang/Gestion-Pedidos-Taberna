@@ -16,7 +16,7 @@
 **Fase actual:** 8 EN STAGING (rama `fase8-tablet-y-rol`): rol solo pedidos, menú recogible, Pedido + para tablet. Impresión: sin print server; **RawBT + comandera (WiFi recomendada)**.
 **Fase 8 (2026-11-25, sin Merge):** tarjetas de categoría con dibujo (Fluent Emoji en `public/iconos-categorias/`, mapeo por
 palabra clave en `pos/lib/iconoCategoria.ts`, muestra en `/iconos-categorias/muestra.html`), resumen a la derecha desde md,
-menú lateral recogible (`useMenu`), rol `taberna_pedidos` (front + **migración 013 SIN APLICAR**, con rollback). QA Chromium
+menú lateral recogible (`useMenu`), rol `taberna_pedidos` (front + **migración 013 APLICADA en prod 2026-11-25**, verificación OK y RLS probada por rol; rollback escrito). QA Chromium
 mockeado OK (`qa-fase8.mjs`). Staging: `/root/Gestion-Pedidos-Taberna-staging`, `sgp-taberna-staging`, 8092,
 `pedidostaberna-staging.duckdns.org` (MISMA base que prod: pedido de prueba = pedido real). Falta: OK de Lucas para la 013 y
 crear el usuario solo pedidos; modo RawBT directo (cuando haya impresora); logo; margen.
@@ -151,6 +151,7 @@ Anotados tal como los dijo. **Hecho 2026-10-20 (`d0eddb3`): menú, pantalla prin
 | 010 | RLS por rol `taberna`, sin anon ni DELETE, columnas faltantes, `renombrar_categoria` | sí (vía script, 2026-10-20) |
 | 011 | Cola de impresión `print_jobs` | sí (vía script, 2026-10-20) |
 | 012 | `configuracion` (una fila) | sí (vía script, 2026-10-20) |
+| 013 | Rol `taberna_pedidos` (`es_personal`, `es_solo_pedidos`, 13 policies) | sí (2026-11-25, `supabase-sql.sh -f`) |
 | `instalar_sgp_desde_cero.sql` | 001–012 + seed en una transacción | **sí** (2026-10-20, verificación OK) |
 
 ## Deploy (datos)
