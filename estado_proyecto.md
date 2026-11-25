@@ -20,7 +20,7 @@ Lucas mire los dibujos (`/iconos-categorias/muestra.html`; "Medias tartas" dudos
 **EN PRODUCCIÓN `7919dbf` (PR #4, 2026-11-25; vuelta atrás: `docker tag sgp-taberna:anterior-70b7ec0 sgp-taberna:latest` + up -d):** Productos con tarjetas de categoría desde md
 (piezas movidas a `shared/components/categorias/` y `shared/lib/iconoCategoria.ts`); resumen del pedido con más contraste,
 opción B elegida por Lucas (ítem fondo naranja suave + cantidad en círculo naranja; Local/Delivery y pago en naranja lleno).
-QA Chromium mockeado OK. **Rama `iconos-propios` (espera Merge y deploy):** 18 dibujos propios generados con Gemini solo desde
+QA Chromium mockeado OK. **Íconos propios EN PRODUCCIÓN `76f9d64` (PR #5, 2026-11-25; vuelta atrás: imagen `sgp-taberna:anterior-7919dbf`):** 18 dibujos propios generados con Gemini solo desde
 texto (USD 0,60), en `public/iconos-categorias/*.png`; estilo, prompts y cómo sumar uno en `docs/ICONOS-CATEGORIAS.md`. Los SVG
 Fluent reemplazados quedaron sin usar (borrarlos lo hace Lucas: `rm` denegado). `Iconos a ver/` = capturas de bancos pagos,
 solo referencia, ignoradas en git. Pendiente: alta de producto con categoría preelegida (pide prop en CrudManager).
