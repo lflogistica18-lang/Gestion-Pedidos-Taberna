@@ -13,7 +13,7 @@
 
 ## DÓNDE QUEDAMOS — leer primero al retomar (maximo 40 lineas)
 
-**Fase actual:** 7 — Cambios de Lucas. Impresión: se abandona el print server; va **comandera Bluetooth + RawBT**.
+**Fase actual:** 7 cerrando → 8 (UI tablet y roles, a charlar). Impresión: sin print server; **RawBT + comandera (WiFi recomendada)**.
 **Lo ultimo que se hizo (2026-11-21/25, sesión en la nube):**
 - **Caída de Supabase (20/11 → 21/11):** el proyecto compartido (`Sales Chatbot RAG`) quedó "No
   saludable" (base, login, REST). Causa: `ImpresoraTaberna.exe` (UA `Bun/1.4.3`) hacía ~13 consultas
@@ -35,17 +35,46 @@
    un pedido (modo `navegador`, ya activo).
 3. El print server queda retirado: no arreglar `cola.ts` salvo que se pida. Para reactivarlo:
    arreglar el bucle, desbanear el usuario y volver `modo_impresion` a `servidor`.
-4. Logo, margen y deuda de `useDashboardStats` (1000 pedidos): siguen como estaban.
+4. Charlar la Fase 8 (ver "Pedidos de Lucas (2026-11-25)"): rol solo pedidos, barra que se recoge,
+   pantalla de pedido con tarjetas, confirmar = imprimir, WiFi vs. Bluetooth. Definir impresora ANTES de comprar.
+5. Logo, margen y deuda de `useDashboardStats` (1000 pedidos): siguen como estaban.
 **Bloqueantes:** ninguno.
 **Pendientes del dueño:**
-- **Borrar el token `diagnostico-claude`** en Supabase (Account preferences → Access Tokens) y quitar
-  la credencial de `api.supabase.com` del entorno de la nube.
-- Comprar la comandera Bluetooth. Pasar el logo de la Taberna.
+- Quitar la credencial de `api.supabase.com` del entorno de la nube (el token ya está borrado).
+- Elegir impresora (WiFi recomendada si imprimen varias tablets; todas Android). Pasar el logo.
 **Avisos:**
 - La base es compartida y gratis: cualquier app que consulte en bucle tira abajo a las otras.
   Ante "no deja entrar": revisar la salud del proyecto antes que el VPS.
 - Nuevos usuarios de la caja: rol con `UPDATE auth.users ...` (ver abajo). Salir y volver a entrar.
 - El VPS levanta con `docker compose` (plugin v2), no `docker-compose` v1 como dice CLAUDE.md.
+
+---
+
+## Pedidos de Lucas (2026-11-25) — Fase 8, para charlar al retomar
+
+Proceso: todo por **staging** (`/omni-staging`); **Fable** evalúa y planifica, **Sonnet** construye
+con contrato; base, RLS y deploy los hace el orquestador con OK de Lucas.
+
+**A. Rol "solo pedidos":** ve Pedido + e Historial; sin Caja, Productos ni Configuración. Hace falta
+un segundo rol en `app_metadata` + RLS (ver/cargar pedidos sí, tocar precios/config no) + menú filtrado.
+**B. Barra lateral que se recoge** en toda la app.
+**C. Nueva pantalla de pedido (para tablet; la usa una persona mayor: lo más simple y visible posible):**
+- Arranca con la barra recogida y las categorías como **tarjetas grandes con un dibujo de referencia**.
+- Al tocar una categoría, se ocultan las otras: esa categoría queda grande arriba y abajo la lista de
+  sus productos. El pedido sigue al costado.
+- Íconos: Lucide (ya instalado) tiene comidas pero en línea fina; mejor un set a color (Fluent Emoji
+  o Noto Emoji). Elegir viendo una muestra con las categorías reales.
+**D. Confirmar = imprimir directo**, sin el diálogo: mandar el ticket a RawBT por intent/URL `rawbt:`
+(reusar el ESC/POS de `print-server/src/escpos.ts` + `ticket.ts`). RawBT es **solo Android**:
+las tablets y celus que impriman tienen que ser Android.
+**E. Impresora y fallas (respuestas dadas a Lucas):**
+- Bluetooth se conecta con un aparato a la vez; con varias tablets → **comandera WiFi** (recomendada).
+  RawBT funciona igual con las dos.
+- Sin cola central: RawBT avisa el error en el aparato que imprime, pero la app no se entera. Hoy se
+  reimprime con 🖨️. Saber si salió cada ticket y que quede esperando = impresión central (print
+  server arreglado). Decisión a charlar: simple (RawBT) vs. controlado (central).
+- Sin WiFi no se guarda el pedido → no hay ticket (la Bluetooth no necesita WiFi, la app sí).
+- Dos impresoras a la vez (cocina + caja): no de un toque; opciones: botón "copia para caja" o impresión central.
 
 ---
 
