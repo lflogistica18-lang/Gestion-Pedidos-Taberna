@@ -393,17 +393,35 @@ body { background: var(--color-bg-principal); color: var(--color-texto-primario)
     vertical-align: top;
   }
   
-  .print-receipt__items .qty { width: 15%; }
-  .print-receipt__items .desc { width: 60%; }
-  .print-receipt__items .amt { width: 25%; text-align: right; }
-  
+  .print-receipt__items .qty { width: 12%; }
+  .print-receipt__items .desc { width: 66%; }
+  .print-receipt__items .amt { width: 22%; text-align: right; }
+
+  /* Lo que lee la cocina: cantidad y producto grandes y en negrita (el precio queda chico) */
+  .print-receipt__items tbody .qty,
+  .print-receipt__items tbody .desc {
+    font-size: 22px;
+    font-weight: bold;
+    line-height: 1.15;
+  }
+  .print-receipt__items tbody td { padding: 5px 0; }
+  .print-receipt__items tbody .amt { padding-top: 9px; }
+  .print-receipt__items tbody .print-receipt__unit { font-weight: normal; }
+
   .print-receipt__notes {
     margin-top: 10px;
     border: 1px dashed #000;
     padding: 5px;
   }
-  
+
   .print-receipt__notes p { margin: 2px 0; }
+  /* El texto de las notas, del mismo tamaño que los productos (sin negrita) */
+  .print-receipt__notes p:not(.print-receipt__bold) { font-size: 22px; line-height: 1.15; }
+
+  /* Papel de 58 mm: proporcional */
+  .print-receipt--58 .print-receipt__items tbody .qty,
+  .print-receipt--58 .print-receipt__items tbody .desc,
+  .print-receipt--58 .print-receipt__notes p:not(.print-receipt__bold) { font-size: 18px; }
   
   .print-receipt__total-section {
     display: flex;
