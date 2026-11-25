@@ -1,5 +1,14 @@
 Dibujos de las categorías de Pedido +
 
+1) DIBUJOS PROPIOS (.png, 256x256) — 18 archivos
+Generados con inteligencia artificial (Gemini, motor de imagen de la skill de creativos del Omni) el 2026-11-25,
+solo a partir de una descripción escrita (no se usaron imágenes de terceros como modelo). Se pueden usar
+libremente en esta app. Archivos: empanada, bebida, postre, pasta, milanesa, hamburguesa, ensalada, sandwich,
+sandwich-milanesa, tortilla, guiso, tarta, combo, vianda, carnes, arrollado, adicional, generico.
+Cómo se hicieron y cómo sumar más: docs/ICONOS-CATEGORIAS.md.
+
+2) FLUENT EMOJI (.svg) — 8 archivos que siguen vigentes para categorías futuras
+Archivos: papas, pizza, cafe, helado, cerveza, vino, sopa, desayuno.
 Origen: Fluent Emoji (estilo "Color", SVG), de Microsoft.
 https://github.com/microsoft/fluentui-emoji
 Licencia: MIT. Copyright (c) Microsoft Corporation.
@@ -9,6 +18,6 @@ copyright y de licencia. El software se entrega "tal cual", sin garantía de nin
 
 Texto completo de la licencia MIT: https://github.com/microsoft/fluentui-emoji/blob/main/LICENSE
 
-Archivos: empanada, bebida, postre, pasta, milanesa, hamburguesa, papas, ensalada, sandwich, sandwich-milanesa,
-tortilla, guiso, tarta, combo, vianda, carnes, arrollado, adicional (Salt), pizza, cafe, helado, cerveza, vino,
-sopa, desayuno, generico. Renombrados al castellano; el contenido no se modificó.
+Renombrados al castellano; el contenido no se modificó.
+
+NOTA: los .svg de Fluent Emoji que ya tienen dibujo propio (empanada, bebida, ..., generico) ya no se usan.
