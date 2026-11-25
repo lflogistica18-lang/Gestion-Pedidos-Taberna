@@ -13,110 +13,51 @@
 
 ## DÓNDE QUEDAMOS — leer primero al retomar (maximo 40 lineas)
 
-**EN PRODUCCIÓN `009c801` (PR #8, 2026-11-25; vuelta atrás: imagen `sgp-taberna:anterior-3a32a63`):** ARREGLO de una regresión que entró con
-`3a32a63`: `pos-page.tsx` dejó de suscribirse a los ítems del carrito y en el celu la barra "Ver pedido" no aparecía al sumar
-productos (no se podía confirmar un pedido nuevo desde el celu sin recargar). Además: cada pedido nuevo arranca en Local
-(`clearCart` y `salirDeEdicion`), y un Delivery no se confirma sin nombre y dirección (botón apagado + texto de qué falta).
-QA Chromium OK tras el arreglo. Lección: el QA de "editar" no probó cargar un pedido NUEVO en celu; sumarlo siempre a la regresión.
-**Editar y anular EN PRODUCCIÓN `3a32a63` (PR #7, 2026-11-25; vuelta atrás: imagen `sgp-taberna:anterior-b821d7c` y `014_*.rollback.sql`):** desde Pedidos se puede EDITAR
-(mismo pedido y número; carga el carrito en modo "Editando el pedido #N", botón "Guardar cambios") y ANULAR con motivo (queda
-`anulado_por` y `motivo_anulacion`). Los dos roles; solo pedidos no anula un entregado. Todo por RPC `sgp.editar_pedido` /
-`sgp.anular_pedido` (SECURITY DEFINER, precio lo pone la base, historial en `sgp.order_edits` solo admin). **Migración 014 APLICADA en prod 2026-11-25 (verificación OK)**; antes ensayada en prod dentro de BEGIN…ROLLBACK con `supabase/pruebas/014_prueba_rls.sql`, 22/22 OK. Ticket de pedido
-editado sale con "*** PEDIDO MODIFICADO ***" (permiso de Lucas para tocar `Receipt.tsx`). QA Chromium mockeado OK. Orden de
-salida: aplicar 014 → Merge → deploy. Sin probar: ticket modificado en papel, impresión real.
-**EN PRODUCCIÓN `b821d7c` (PR #6, 2026-11-25; vuelta atrás: imagen `sgp-taberna:anterior-76f9d64`):** (1) al cerrarse el cuadro de imprimir la app pregunta
-"¿Salió el ticket?" (franja y pedidos tomados en la compu; No/cerrar = queda pendiente en `print_jobs`); pedido anulado sale de
-"Para imprimir". (2) PWA se actualiza sola (`shared/lib/actualizarApp.ts`: chequeo al volver y cada 30 min, recarga sola), carrito
-en `sessionStorage` (`sgp.carrito`), manifest `orientation: any`, nginx sin caché en index/sw y assets inmutables (probado en
-staging con `nginx -t`). (3) Celu: al elegir categoría se esconden las pastillas y queda cabecera compacta con "Todas" (Pedido + y
-Productos). QA Chromium OK. Deuda anotada: producto desactivado puede quedar en un carrito guardado; `clearCart` no vuelve a "Local".
-**Fase actual:** 8 EN PRODUCCIÓN `70b7ec0` (PR #3, 2026-11-25; vuelta atrás: `docker tag sgp-taberna:anterior-88d71ff
-sgp-taberna:latest` + up -d, y `013_*.rollback.sql`): rol solo pedidos, menú recogible, Pedido + para tablet. Staging
-quedó apagado (`sgp-taberna-staging`, sin dominio). FALTA: crear el usuario solo pedidos (Lucas pasa el mail), que
-Lucas mire los dibujos (`/iconos-categorias/muestra.html`; "Medias tartas" dudoso) y la prueba real en el local. Impresión: sin print server; **RawBT + comandera (WiFi recomendada)**.
-**EN PRODUCCIÓN `7919dbf` (PR #4, 2026-11-25; vuelta atrás: `docker tag sgp-taberna:anterior-70b7ec0 sgp-taberna:latest` + up -d):** Productos con tarjetas de categoría desde md
-(piezas movidas a `shared/components/categorias/` y `shared/lib/iconoCategoria.ts`); resumen del pedido con más contraste,
-opción B elegida por Lucas (ítem fondo naranja suave + cantidad en círculo naranja; Local/Delivery y pago en naranja lleno).
-QA Chromium mockeado OK. **Íconos propios EN PRODUCCIÓN `76f9d64` (PR #5, 2026-11-25; vuelta atrás: imagen `sgp-taberna:anterior-7919dbf`):** 18 dibujos propios generados con Gemini solo desde
-texto (USD 0,60), en `public/iconos-categorias/*.png`; estilo, prompts y cómo sumar uno en `docs/ICONOS-CATEGORIAS.md`. Los SVG
-Fluent reemplazados quedaron sin usar (borrarlos lo hace Lucas: `rm` denegado). `Iconos a ver/` = capturas de bancos pagos,
-solo referencia, ignoradas en git. Pendiente: alta de producto con categoría preelegida (pide prop en CrudManager).
-**Fase 8 (2026-11-25):** tarjetas de categoría con dibujo (Fluent Emoji en `public/iconos-categorias/`, mapeo por
-palabra clave en `pos/lib/iconoCategoria.ts`, muestra en `/iconos-categorias/muestra.html`), resumen a la derecha desde md,
-menú lateral recogible (`useMenu`), rol `taberna_pedidos` (front + **migración 013 APLICADA en prod 2026-11-25**, verificación OK y RLS probada por rol; rollback escrito). QA Chromium
-mockeado OK (`qa-fase8.mjs`). Staging: `/root/Gestion-Pedidos-Taberna-staging`, `sgp-taberna-staging`, 8092,
-`pedidostaberna-staging.duckdns.org` (MISMA base que prod: pedido de prueba = pedido real). Falta: OK de Lucas para la 013 y
-crear el usuario solo pedidos; modo RawBT directo (cuando haya impresora); logo; margen.
-**Sesión local 2026-11-25 — EN PRODUCCIÓN `88d71ff` (PR #2), junto con el ticket de 22 px. Vuelta atrás:
-`docker tag sgp-taberna:anterior-d0eddb3 sgp-taberna:latest` + `docker compose up -d`. master solo por PR (hook).**
-- Opción por aparato "¿Este aparato imprime?" (Configuración → Impresión, `localStorage`, por defecto sí).
-  En "No" (celu/tablet): confirmar y 🖨️ dejan el ticket en `sgp.print_jobs` sin abrir el diálogo. La compu
-  (que también toma pedidos) ve la franja "Para imprimir (N)" en toda la app, imprime y marca `impreso`.
-  Sin migración. Provisorio: se saca con `grep PROVISORIO-WIFI` cuando impriman celu y tablet.
-- QA Chromium con Supabase mockeado: 5 casos OK. Sin probar: aviso por realtime/beep, franja a 390 px, papel real.
-- Decidido por Lucas: ticket 22 px tal cual; rol solo pedidos y barra recogible OK; pantalla tablet con el
-  resumen a la derecha; una impresora WiFi en cocina para empezar (dos = "copia para caja" más adelante).
-**Antes (2026-11-21/25, sesión en la nube):**
-- **Caída de Supabase (20/11 → 21/11):** el proyecto compartido (`Sales Chatbot RAG`) quedó "No
-  saludable" (base, login, REST). Causa: `ImpresoraTaberna.exe` (UA `Bun/1.4.3`) hacía ~13 consultas
-  por minuto: ~9.000 de ~9.500 pedidos HTTP diarios. Bug en `print-server/src/cola.ts`: `suscribir()`
-  hace `removeChannel` del canal viejo, eso dispara `CLOSED` en su callback y agenda otra
-  suscripción a los 5 s → bucle infinito, con `procesarPendientes()` en cada `SUBSCRIBED`.
-  Empezaba cada día cerca de las 7 h, al prender la compu.
-- Arreglo (con OK de Lucas): restart del proyecto por la Management API; `banned_until = 2999` para
-  `impresion@lataberna.com`; `sgp.configuracion.modo_impresion = 'navegador'`. Todo sano, sin trabajos pendientes.
-- Mientras no llegue la Bluetooth: desde la compu, al confirmar se abre el diálogo de imprimir (USB);
-  desde el celu, Cancelar y reimprimir con 🖨️ en la compu. El mensaje para la empleada ya se mandó.
-- **Ticket más grande (SIN SUBIR a prod):** `src/index.css` (`@media print`): cantidad + producto en
-  22 px negrita; notas en 22 px sin negrita; columnas 12/66/22 %; 58 mm → 18 px. El resto sin tocar.
-  Captura `ticket-prueba-22px.png` (no versionada). Los nombres largos (49 letras) ocupan 4–5 renglones.
+**Fase actual:** 8 cerrada EN PRODUCCIÓN `e7e4919` (PR #9, 2026-11-25). Sigue: primer uso real en el local y, cuando haya
+impresora WiFi, la impresión directa (sección "Impresión directa" abajo). master solo recibe por PR (hook): Lucas hace el Merge.
+**Lo que quedó en producción en la sesión del 2026-11-25 (PRs #2 a #9, cada uno con copia `sgp-taberna:anterior-<commit>`):**
+- **Impresión por aparato (PROVISORIO-WIFI):** Configuración → Impresión → "¿Este aparato imprime?" (`localStorage`). En "No"
+  (celu/tablet) el ticket va a `sgp.print_jobs`; la compu lo ve en la franja "Para imprimir". Al cerrarse el cuadro de imprimir la
+  app pregunta "¿Salió el ticket?" (también en pedidos tomados en la compu); No/cerrar = queda pendiente. Anulado sale de la lista.
+- **Roles:** `taberna` (admin) y `taberna_pedidos` (solo Pedido + e Historial; usuario `ventas@lataberna.com`). Migración 013.
+- **Pedido + y Productos:** desde md, categorías como tarjetas con dibujo → lista → "Todas las categorías"; resumen del pedido
+  siempre a la derecha (opción B: ítem naranja suave, cantidad en círculo). En celu: pastillas que se esconden al elegir una
+  categoría (cabecera compacta con "Todas"). Menú lateral recogible. Dibujos propios (Gemini, solo texto): `docs/ICONOS-CATEGORIAS.md`.
+- **Editar y anular desde Pedidos:** mismo pedido y número; RPC `sgp.editar_pedido` / `sgp.anular_pedido` (precio lo pone la base,
+  historial en `sgp.order_edits` solo admin, anular pide motivo y guarda quién). Ticket editado sale con "PEDIDO MODIFICADO"
+  (único cambio a `Receipt.tsx`, con permiso de Lucas). Migración 014. La lista de Pedidos muestra el último primero.
+- **PWA:** se actualiza sola (`shared/lib/actualizarApp.ts`), carrito en `sessionStorage`, orientación libre, nginx sin caché en
+  index/sw. Pedido nuevo arranca en Local; Delivery exige nombre y dirección. Ticket a 22 px.
 **Proximo paso concreto:**
-1. En el local: poner "No" en celu y tablet (Configuración → Impresión) y probar un pedido real; mirar que la
-   franja "Para imprimir" aparezca en la compu y cómo se lee el ticket de 22 px en papel.
-2. Llega la comandera Bluetooth (80 mm, ESC/POS) → RawBT en el celu de ella, emparejar, probar
-   un pedido (modo `navegador`, ya activo).
-3. El print server queda retirado: no arreglar `cola.ts` salvo que se pida. Para reactivarlo:
-   arreglar el bucle, desbanear el usuario y volver `modo_impresion` a `servidor`.
-4. Charlar la Fase 8 (ver "Pedidos de Lucas (2026-11-25)"): rol solo pedidos, barra que se recoge,
-   pantalla de pedido con tarjetas, confirmar = imprimir, WiFi vs. Bluetooth. Definir impresora ANTES de comprar.
-5. Logo, margen y deuda de `useDashboardStats` (1000 pedidos): siguen como estaban.
+1. Prueba real en el local: "No" en celu y tablet, un pedido de cada aparato, editar uno, anular uno, mirar los tickets en papel
+   (22 px y "PEDIDO MODIFICADO"). Nada de la sesión se probó con impresora ni aparatos reales: todo fue Chromium + base simulada.
+2. Lucas: cambiar la contraseña de `ventas@lataberna.com` (quedó a la vista en una captura del chat).
+3. Impresora WiFi elegida → modo "RawBT directo" y sacar lo `PROVISORIO-WIFI` (`grep -rn PROVISORIO-WIFI src`).
+4. Logo (Lucas lo pasa), margen (charlar), deuda `useDashboardStats` (máx. 1000 pedidos).
 **Bloqueantes:** ninguno.
-**Pendientes del dueño:**
-- Quitar la credencial de `api.supabase.com` del entorno de la nube (el token ya está borrado).
-- Elegir impresora (WiFi recomendada si imprimen varias tablets; todas Android). Pasar el logo.
+**Pendientes del dueño:** contraseña de ventas@; elegir impresora (WiFi, Android); logo; borrar los SVG Fluent sin uso de
+`public/iconos-categorias/` (el agente tiene `rm` denegado); quitar la credencial de `api.supabase.com` del entorno de la nube.
 **Avisos:**
-- La base es compartida y gratis: cualquier app que consulte en bucle tira abajo a las otras.
-  Ante "no deja entrar": revisar la salud del proyecto antes que el VPS.
-- Nuevos usuarios de la caja: rol con `UPDATE auth.users ...` (ver abajo). Salir y volver a entrar.
-- El VPS levanta con `docker compose` (plugin v2), no `docker-compose` v1 como dice CLAUDE.md.
+- **Regresión de la sesión (arreglada en `009c801`):** al refactorizar `pos-page.tsx` se perdió la suscripción a los ítems y en celu
+  no aparecía la barra "Ver pedido". Todo QA de Pedido + incluye SIEMPRE "cargar un pedido nuevo en 390 px y ver la barra".
+- QA: scripts de Playwright con Supabase mockeado en el scratchpad de la sesión (no versionados); se rehacen leyendo los hooks.
+- La base es compartida y gratis (`zslsosunvsbxxnzeckpg`): un bucle de consultas tira abajo dropshipping y el cotizador. Ante
+  "no deja entrar", mirar primero la salud del proyecto. Un pedido de prueba es un pedido real: anularlo después.
+- La Caja cuenta desde que se confirma (Lucas: lógico sería al entregar; "de momento" queda así).
+- Staging: `/root/Gestion-Pedidos-Taberna-staging`, contenedor `sgp-taberna-staging` (apagado, puerto 8092, sin dominio); sirve
+  para probar `nginx -t` y builds. El VPS usa `docker compose` v2. Deploy = tag de copia + pull + build --no-cache + up -d.
+- Deuda: producto desactivado puede quedar en un carrito guardado; alta de producto no preelige la categoría abierta.
 
 ---
 
-## Pedidos de Lucas (2026-11-25) — Fase 8, para charlar al retomar
+## Impresión directa — pendiente para cuando haya impresora WiFi
 
-Proceso: todo por **staging** (`/omni-staging`); **Fable** evalúa y planifica, **Sonnet** construye
-con contrato; base, RLS y deploy los hace el orquestador con OK de Lucas.
-
-**A. Rol "solo pedidos":** ve Pedido + e Historial; sin Caja, Productos ni Configuración. Hace falta
-un segundo rol en `app_metadata` + RLS (ver/cargar pedidos sí, tocar precios/config no) + menú filtrado.
-**B. Barra lateral que se recoge** en toda la app.
-**C. Nueva pantalla de pedido (para tablet; la usa una persona mayor: lo más simple y visible posible):**
-- Arranca con la barra recogida y las categorías como **tarjetas grandes con un dibujo de referencia**.
-- Al tocar una categoría, se ocultan las otras: esa categoría queda grande arriba y abajo la lista de
-  sus productos. El pedido sigue al costado.
-- Íconos: Lucide (ya instalado) tiene comidas pero en línea fina; mejor un set a color (Fluent Emoji
-  o Noto Emoji). Elegir viendo una muestra con las categorías reales.
-**D. Confirmar = imprimir directo**, sin el diálogo: mandar el ticket a RawBT por intent/URL `rawbt:`
-(reusar el ESC/POS de `print-server/src/escpos.ts` + `ticket.ts`). RawBT es **solo Android**:
-las tablets y celus que impriman tienen que ser Android.
-**E. Impresora y fallas (respuestas dadas a Lucas):**
-- Bluetooth se conecta con un aparato a la vez; con varias tablets → **comandera WiFi** (recomendada).
-  RawBT funciona igual con las dos.
-- Sin cola central: RawBT avisa el error en el aparato que imprime, pero la app no se entera. Hoy se
-  reimprime con 🖨️. Saber si salió cada ticket y que quede esperando = impresión central (print
-  server arreglado). Decisión a charlar: simple (RawBT) vs. controlado (central).
-- Sin WiFi no se guarda el pedido → no hay ticket (la Bluetooth no necesita WiFi, la app sí).
-- Dos impresoras a la vez (cocina + caja): no de un toque; opciones: botón "copia para caja" o impresión central.
+A, B y C de los pedidos del 2026-11-25 (rol solo pedidos, barra recogible, pantalla de tablet) están HECHOS y en producción.
+**D. Confirmar = imprimir directo**, sin el diálogo: mandar el ticket a RawBT por intent/URL `rawbt:` (reusar el ESC/POS de
+`print-server/src/escpos.ts` + `ticket.ts`). RawBT es **solo Android**. Tercer valor de la opción por aparato.
+**E. Decidido con Lucas:** una impresora WiFi en cocina para empezar (Bluetooth conecta de a un aparato); dos impresoras a la
+vez = botón "copia para caja" más adelante; impresión central (print server arreglado) solo si en el uso real se pierden tickets.
+El print server sigue retirado (usuario `impresion@lataberna.com` baneado; no arreglar `cola.ts` salvo pedido).
 
 ---
 
@@ -167,8 +108,10 @@ Anotados tal como los dijo. **Hecho 2026-10-20 (`d0eddb3`): menú, pantalla prin
 | UI estilo Panel | hecho | 2026-10-19 | `docs/notas/estilo-panel.md` |
 | Configuración | hecho | 2026-10-19 | migración 012 |
 | 6 - Deploy producción | hecho (falta primer uso) | 2026-10-20 | `docs/PUESTA-EN-MARCHA.md` |
-| 7 - Cambios de Lucas (menú, reporte, lista de productos, logo, margen) | en curso (menú, Caja y Pedido + en prod) | | "Pedidos de Lucas" arriba |
-| 8 - Explicación (/omni-explicar) + operación | pendiente | | |
+| 7 - Cambios de Lucas (menú, reporte, lista de productos) | hecho (logo y margen pasan a pendientes) | 2026-10-20 | "Pedidos de Lucas" abajo |
+| 8 - Tablet, roles, impresión por aparato, editar/anular, PWA | hecho (falta primer uso real) | 2026-11-25 | PRs #2–#9 |
+| 9 - Impresión directa por WiFi (RawBT) | pendiente (falta impresora) | | sección "Impresión directa" |
+| 10 - Explicación (/omni-explicar) + operación | pendiente | | |
 
 ## Migraciones
 
@@ -202,3 +145,8 @@ Anotados tal como los dijo. **Hecho 2026-10-20 (`d0eddb3`): menú, pantalla prin
 - 2026-10-19 — La base arranca de cero (los pedidos viejos eran de prueba).
 - 2026-11-21 — Print server retirado (su bucle de reconexión tiró la base compartida); impresión con comandera Bluetooth + RawBT. Usuario de impresión baneado.
 - 2026-11-21 — Ticket: productos y notas a 22 px (lo que lee la cocina); el resto igual.
+- 2026-11-25 — master solo por PR; el agente deja la rama y Lucas hace el Merge. Base y deploy: el orquestador, con OK de Lucas.
+- 2026-11-25 — Editar un pedido = modificar ese mismo pedido (no reemplazarlo); solo mientras no esté entregado.
+- 2026-11-25 — El rol solo pedidos puede editar y anular (con motivo y registro), pero no anular un entregado.
+- 2026-11-25 — Dibujos de categoría propios, generados solo desde texto; nunca capturas de bancos de imágenes.
+- 2026-11-25 — En celu, Pedido + y Productos siguen con pastillas (no tarjetas); las tarjetas son desde 768 px.
