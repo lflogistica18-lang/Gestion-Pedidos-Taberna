@@ -14,6 +14,7 @@ import { correrAsistente, imprimirPrueba } from './asistente.js';
 import { iniciarCola } from './cola.js';
 import { aConfigCompleta, carpetaDeDatos, leerConfigExe, urlYClave, type ConfigExe } from './configExe.js';
 import { cerrarConsola, decir, pausa } from './consola.js';
+import { esEjecutableCompilado, relevarAnterior } from './relevo.js';
 import { listarImpresoras, quitarAccesoInicio } from './windows.js';
 
 const TITULO = 'Impresora La Taberna';
@@ -90,6 +91,11 @@ async function principal(): Promise<boolean> {
   const cfg = aConfigCompleta(config);
   if (!urlYClave(config).url || !urlYClave(config).clave) {
     salirConMensaje('Este programa no trae la dirección de Supabase. Pedile a quien te lo pasó una versión nueva.');
+  }
+
+  // El .exe nuevo desplaza al viejo (procesos abiertos, arranque automático, renombre). Nunca frena el arranque.
+  if (process.platform === 'win32' && esEjecutableCompilado(process.execPath)) {
+    await relevarAnterior({ exe: process.execPath, pid: process.pid, avisar: decir }).catch(() => undefined);
   }
 
   decir(`Impresora: ${cfg.impresoraWindows}`);

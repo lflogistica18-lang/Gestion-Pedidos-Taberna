@@ -22,6 +22,10 @@ Hace falta la compu con Windows 11 donde va a quedar la impresora, y el archivo 
 
 El programa además queda configurado para **abrirse solo cada vez que se prende la compu**. No tenés que hacer nada más.
 
+### Actualizar el programita
+
+Para pasar a una versión nueva: **descargá el `ImpresoraTaberna.exe` nuevo y hacé doble clic**. No hace falta cerrar ni borrar nada. Al abrirse, el nuevo cierra solo al anterior si estaba abierto, cambia el arranque automático para que al prender la compu se abra el nuevo, y renombra el archivo viejo agregándole `-VIEJO-NO-ABRIR` (queda guardado en su carpeta; ya no hace falta abrirlo). Si algún paso no se puede hacer, la ventana lo avisa en una línea y el programa sigue igual. Los datos (usuario, impresora) se conservan.
+
 ### Activar la impresión automática en la app
 
 En la app de pedidos: **Configuración → Impresión → Modo de impresión** y elegí **"Print server en la compu"**. Después tocá **Guardar**. (Si dejás la otra opción, "Desde el celu (RawBT)", los tickets no salen por esta compu.)
