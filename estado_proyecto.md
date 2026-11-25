@@ -14,7 +14,8 @@
 ## DÓNDE QUEDAMOS — leer primero al retomar (maximo 40 lineas)
 
 **Fase actual:** 7 cerrando → 8 (UI tablet y roles, a charlar). Impresión: sin print server; **RawBT + comandera (WiFi recomendada)**.
-**Sesión local 2026-11-25 — rama `impresion-por-aparato` (SIN SUBIR a prod, espera OK y horario de Lucas):**
+**Sesión local 2026-11-25 — EN PRODUCCIÓN `88d71ff` (PR #2), junto con el ticket de 22 px. Vuelta atrás:
+`docker tag sgp-taberna:anterior-d0eddb3 sgp-taberna:latest` + `docker compose up -d`. master solo por PR (hook).**
 - Opción por aparato "¿Este aparato imprime?" (Configuración → Impresión, `localStorage`, por defecto sí).
   En "No" (celu/tablet): confirmar y 🖨️ dejan el ticket en `sgp.print_jobs` sin abrir el diálogo. La compu
   (que también toma pedidos) ve la franja "Para imprimir (N)" en toda la app, imprime y marca `impreso`.
@@ -37,8 +38,8 @@
   22 px negrita; notas en 22 px sin negrita; columnas 12/66/22 %; 58 mm → 18 px. El resto sin tocar.
   Captura `ticket-prueba-22px.png` (no versionada). Los nombres largos (49 letras) ocupan 4–5 renglones.
 **Proximo paso concreto:**
-1. Con OK y horario de Lucas: merge de `impresion-por-aparato` a master y deploy (ticket 22 px + impresión
-   por aparato), con copia de la imagen anterior. Después: poner "No" en celu y tablet y probar un pedido real.
+1. En el local: poner "No" en celu y tablet (Configuración → Impresión) y probar un pedido real; mirar que la
+   franja "Para imprimir" aparezca en la compu y cómo se lee el ticket de 22 px en papel.
 2. Llega la comandera Bluetooth (80 mm, ESC/POS) → RawBT en el celu de ella, emparejar, probar
    un pedido (modo `navegador`, ya activo).
 3. El print server queda retirado: no arreglar `cola.ts` salvo que se pida. Para reactivarlo:
