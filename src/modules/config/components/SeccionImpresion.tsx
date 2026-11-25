@@ -2,6 +2,7 @@ import { Printer } from 'lucide-react'
 import { AvisoEstado, Campo, ControlSegmentado, Entrada } from '@/shared/components/panel'
 import type { ModoImpresion, PapelMm } from '@/shared/lib/config'
 import { valorDe, type PropsSeccion } from '../secciones'
+import { useAparato } from '@/shared/store/useAparato'
 import { useGuardarSeccion } from '../hooks/useGuardarSeccion'
 import { OpcionModoImpresion } from './OpcionModoImpresion'
 import { TarjetaSeccion } from './TarjetaSeccion'
@@ -12,11 +13,18 @@ const OPCIONES_PAPEL: { value: '80' | '58'; label: string }[] = [
   { value: '58', label: '58 mm' },
 ]
 
+const OPCIONES_APARATO: { value: 'si' | 'no'; label: string }[] = [
+  { value: 'si', label: 'Sí' },
+  { value: 'no', label: 'No' },
+]
+
 export function SeccionImpresion({ config, borrador, onCambiar, onGuardado, bloqueado }: PropsSeccion) {
   const { guardando, guardar } = useGuardarSeccion(onGuardado)
   const modo = valorDe(config, borrador, 'modo_impresion')
   const papel = valorDe(config, borrador, 'papel_mm')
   const pie = valorDe(config, borrador, 'pie_ticket')
+  const imprimeAca = useAparato((s) => s.imprimeAca)
+  const setImprimeAca = useAparato((s) => s.setImprimeAca)
   const hayCambios = modo !== config.modo_impresion || papel !== config.papel_mm || pie !== config.pie_ticket
 
   function elegirModo(m: ModoImpresion) {
@@ -59,6 +67,21 @@ export function SeccionImpresion({ config, borrador, onCambiar, onGuardado, bloq
             <AvisoEstado tono="ambar" titulo="Antes de activarlo">
               Instalá el print server en la compu (print-server/README.md) y aplicá la migración 011. Si no, los tickets van a quedar en la cola sin imprimirse.
             </AvisoEstado>
+          )}
+          {/* PROVISORIO-WIFI: sacar este bloque cuando haya impresora WiFi */}
+          {modo === 'navegador' && (
+            <Campo
+              etiqueta="En este aparato"
+              ayuda="Sí: al confirmar se abre el cuadro de imprimir. No: el pedido se confirma y el ticket queda para imprimir desde la compu."
+            >
+              <p className="mb-2 text-sm text-texto-primario">¿Este aparato imprime los tickets?</p>
+              <ControlSegmentado
+                opciones={OPCIONES_APARATO}
+                value={imprimeAca ? 'si' : 'no'}
+                onChange={(v) => setImprimeAca(v === 'si')}
+                etiqueta="¿Este aparato imprime los tickets?"
+              />
+            </Campo>
           )}
           <Campo etiqueta="Ancho del papel" ayuda="La mayoría de las comanderas son de 80 mm.">
             <ControlSegmentado opciones={OPCIONES_PAPEL} value={String(papel) === '58' ? '58' : '80'} onChange={elegirPapel} etiqueta="Ancho del papel" />

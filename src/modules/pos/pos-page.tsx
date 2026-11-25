@@ -16,6 +16,7 @@ import { Boton, EncabezadoPagina, Entrada, FiltrosPastilla, IconButton, Modal, P
 import { BarraCarrito } from './components/BarraCarrito'
 import { useEncolarImpresion } from './hooks/useEncolarImpresion'
 import { useConfiguracion } from '@/shared/store/useConfiguracion'
+import { useAparato } from '@/shared/store/useAparato'
 import { medioDePagoValido } from '@/shared/lib/config'
 
 /** Minúsculas y sin acentos, para buscar sin distinguir. */
@@ -26,6 +27,7 @@ function normalizar(texto: string): string {
 export default function PosPage() {
   const [categoriaElegida, setCategoriaElegida] = useState<string>('')
   const modoImpresion = useConfiguracion((s) => s.config.modo_impresion)
+  const imprimeAca = useAparato((s) => s.imprimeAca)
   const mediosPago = useConfiguracion((s) => s.config.medios_pago)
   const [busqueda, setBusqueda] = useState('')
   const [cartOpen, setCartOpen] = useState(false)
@@ -101,6 +103,14 @@ export default function PosPage() {
           mostrarToast(`Pedido #${pedido.order_number} creado, pero no se mandó a imprimir: ${colaErr}. Reimprimí desde Pedidos.`, 'error')
         } else {
           mostrarToast(`Pedido #${pedido.order_number} creado — enviado a la comandera`, 'exito')
+        }
+      } else if (!imprimeAca) {
+        // PROVISORIO-WIFI: sacar esta rama (celu/tablet que no imprimen) cuando haya impresora WiFi
+        const { error: colaErr } = await encolar(pedido.id)
+        if (colaErr) {
+          mostrarToast(`Pedido #${pedido.order_number} creado, pero no quedó para imprimir: ${colaErr}. Reimprimí desde Pedidos.`, 'error')
+        } else {
+          mostrarToast(`Pedido #${pedido.order_number} creado — queda para imprimir en la compu`, 'exito')
         }
       } else {
         setPedidoAImprimir(pedido)

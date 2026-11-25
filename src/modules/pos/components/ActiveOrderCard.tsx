@@ -8,6 +8,7 @@ import type { TonoPastilla } from '@/shared/components/panel'
 import { cn } from '@/shared/lib/cn'
 import { useMinutosDesde } from '@/shared/hooks/useMinutosDesde'
 import { useConfiguracion } from '@/shared/store/useConfiguracion'
+import { useAparato } from '@/shared/store/useAparato'
 import { useEncolarImpresion } from '../hooks/useEncolarImpresion'
 
 const ESTADOS: Record<string, { label: string; tono: TonoPastilla }> = {
@@ -44,6 +45,7 @@ export function ActiveOrderCard({ order, updating, onDeliver, onDelete }: Active
   const isReady = order.status === 'listo'
   const cocinaActiva = useConfiguracion((s) => s.config.cocina_activa)
   const modoImpresion = useConfiguracion((s) => s.config.modo_impresion)
+  const imprimeAca = useAparato((s) => s.imprimeAca)
   // Sin pantalla de cocina nadie marca "listo": la caja entrega desde cualquier estado activo
   const puedeEntregar = cocinaActiva ? isReady : order.status !== 'entregado' && order.status !== 'cancelado'
 
@@ -59,12 +61,17 @@ export function ActiveOrderCard({ order, updating, onDeliver, onDelete }: Active
 
   // Reimprimir: en modo 'servidor' va a la cola; si no, diálogo del navegador (RawBT)
   const handlePrint = async () => {
-    if (modoImpresion !== 'servidor') {
+    // PROVISORIO-WIFI: sacar la condición `imprimeAca` (celu/tablet encolan para la compu) cuando haya impresora WiFi
+    if (modoImpresion !== 'servidor' && imprimeAca) {
       imprimirEnNavegador()
       return
     }
     const { error } = await encolar(order.id)
-    if (error) mostrarToast('No se pudo mandar a imprimir: ' + error, 'error')
+    if (error) {
+      mostrarToast('No se pudo mandar a imprimir: ' + error, 'error')
+    } else if (modoImpresion !== 'servidor') {
+      mostrarToast(`Pedido #${order.order_number} mandado a imprimir en la compu`, 'exito')
+    }
   }
 
   return (
