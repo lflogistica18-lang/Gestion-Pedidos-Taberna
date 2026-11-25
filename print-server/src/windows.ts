@@ -233,7 +233,8 @@ foreach ($p in $otros) { try { $null = $p.WaitForExit(5000) } catch { } }
 /** Destino del acceso directo de inicio, o null si el acceso directo no existe. */
 export async function leerDestinoAccesoInicio(carpetaInicio = ''): Promise<string | null> {
   const r = await ps(
-    `${PS_CARPETA_INICIO}
+    `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+${PS_CARPETA_INICIO}
 $ruta = Join-Path $d $env:TABERNA_NOMBRE
 if (Test-Path -LiteralPath $ruta) { 'SI|' + (New-Object -ComObject WScript.Shell).CreateShortcut($ruta).TargetPath } else { 'NO' }`,
     { TABERNA_NOMBRE: NOMBRE_ACCESO, TABERNA_CARPETA_INICIO: carpetaInicio },
@@ -250,7 +251,8 @@ if (Test-Path -LiteralPath $ruta) { 'SI|' + (New-Object -ComObject WScript.Shell
  */
 export async function renombrarComoViejo(ruta: string): Promise<string | null> {
   const r = await ps(
-    `$o = $env:TABERNA_RUTA
+    `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$o = $env:TABERNA_RUTA
 if (Test-Path -LiteralPath $o -PathType Leaf) {
   $dir = Split-Path -Parent $o
   $base = [IO.Path]::GetFileNameWithoutExtension($o)
