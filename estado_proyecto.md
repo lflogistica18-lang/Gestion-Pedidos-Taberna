@@ -17,6 +17,11 @@
 sgp-taberna:latest` + up -d, y `013_*.rollback.sql`): rol solo pedidos, menú recogible, Pedido + para tablet. Staging
 quedó apagado (`sgp-taberna-staging`, sin dominio). FALTA: crear el usuario solo pedidos (Lucas pasa el mail), que
 Lucas mire los dibujos (`/iconos-categorias/muestra.html`; "Medias tartas" dudoso) y la prueba real en el local. Impresión: sin print server; **RawBT + comandera (WiFi recomendada)**.
+**Rama `productos-tarjetas-y-contraste` (2026-11-25, espera Merge y deploy):** Productos con tarjetas de categoría desde md
+(piezas movidas a `shared/components/categorias/` y `shared/lib/iconoCategoria.ts`); resumen del pedido con más contraste,
+opción B elegida por Lucas (ítem fondo naranja suave + cantidad en círculo naranja; Local/Delivery y pago en naranja lleno).
+QA Chromium mockeado OK. Pendiente: íconos propios generados con Gemini desde descripción (las capturas de `Iconos a ver/`
+son de bancos pagos: solo referencia, ignoradas en git); alta de producto con categoría preelegida (pide prop en CrudManager).
 **Fase 8 (2026-11-25):** tarjetas de categoría con dibujo (Fluent Emoji en `public/iconos-categorias/`, mapeo por
 palabra clave en `pos/lib/iconoCategoria.ts`, muestra en `/iconos-categorias/muestra.html`), resumen a la derecha desde md,
 menú lateral recogible (`useMenu`), rol `taberna_pedidos` (front + **migración 013 APLICADA en prod 2026-11-25**, verificación OK y RLS probada por rol; rollback escrito). QA Chromium

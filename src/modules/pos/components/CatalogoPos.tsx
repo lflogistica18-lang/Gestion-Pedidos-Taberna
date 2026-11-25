@@ -4,8 +4,8 @@ import type { CategoryItem } from '@/modules/products/hooks/useCategories'
 import { EstadoVacio } from '@/shared/components/comunes/EstadoVacio'
 import { useCartStore } from '../store/useCartStore'
 import { ProductGrid } from './ProductGrid'
-import { TarjetasCategorias } from './TarjetasCategorias'
-import { CabeceraCategoria } from './CabeceraCategoria'
+import { TarjetasCategorias } from '@/shared/components/categorias/TarjetasCategorias'
+import { CabeceraCategoria } from '@/shared/components/categorias/CabeceraCategoria'
 
 /** Minúsculas y sin acentos, para buscar sin distinguir. */
 function normalizar(texto: string): string {

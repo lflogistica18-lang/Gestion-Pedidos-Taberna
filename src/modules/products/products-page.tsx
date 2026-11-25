@@ -3,6 +3,9 @@ import { Package, Plus } from 'lucide-react'
 import { Boton, EncabezadoPagina } from '@/shared/components/panel'
 import { PestanasProductos, type PestanaProductos } from './components/PestanasProductos'
 import { PanelCategorias } from './components/PanelCategorias'
+import { TarjetasProductos } from './components/TarjetasProductos'
+import { CabeceraCategoria } from '@/shared/components/categorias/CabeceraCategoria'
+import { useEsTablet } from './hooks/useEsTablet'
 import { FiltrosProductos } from './components/FiltrosProductos'
 import { COLUMNAS_PRODUCTOS } from './components/columnasProductos'
 import { useProducts } from './hooks/useProducts'
@@ -27,14 +30,21 @@ export default function ProductsPage() {
   const { upsert } = useUpsertProduct()
   const { toggle } = useToggleProduct()
   const { categories } = useCategories()
+  const esTablet = useEsTablet()
+
+  const buscando = busqueda.trim() !== ''
+  // Desde md: con texto en el buscador se busca en todas las categorías, sin tarjetas
+  const categoriaActiva = esTablet && buscando ? 'todas' : catFiltro
+  const tarjetas = esTablet && !buscando && catFiltro === 'todas' && !error
+  const cabecera = esTablet && !buscando && catFiltro !== 'todas'
 
   // Filtrar productos por categoría seleccionada
   const productosFiltrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase()
     return products.filter(p =>
-      (catFiltro === 'todas' || p.category === catFiltro) &&
+      (categoriaActiva === 'todas' || p.category === categoriaActiva) &&
       (q === '' || p.name.toLowerCase().includes(q)))
-  }, [products, catFiltro, busqueda])
+  }, [products, categoriaActiva, busqueda])
 
   const campos: CampoSchema[] = [
     { nombre: 'name', etiqueta: 'Nombre', tipo: 'texto', obligatorio: true },
@@ -137,8 +147,25 @@ export default function ProductsPage() {
             onCategoria={setCatFiltro}
             total={products.length}
             opciones={categories.map(c => ({ nombre: c.name, cantidad: conteoPorCategoria[c.name] ?? 0 }))}
+            pastillasSoloCelu
           />
 
+          {tarjetas && (
+            <TarjetasProductos
+              categorias={categories}
+              conteos={conteoPorCategoria}
+              loading={loading}
+              ocultarVacias={tab === 'inactivos'}
+              onElegir={setCatFiltro}
+            />
+          )}
+          {cabecera && (
+            <CabeceraCategoria nombre={catFiltro} cantidad={productosFiltrados.length} onVolver={() => setCatFiltro('todas')} />
+          )}
+
+          {/* Con tarjetas la lista no se ve, pero el formulario de alta tiene que poder abrirse */}
+          {(!tarjetas || creando) && (
+          <div className={tarjetas ? 'h-0 overflow-hidden' : undefined}>
           <CrudManager<Product>
             nombreSingular="producto"
             datos={productosFiltrados}
@@ -146,7 +173,7 @@ export default function ProductsPage() {
             columnas={COLUMNAS_PRODUCTOS}
             cargando={loading}
             error={error}
-            hayFiltro={busqueda.trim() !== '' || catFiltro !== 'todas'}
+            hayFiltro={buscando || categoriaActiva !== 'todas'}
             mensajeVacio={tab === 'inactivos' ? 'No hay productos inactivos' : undefined}
             permitirCrear={tab !== 'inactivos'}
             creando={creando}
@@ -167,6 +194,8 @@ export default function ProductsPage() {
               return r.success ? null : r.error.issues[0].message
             }}
           />
+          </div>
+          )}
         </>
       )}
     </div>

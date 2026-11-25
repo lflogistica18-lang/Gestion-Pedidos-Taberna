@@ -13,10 +13,10 @@ export function CartItemRow({ item }: CartItemRowProps) {
   const removeItem = useCartStore((s) => s.removeItem)
 
   return (
-    <li className="rounded-xl border border-borde-sutil bg-bg-principal p-3">
+    <li className="rounded-xl border border-tono-naranja-borde bg-tono-naranja-fondo p-3">
       <div className="flex items-start justify-between gap-3">
-        <span className="min-w-0 break-words text-sm font-medium text-texto-primario md:text-base">{item.productName}</span>
-        <span className="shrink-0 text-sm font-semibold tabular-nums md:text-base text-texto-primario">
+        <span className="min-w-0 break-words text-base font-bold text-texto-primario md:text-lg">{item.productName}</span>
+        <span className="shrink-0 text-base font-bold tabular-nums text-texto-primario md:text-lg">
           {fmtMonto(item.unitPrice * item.quantity)}
         </span>
       </div>
@@ -24,6 +24,7 @@ export function CartItemRow({ item }: CartItemRowProps) {
         <ControlCantidad
           nombre={item.productName}
           cantidad={item.quantity}
+          destacada
           onRestar={() => updateQuantity(item.productId, -1)}
           onSumar={() => updateQuantity(item.productId, +1)}
         />

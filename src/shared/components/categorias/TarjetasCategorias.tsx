@@ -1,14 +1,14 @@
 import { Pastilla } from '@/shared/components/panel'
 import { cn } from '@/shared/lib/cn'
-import { capitalizar } from '../lib/iconoCategoria'
+import { capitalizar } from '@/shared/lib/iconoCategoria'
 import { IconoCategoria } from './IconoCategoria'
 
 export interface DatoCategoria {
   nombre: string
-  /** Productos activos de la categoría. */
+  /** Productos de la categoría en la pestaña que se está viendo. */
   cantidad: number
-  /** Unidades de esta categoría que ya están en el pedido en curso. */
-  enPedido: number
+  /** Solo Pedido +: unidades de esta categoría que ya están en el pedido en curso. */
+  enPedido?: number
 }
 
 interface TarjetasCategoriasProps {
@@ -39,10 +39,10 @@ export function TarjetasCategorias({ categorias, loading, onElegir }: TarjetasCa
           <button
             type="button"
             onClick={() => onElegir(c.nombre)}
-            aria-label={`${capitalizar(c.nombre)}, ${c.cantidad} ${c.cantidad === 1 ? 'producto' : 'productos'}${c.enPedido > 0 ? `, ${c.enPedido} en el pedido` : ''}`}
+            aria-label={`${capitalizar(c.nombre)}, ${c.cantidad} ${c.cantidad === 1 ? 'producto' : 'productos'}${(c.enPedido ?? 0) > 0 ? `, ${c.enPedido} en el pedido` : ''}`}
             className={cn(
               'flex min-h-36 w-full flex-col items-center gap-2 rounded-xl border p-3 text-center shadow-tarjeta transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento-primario',
-              c.enPedido > 0
+              (c.enPedido ?? 0) > 0
                 ? 'border-tono-naranja-borde bg-tono-naranja-fondo'
                 : 'border-borde-sutil bg-bg-tarjeta hover:bg-tono-naranja-fondo active:bg-tono-naranja-fondo',
             )}
@@ -54,7 +54,7 @@ export function TarjetasCategorias({ categorias, loading, onElegir }: TarjetasCa
             <span className="mt-auto block whitespace-nowrap text-sm text-texto-secundario">
               {c.cantidad} {c.cantidad === 1 ? 'producto' : 'productos'}
             </span>
-            {c.enPedido > 0 && (
+            {(c.enPedido ?? 0) > 0 && (
               <Pastilla tono="naranja" className="text-sm font-semibold">
                 {c.enPedido} en el pedido
               </Pastilla>

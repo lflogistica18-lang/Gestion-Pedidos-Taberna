@@ -24,3 +24,5 @@ dist-ssr
 *.sw?
 .env
 capturas-fase7/
+# Referencias de íconos de Lucas (capturas de bancos de imágenes: no se versionan)
+Iconos a ver/

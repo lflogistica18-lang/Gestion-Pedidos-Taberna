@@ -68,6 +68,7 @@ export function CartPanel({ variante, submitting, error, onConfirm }: CartPanelP
           opciones={ORDER_TYPES}
           value={orderType}
           onChange={setOrderType}
+          tono="acento"
           className={CLASES_SEGMENTADO}
         />
       </Campo>
@@ -98,6 +99,7 @@ export function CartPanel({ variante, submitting, error, onConfirm }: CartPanelP
           opciones={opcionesPago}
           value={pagoElegido}
           onChange={setPaymentMethod}
+          tono="acento"
           className={CLASES_SEGMENTADO}
         />
       </Campo>
@@ -149,12 +151,15 @@ export function CartPanel({ variante, submitting, error, onConfirm }: CartPanelP
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-borde-sutil px-4 py-3">
           <div>
             <h2 className="text-base font-semibold text-texto-primario md:text-xl">Pedido</h2>
-            <p className="text-sm text-texto-secundario md:text-base">{cantidad} {cantidad === 1 ? 'ítem' : 'ítems'}</p>
+            <p className="mt-0.5 flex items-center gap-2 text-sm text-texto-secundario md:text-base">
+              <span className="inline-flex min-w-7 items-center justify-center rounded-full bg-acento-primario px-2 py-0.5 text-sm font-bold tabular-nums text-sobre-acento md:text-base">{cantidad}</span>
+              {cantidad === 1 ? 'ítem' : 'ítems'}
+            </p>
           </div>
           {limpiar}
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-4">{cuerpo}</div>
-        <div className="shrink-0 border-t border-borde-sutil p-4">{pie}</div>
+        <div className="shrink-0 border-t-2 border-borde-campo p-4">{pie}</div>
       </div>
     )
   }
@@ -165,7 +170,7 @@ export function CartPanel({ variante, submitting, error, onConfirm }: CartPanelP
       {cuerpo}
       {aviso && <div className="mt-4">{aviso}</div>}
       {/* Pie pegado al fondo de la hoja: compensa el padding del Modal */}
-      <div className="sticky bottom-0 -mx-5 -mb-5 mt-4 border-t border-borde-sutil bg-bg-tarjeta px-5 pb-5 pt-3 sm:-mx-6 sm:-mb-6 sm:px-6 sm:pb-6">
+      <div className="sticky bottom-0 -mx-5 -mb-5 mt-4 border-t-2 border-borde-campo bg-bg-tarjeta px-5 pb-5 pt-3 sm:-mx-6 sm:-mb-6 sm:px-6 sm:pb-6">
         {pie}
       </div>
     </div>
