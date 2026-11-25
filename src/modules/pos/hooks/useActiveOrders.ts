@@ -28,7 +28,7 @@ export function useActiveOrders(): UseActiveOrdersResult {
         .select('*, order_items(*)')
         .is('deleted_at', null)
         .in('status', ACTIVE_STATUSES)
-        .order('created_at', { ascending: true })
+        .order('created_at', { ascending: false }) // el último pedido arriba: es el que se suele corregir
 
       if (err) {
         setError(err.message)
