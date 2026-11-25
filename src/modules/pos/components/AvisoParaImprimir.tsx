@@ -3,6 +3,7 @@ import { Printer } from 'lucide-react'
 import { useReactToPrint } from 'react-to-print'
 import { Receipt } from './Receipt'
 import { FilaParaImprimir } from './FilaParaImprimir'
+import { PreguntaSalioTicket } from './PreguntaSalioTicket'
 import { useImpresionesPendientes, type TrabajoPendiente } from '../hooks/useImpresionesPendientes'
 import { EstadoError } from '@/shared/components/comunes/EstadoError'
 import { Modal, Pastilla, mostrarToast } from '@/shared/components/panel'
@@ -37,6 +38,9 @@ export function AvisoParaImprimir() {
 
   const [abierto, setAbierto] = useState(false)
   const [imprimiendo, setImprimiendo] = useState<TrabajoPendiente | null>(null)
+  // Ticket cuyo diálogo de imprimir ya se cerró y falta que la persona diga si salió
+  const [preguntando, setPreguntando] = useState<TrabajoPendiente | null>(null)
+  const [guardando, setGuardando] = useState(false)
   const ticketRef = useRef<HTMLDivElement>(null)
   const trabajoRef = useRef<TrabajoPendiente | null>(null)
 
@@ -52,15 +56,13 @@ export function AvisoParaImprimir() {
   const imprimirTicket = useReactToPrint({
     contentRef: ticketRef,
     documentTitle: imprimiendo?.orders ? `Ticket_Pedido_${imprimiendo.orders.order_number}` : 'Ticket',
-    // Si la persona cancela el diálogo igual queda marcado como impreso; se reimprime con 🖨️ desde Pedidos.
+    // El navegador dispara onAfterPrint tanto si se imprimió como si se canceló, y no avisa cuál fue.
+    // Por eso no se marca nada acá: se le pregunta a la persona (ver PreguntaSalioTicket).
     onAfterPrint: () => {
       const trabajo = trabajoRef.current
       trabajoRef.current = null
       setImprimiendo(null)
-      if (!trabajo) return
-      void marcarImpreso(trabajo.id).then(({ error: err }) => {
-        if (err) mostrarToast(`No se pudo marcar el pedido como impreso: ${err}`, 'error')
-      })
+      if (trabajo) setPreguntando(trabajo)
     },
   })
 
@@ -73,6 +75,26 @@ export function AvisoParaImprimir() {
     trabajoRef.current = trabajo
     setImprimiendo(trabajo)
   }
+
+  const confirmarSalio = async () => {
+    if (!preguntando || guardando) return
+    setGuardando(true)
+    const { error: err } = await marcarImpreso(preguntando.id)
+    setGuardando(false)
+    if (err) {
+      mostrarToast(`No se pudo marcar el pedido como impreso: ${err}`, 'error')
+      return
+    }
+    setPreguntando(null)
+  }
+
+  const cerrarModal = () => {
+    setPreguntando(null)
+    setAbierto(false)
+  }
+
+  // Si el trabajo ya no está pendiente (lo marcó otro aparato), la pregunta no tiene sentido
+  const preguntaVigente = preguntando && pendientes.some((t) => t.id === preguntando.id) ? preguntando : null
 
   if (!activo) return null
   if (pendientes.length === 0 && !error) return null
@@ -106,14 +128,24 @@ export function AvisoParaImprimir() {
 
       <Modal
         open={abierto}
-        onClose={() => setAbierto(false)}
+        onClose={cerrarModal}
         title="Para imprimir"
         subtitulo={`${pendientes.length} ${pendientes.length === 1 ? 'ticket' : 'tickets'} de celu y tablet`}
       >
         {error && <EstadoError mensaje={error} onReintentar={() => void refetch()} />}
+        {preguntaVigente?.orders && (
+          <div className="mb-3">
+            <PreguntaSalioTicket
+              numeroPedido={preguntaVigente.orders.order_number}
+              onSi={() => void confirmarSalio()}
+              onNo={() => setPreguntando(null)}
+              disabled={guardando}
+            />
+          </div>
+        )}
         <ul className="space-y-2">
           {pendientes.map((t) => (
-            <FilaParaImprimir key={t.id} trabajo={t} ocupado={imprimiendo !== null} onImprimir={empezar} />
+            <FilaParaImprimir key={t.id} trabajo={t} ocupado={imprimiendo !== null || preguntaVigente !== null} onImprimir={empezar} />
           ))}
         </ul>
       </Modal>

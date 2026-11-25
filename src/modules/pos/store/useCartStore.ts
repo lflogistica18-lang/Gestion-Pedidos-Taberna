@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist, createJSONStorage } from 'zustand/middleware'
 import type { Product, OrderType, PaymentMethod } from '@/types/database.types'
 
 export interface CartItem {
@@ -35,7 +36,9 @@ interface CartStore {
   getItemCount: () => number
 }
 
-export const useCartStore = create<CartStore>((set, get) => ({
+export const useCartStore = create<CartStore>()(
+  persist(
+    (set, get) => ({
   items: [],
   orderType: 'local',
   paymentMethod: 'efectivo',
@@ -98,4 +101,19 @@ export const useCartStore = create<CartStore>((set, get) => ({
 
   getItemCount: () =>
     get().items.reduce((sum, i) => sum + i.quantity, 0),
-}))
+    }),
+    {
+      // Sobrevive a una recarga (p. ej. actualización automática) sin borrar el pedido en curso
+      name: 'sgp.carrito',
+      storage: createJSONStorage(() => sessionStorage),
+      partialize: (s) => ({
+        items: s.items,
+        orderType: s.orderType,
+        paymentMethod: s.paymentMethod,
+        notes: s.notes,
+        customerName: s.customerName,
+        deliveryAddress: s.deliveryAddress,
+      }),
+    }
+  )
+)

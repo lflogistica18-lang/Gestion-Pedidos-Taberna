@@ -1,6 +1,5 @@
-import { useState, useRef, useEffect } from 'react'
-import { useReactToPrint } from 'react-to-print'
-import { Receipt } from './components/Receipt'
+import { useState } from 'react'
+import { TicketPedidoPropio } from './components/TicketPedidoPropio'
 import type { OrderWithItems } from './hooks/useActiveOrders'
 import { useProducts } from '@/modules/products/hooks/useProducts'
 import { useCategories } from '@/modules/products/hooks/useCategories'
@@ -29,19 +28,8 @@ export default function PosPage() {
   const [cartOpen, setCartOpen] = useState(false)
   const [ordersOpen, setOrdersOpen] = useState(false)
 
-  // Ticket para cocina: se imprime solo al confirmar cada pedido
+  // Ticket para cocina: se imprime solo al confirmar cada pedido (PROVISORIO-WIFI)
   const [pedidoAImprimir, setPedidoAImprimir] = useState<OrderWithItems | null>(null)
-  const ticketRef = useRef<HTMLDivElement>(null)
-  const imprimirTicket = useReactToPrint({
-    contentRef: ticketRef,
-    documentTitle: pedidoAImprimir ? `Ticket_Pedido_${pedidoAImprimir.order_number}` : 'Ticket',
-    onAfterPrint: () => setPedidoAImprimir(null),
-  })
-
-  // Se imprime recién cuando el ticket ya está montado en el DOM
-  useEffect(() => {
-    if (pedidoAImprimir) imprimirTicket()
-  }, [pedidoAImprimir, imprimirTicket])
 
   const { categories } = useCategories()
   const { products, loading, error: productsError, refetch: refetchProducts } = useProducts({ activeOnly: true })
@@ -114,12 +102,7 @@ export default function PosPage() {
 
   return (
     <div className="flex min-h-full flex-col md:h-full md:flex-row">
-      {/* Ticket oculto — solo existe mientras se imprime */}
-      {pedidoAImprimir && (
-        <div style={{ display: 'none' }}>
-          <Receipt ref={ticketRef} order={pedidoAImprimir} />
-        </div>
-      )}
+      <TicketPedidoPropio pedido={pedidoAImprimir} alTerminarDialogo={() => setPedidoAImprimir(null)} />
 
       <div className="flex min-w-0 flex-1 flex-col md:overflow-y-auto">
         <div className="flex-1 px-4 py-3 sm:px-6 sm:py-6">
