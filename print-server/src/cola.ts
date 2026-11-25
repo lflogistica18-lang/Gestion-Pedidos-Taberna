@@ -1,13 +1,11 @@
-import { createClient, type RealtimeChannel } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 import type { Config } from './config.js';
 import { armarTicket, ticketComoTexto, type OpcionesTicket, type Pedido } from './ticket.js';
 import { imprimir, ImpresoraNoDisponible } from './impresora.js';
+import { cicloSondeo, esErrorDeSesion, esperaLogin, RESET_TRABADOS_MS, type ResultadoVuelta } from './sondeo.js';
 
 const MAX_INTENTOS = 3;
-const REINTENTO_LOGIN_MS = 30_000;
-const SONDEO_MS = 60_000;
 const TRABADO_MS = 2 * 60_000;
-const BACKOFF_MS = [5_000, 10_000, 20_000, 60_000];
 
 interface TrabajoTomado {
   id: string;
@@ -48,53 +46,69 @@ function msgError(e: unknown): string {
 }
 const dormir = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
+function fallo(e: { code?: string | null; message?: string | null }): ResultadoVuelta {
+  return { ok: false, sesion: esErrorDeSesion(e), motivo: explicarErrorLogin(e.message ?? undefined) };
+}
+
 /** Arranca la cola. Devuelve una función para detenerla limpiamente. */
 export async function iniciarCola(cfg: Config, ui: InterfazCola = {}): Promise<() => Promise<void>> {
   if (ui.log) salida = ui.log;
   const supabase = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {
     db: { schema: 'sgp' },
-    auth: { persistSession: false, autoRefreshToken: true },
+    // Sin renovación automática en segundo plano: la sesión se renueva solo desde el sondeo,
+    // cuando la base contesta error de sesión (como mucho una vez por minuto). Sin Realtime.
+    auth: { persistSession: false, autoRefreshToken: false },
   });
 
   let detenido = false;
-  let canal: RealtimeChannel | null = null;
-  let intentoCanal = 0;
-  let timerCanal: NodeJS.Timeout | null = null;
-  let timerSondeo: NodeJS.Timeout | null = null;
+  let despertar: (() => void) | null = null;
+  /** Espera que se puede cortar al detener el programa. */
+  const dormirCortable = (ms: number) =>
+    new Promise<void>((resolver) => {
+      const t = setTimeout(() => {
+        despertar = null;
+        resolver();
+      }, ms);
+      despertar = () => {
+        clearTimeout(t);
+        despertar = null;
+        resolver();
+      };
+    });
+  let ultimoReseteo = 0;
 
   const enProceso = new Set<string>();
   let cadena: Promise<void> = Promise.resolve();
 
   // ---------- Login ----------
-  /** Un intento de login. Si anda, deja la sesión lista también para el canal en tiempo real. */
+  /** Un intento de login. Devuelve null si anduvo, o el motivo del fallo. */
   async function intentarLogin(): Promise<string | null> {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: cfg.printEmail,
         password: cfg.printPassword,
       });
-      if (!error && data.session) {
-        await supabase.realtime.setAuth(data.session.access_token);
-        return null;
-      }
+      if (!error && data.session) return null;
       return explicarErrorLogin(error?.message);
     } catch (e) {
       return explicarErrorLogin(msgError(e));
     }
   }
 
-  while (!detenido) {
+  // Login inicial: espera creciente 30 s, 1, 2 y 5 min (tope). El aviso sale solo la primera vez.
+  for (let fallidos = 1; !detenido; fallidos++) {
     const motivo = await intentarLogin();
     if (!motivo) {
-      log(`🔐 Sesión iniciada como ${cfg.printEmail}`);
+      log(fallidos > 1 ? `🔐 Sesión iniciada como ${cfg.printEmail} (conexión recuperada)` : `🔐 Sesión iniciada como ${cfg.printEmail}`);
       break;
     }
-    log(`⚠️ No se pudo iniciar sesión (${motivo}). Reintento en ${REINTENTO_LOGIN_MS / 1000} s`);
-    await dormir(REINTENTO_LOGIN_MS);
+    const espera = esperaLogin(fallidos);
+    if (fallidos === 1) log(`⚠️ No se pudo iniciar sesión (${motivo}). Reintento en ${espera / 1000} s (y cada vez más espaciado)`);
+    await dormirCortable(espera);
   }
 
   // ---------- Trabajos trabados ----------
-  async function resetearTrabados(): Promise<void> {
+  async function resetearTrabados(): Promise<ResultadoVuelta> {
     const limite = new Date(Date.now() - TRABADO_MS).toISOString();
     const { data, error } = await supabase
       .from('print_jobs')
@@ -102,12 +116,10 @@ export async function iniciarCola(cfg: Config, ui: InterfazCola = {}): Promise<(
       .eq('estado', 'imprimiendo')
       .lt('updated_at', limite)
       .select('id');
-    if (error) {
-      log(`⚠️ Error reseteando trabajos trabados: ${error.message}`);
-      return;
-    }
+    if (error) return fallo(error);
     // Los que este mismo proceso está imprimiendo ahora no pueden estar vencidos (timeout 8 s).
     if (data && data.length > 0) log(`♻️ ${data.length} trabajo(s) trabado(s) devuelto(s) a pendiente`);
+    return { ok: true };
   }
 
   // ---------- Configuración del local (pantalla Configuración de la app) ----------
@@ -189,7 +201,7 @@ export async function iniciarCola(cfg: Config, ui: InterfazCola = {}): Promise<(
     } catch (e) {
       if (e instanceof ImpresoraNoDisponible) {
         // Impresora apagada o desenchufada: no es culpa del pedido. Vuelve a la cola sin gastar
-        // intentos y se reprueba en el próximo repaso (cada minuto) hasta que la impresora vuelva.
+        // intentos y se reprueba en la próxima vuelta del sondeo hasta que la impresora vuelva.
         log(`⚠️ ${e.message} El pedido #${p.order_number} queda esperando.`);
         await actualizar(job.id, { estado: 'pendiente', ultimo_error: e.message }, 'No se pudo devolver el trabajo a la cola');
         return;
@@ -218,77 +230,47 @@ export async function iniciarCola(cfg: Config, ui: InterfazCola = {}): Promise<(
       });
   }
 
-  async function procesarPendientes(): Promise<boolean> {
-    if (detenido) return true;
+  async function procesarPendientes(): Promise<ResultadoVuelta> {
+    if (detenido) return { ok: true };
     const { data, error } = await supabase
       .from('print_jobs')
       .select('id')
       .eq('estado', 'pendiente')
       .is('deleted_at', null)
       .order('created_at', { ascending: true });
-    if (error) {
-      log(`⚠️ Error consultando pendientes: ${explicarErrorLogin(error.message)}. Sigo intentando.`);
-      return false;
-    }
+    if (error) return fallo(error);
     for (const fila of data ?? []) encolar(fila.id as string);
-    return true;
+    return { ok: true };
   }
 
-  /** Después de un corte largo de internet la sesión puede vencerse: se vuelve a entrar sola. */
-  async function repasar(): Promise<void> {
-    await resetearTrabados();
-    if (!(await procesarPendientes())) {
-      const motivo = await intentarLogin();
-      if (!motivo) {
-        log('🔐 Sesión renovada');
-        await procesarPendientes();
-      }
+  /** Una vuelta del sondeo: reseteo de trabados (como mucho 1 por minuto) y consulta de pendientes, de a una. */
+  async function vuelta(): Promise<ResultadoVuelta> {
+    if (Date.now() - ultimoReseteo >= RESET_TRABADOS_MS) {
+      ultimoReseteo = Date.now();
+      const r = await resetearTrabados();
+      if (!r.ok) return r;
     }
+    return procesarPendientes();
   }
 
-  // ---------- Realtime ----------
-  function suscribir(): void {
-    if (detenido) return;
-    if (canal) void supabase.removeChannel(canal);
-    canal = supabase
-      .channel('cola-impresion')
-      .on('postgres_changes', { event: 'INSERT', schema: 'sgp', table: 'print_jobs' }, (payload) => {
-        const nuevo = payload.new as { id?: string; estado?: string };
-        if (nuevo.id && (!nuevo.estado || nuevo.estado === 'pendiente')) encolar(nuevo.id);
-      })
-      .subscribe((status, err) => {
-        if (detenido) return;
-        if (status === 'SUBSCRIBED') {
-          log('📡 Escuchando la cola de impresión');
-          intentoCanal = 0;
-          void procesarPendientes();
-        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-          const espera = BACKOFF_MS[Math.min(intentoCanal, BACKOFF_MS.length - 1)];
-          intentoCanal++;
-          log(`⚠️ Canal en tiempo real: ${status}${err ? ' (' + err.message + ')' : ''}. Reintento en ${espera / 1000} s`);
-          if (timerCanal) clearTimeout(timerCanal);
-          timerCanal = setTimeout(suscribir, espera);
-        }
-      });
-  }
-
-  // ---------- Arranque ----------
-  await resetearTrabados();
-  await procesarPendientes();
-  suscribir();
-  timerSondeo = setInterval(() => {
-    void repasar().catch((e) => log(`⚠️ Error en el repaso periódico: ${msgError(e)}`));
-  }, SONDEO_MS);
+  // ---------- Sondeo (sin Realtime) ----------
+  // Un único ciclo encadenado; ver sondeo.ts. Sin setInterval, sin canales, sin websocket.
+  const ciclo = cicloSondeo({
+    ahora: () => Date.now(),
+    dormir: dormirCortable,
+    vuelta,
+    relogin: async () => (await intentarLogin()) === null,
+    detenido: () => detenido,
+    aviso: log,
+  }).catch((e) => log(`⚠️ El sondeo se detuvo por un error inesperado: ${msgError(e)}`));
 
   const destino = cfg.tipo === 'windows' ? `impresora de Windows '${cfg.impresoraWindows}'` : `${cfg.ip}:${cfg.puerto}`;
   log(`🚀 Servidor de impresión listo${cfg.simular ? ' (MODO SIMULADO)' : ` → ${destino}`}`);
 
   return async () => {
     detenido = true;
-    if (timerSondeo) clearInterval(timerSondeo);
-    if (timerCanal) clearTimeout(timerCanal);
-    // Esperamos (hasta 10 s) a que termine la impresión en curso.
-    await Promise.race([cadena, dormir(10_000)]);
-    await supabase.removeAllChannels();
+    if (despertar) despertar();
+    // Esperamos (hasta 10 s) a que termine la impresión en curso y el ciclo.
+    await Promise.race([Promise.all([cadena, ciclo]), dormir(10_000)]);
   };
 }

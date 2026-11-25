@@ -13,7 +13,8 @@
     "dev": "tsx src/index.ts",
     "prueba": "tsx src/prueba.ts",
     "prueba:prod": "node dist/prueba.js",
-    "exe": "node scripts/exe.mjs"
+    "test": "tsx --test src/sondeo.test.ts",
+    "exe":"node scripts/exe.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2",
