@@ -82,6 +82,7 @@ Ahora el programa **no usa Realtime**: no hay canales, ni websocket, ni `setInte
 - Vuelta normal: cada 4 s, una consulta de pendientes (los trabajos trabados se revisan como mucho una vez por minuto).
 - Si falla: espera 5, 10, 20, 40, 60, 120 y 300 s (tope), y se queda en 300 s hasta que una vuelta salga bien; recién ahí vuelve a 4 s.
 - Re-login solo si el error es de sesión, como mucho una vez por minuto y con la misma espera creciente. El login inicial espera 30, 60, 120 y 300 s.
+- Impresora apagada: pausa creciente de 30, 60, 120 y 300 s (tope) en la que no se toma ningún trabajo ni se consulta la base; se resetea con el primer ticket que sale bien. Avisa una vez al entrar y una al volver.
 - La ventana avisa una vez al empezar a fallar y una vez al recuperarse, no en cada vuelta.
 
 Pruebas con reloj simulado: `npm test` (con la base caída 1 hora hace unos 18 pedidos en total, no cientos).

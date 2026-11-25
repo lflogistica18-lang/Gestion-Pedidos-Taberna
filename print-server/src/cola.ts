@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import type { Config } from './config.js';
 import { armarTicket, ticketComoTexto, type OpcionesTicket, type Pedido } from './ticket.js';
 import { imprimir, ImpresoraNoDisponible } from './impresora.js';
-import { cicloSondeo, esErrorDeSesion, esperaLogin, RESET_TRABADOS_MS, type ResultadoVuelta } from './sondeo.js';
+import { cicloSondeo, esErrorDeSesion, esperaLogin, PausaImpresora, RESET_TRABADOS_MS, type ResultadoVuelta } from './sondeo.js';
 
 const MAX_INTENTOS = 3;
 const TRABADO_MS = 2 * 60_000;
@@ -76,6 +76,7 @@ export async function iniciarCola(cfg: Config, ui: InterfazCola = {}): Promise<(
       };
     });
   let ultimoReseteo = 0;
+  const pausa = new PausaImpresora();
 
   const enProceso = new Set<string>();
   let cadena: Promise<void> = Promise.resolve();
@@ -168,6 +169,8 @@ export async function iniciarCola(cfg: Config, ui: InterfazCola = {}): Promise<(
   }
 
   async function procesar(id: string): Promise<void> {
+    // Impresora en pausa: no se toca la base. El trabajo sigue 'pendiente' y se retoma al terminar la pausa.
+    if (pausa.activa(Date.now())) return;
     // Tomar de forma atómica: solo uno lo logra.
     const { data: tomado, error: errTomar } = await supabase
       .from('print_jobs')
@@ -201,8 +204,9 @@ export async function iniciarCola(cfg: Config, ui: InterfazCola = {}): Promise<(
     } catch (e) {
       if (e instanceof ImpresoraNoDisponible) {
         // Impresora apagada o desenchufada: no es culpa del pedido. Vuelve a la cola sin gastar
-        // intentos y se reprueba en la próxima vuelta del sondeo hasta que la impresora vuelva.
-        log(`⚠️ ${e.message} El pedido #${p.order_number} queda esperando.`);
+        // intentos y se activa una pausa creciente (30 s a 5 min) sin tomar trabajos hasta que la impresora vuelva.
+        const { espera, primera } = pausa.alNoDisponible(Date.now());
+        if (primera) log(`⚠️ La impresora no responde. Los tickets quedan esperando; reintento en ${Math.round(espera / 1000)} s`);
         await actualizar(job.id, { estado: 'pendiente', ultimo_error: e.message }, 'No se pudo devolver el trabajo a la cola');
         return;
       }
@@ -210,6 +214,7 @@ export async function iniciarCola(cfg: Config, ui: InterfazCola = {}): Promise<(
       return;
     }
 
+    if (pausa.alImprimirBien()) log('🖨️ La impresora volvió a imprimir');
     const ok = await actualizar(
       job.id,
       { estado: 'impreso', impreso_at: new Date().toISOString(), ultimo_error: null },
@@ -245,6 +250,8 @@ export async function iniciarCola(cfg: Config, ui: InterfazCola = {}): Promise<(
 
   /** Una vuelta del sondeo: reseteo de trabados (como mucho 1 por minuto) y consulta de pendientes, de a una. */
   async function vuelta(): Promise<ResultadoVuelta> {
+    // Con la impresora en pausa no se pide nada a la base.
+    if (pausa.activa(Date.now())) return { ok: true };
     if (Date.now() - ultimoReseteo >= RESET_TRABADOS_MS) {
       ultimoReseteo = Date.now();
       const r = await resetearTrabados();

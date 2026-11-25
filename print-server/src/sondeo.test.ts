@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cicloSondeo, esErrorDeSesion, esperaLogin, esperaTrasFalla, type ResultadoVuelta } from './sondeo.js';
+import { cicloSondeo, PausaImpresora, esErrorDeSesion, esperaLogin, esperaTrasFalla, type ResultadoVuelta } from './sondeo.js';
 
 const MIN = 60_000;
 
@@ -128,4 +128,60 @@ test('clasificación de errores de sesión', () => {
   assert.equal(esErrorDeSesion({ code: '42501', message: 'permission denied for table print_jobs' }), true);
   assert.equal(esErrorDeSesion({ message: 'TypeError: fetch failed' }), false);
   assert.equal(esErrorDeSesion({ message: 'ENOTFOUND' }), false);
+});
+
+test('impresora apagada 8 horas con 10 trabajos: menos de 700 pedidos y al volver salen los 10 en orden', async () => {
+  const LIMITE = 8 * 60 * MIN;
+  const VUELVE = 8 * 60 * MIN - 10 * MIN; // la impresora vuelve 10 min antes de terminar
+  let t = 0;
+  let pedidos = 0;
+  const pausa = new PausaImpresora();
+  const pendientes = Array.from({ length: 10 }, (_, i) => i + 1);
+  const impresos: number[] = [];
+  const avisos: string[] = [];
+  const procesar = (id: number): void => {
+    if (pausa.activa(t)) return; // sale antes de tocar la base
+    pedidos += 2; // tomar + leer pedido
+    pedidos += 1; // leer configuración
+    if (t < VUELVE) {
+      const { espera, primera } = pausa.alNoDisponible(t);
+      if (primera) avisos.push(`pausa ${espera}`);
+      pedidos += 1; // devolver a pendiente
+      return;
+    }
+    if (pausa.alImprimirBien()) avisos.push('volvió');
+    pedidos += 1; // marcar impreso
+    impresos.push(id);
+    pendientes.splice(pendientes.indexOf(id), 1);
+  };
+  await cicloSondeo({
+    ahora: () => t,
+    dormir: async (ms) => {
+      t += ms;
+    },
+    detenido: () => t >= LIMITE || (impresos.length === 10 && t > VUELVE + 60_000),
+    aviso: () => {},
+    relogin: async () => true,
+    vuelta: async () => {
+      if (pausa.activa(t)) return { ok: true };
+      pedidos += 1; // consulta de pendientes
+      for (const id of [...pendientes]) procesar(id);
+      return { ok: true };
+    },
+  });
+  assert.ok(pedidos < 700, `pedidos=${pedidos}`);
+  assert.deepEqual(impresos, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  assert.deepEqual(avisos, ['pausa 30000', 'volvió']);
+  console.log(`  pedidos a la base con la impresora apagada ~8 h: ${pedidos}`);
+});
+
+test('pausa de impresora: 30, 60, 120, 300 s y se resetea al imprimir', () => {
+  const p = new PausaImpresora();
+  const esperas = [0, 1, 2, 3, 4, 5].map(() => p.alNoDisponible(0).espera);
+  assert.deepEqual(esperas, [30, 60, 120, 300, 300, 300].map((x) => x * 1000));
+  assert.equal(p.activa(299_999), true);
+  assert.equal(p.activa(300_000), false);
+  assert.equal(p.alImprimirBien(), true);
+  assert.equal(p.alImprimirBien(), false);
+  assert.equal(p.alNoDisponible(0).primera, true);
 });

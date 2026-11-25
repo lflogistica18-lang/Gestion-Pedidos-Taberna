@@ -18,6 +18,13 @@ export const ESPERA_TRAS_RELOGIN_MS = 2_000;
 /** Cada cuánto como máximo se devuelven a pendiente los trabajos trabados. */
 export const RESET_TRABADOS_MS = 60_000;
 
+/** Pausa de impresora apagada: espera 30, 60, 120 y 300 s (tope) sin tomar ningún trabajo. */
+export const ESPERA_IMPRESORA_MS = [30_000, 60_000, 120_000, 300_000];
+
+export function esperaImpresora(fallas: number): number {
+  return ESPERA_IMPRESORA_MS[Math.min(Math.max(fallas, 1), ESPERA_IMPRESORA_MS.length) - 1];
+}
+
 export type ResultadoVuelta = { ok: true } | { ok: false; sesion: boolean; motivo: string };
 
 export function esperaTrasFalla(fallasSeguidas: number): number {
@@ -63,6 +70,36 @@ export class PlanSondeo {
   registrarLogin(ahora: number, ok: boolean): void {
     this.ultimoLogin = ahora;
     this.loginsFallidos = ok ? 0 : this.loginsFallidos + 1;
+  }
+}
+
+/**
+ * Cuando la impresora no responde, no se toma NINGÚN trabajo durante una espera creciente.
+ * Se resetea con la primera impresión que sale bien.
+ */
+export class PausaImpresora {
+  fallas = 0;
+  hasta = -Infinity;
+
+  activa(ahora: number): boolean {
+    return ahora < this.hasta;
+  }
+
+  /** La impresora no respondió. `primera` es true solo la primera vez de la racha (para avisar una vez). */
+  alNoDisponible(ahora: number): { espera: number; primera: boolean } {
+    const primera = this.fallas === 0;
+    this.fallas++;
+    const espera = esperaImpresora(this.fallas);
+    this.hasta = ahora + espera;
+    return { espera, primera };
+  }
+
+  /** Salió un ticket bien. Devuelve true si veníamos en pausa (hay que avisar que volvió). */
+  alImprimirBien(): boolean {
+    const venia = this.fallas > 0;
+    this.fallas = 0;
+    this.hasta = -Infinity;
+    return venia;
   }
 }
 
