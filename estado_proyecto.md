@@ -13,7 +13,7 @@
 
 ## DÓNDE QUEDAMOS — leer primero al retomar (maximo 40 lineas)
 
-**Rama `local-por-defecto-y-direccion` (2026-11-25, URGENTE, espera Merge y deploy):** ARREGLO de una regresión que entró con
+**EN PRODUCCIÓN `009c801` (PR #8, 2026-11-25; vuelta atrás: imagen `sgp-taberna:anterior-3a32a63`):** ARREGLO de una regresión que entró con
 `3a32a63`: `pos-page.tsx` dejó de suscribirse a los ítems del carrito y en el celu la barra "Ver pedido" no aparecía al sumar
 productos (no se podía confirmar un pedido nuevo desde el celu sin recargar). Además: cada pedido nuevo arranca en Local
 (`clearCart` y `salirDeEdicion`), y un Delivery no se confirma sin nombre y dirección (botón apagado + texto de qué falta).
