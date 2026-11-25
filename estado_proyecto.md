@@ -1,7 +1,7 @@
 # Estado del Proyecto
 
 ## Proyecto: SGP — Gestión de Pedidos La Taberna
-## Ultima actualizacion: 2026-10-20 (tarde)
+## Ultima actualizacion: 2026-11-25
 ## Version Omni: v7.2
 ## Starter: no aplica (proyecto anterior al Omni, sin backend; ver CLAUDE.md "Omni")
 
@@ -13,36 +13,39 @@
 
 ## DÓNDE QUEDAMOS — leer primero al retomar (maximo 40 lineas)
 
-**Fase actual:** 7 — Cambios de Lucas: tanda 1 (menú, Pedido +, Caja) EN PRODUCCIÓN `d0eddb3`.
-Sigue: logo (cuando Lucas lo pase), margen (charlar), y en paralelo el primer uso (paso 5).
-**Lo ultimo que se hizo (2026-10-20, sesión local):**
-- Menú: Caja (`/reports`, inicio) → Pedido + (`/pos`) → Cocina → Historial → Productos. Rutas URL
-  iguales; login y `/` redirigen a `/reports`.
-- Pedido +: lista compacta (`FilaProducto`, 49 px, + de 44×44), buscador sin acentos, sin
-  "Directa" en el selector (los `directo` viejos se siguen mostrando). 9 filas visibles a 390×844.
-- Caja: tendencia en el banner (Hoy = acumulado por hora; varios días = por día), refresco cada
-  60 s si el período incluye hoy, "Qué días se vende más" (opción B elegida por Lucas: barras
-  Lun→Dom con monto, promedio por día de las últimas 8 semanas). "Más vendidos" sin gráfico.
-- QA con Chromium + Supabase mockeado (`capturas-fase7/`, no versionado). Deploy con copia de la
-  imagen anterior: vuelta atrás = `docker tag sgp-taberna:anterior-65c8636 sgp-taberna:latest` + up -d.
-- "Batería de consulta": Lucas dijo que lo olvidemos.
-- Ojo: el VPS levanta con `docker compose` (plugin v2), no `docker-compose` v1 como dice CLAUDE.md.
+**Fase actual:** 7 — Cambios de Lucas. Impresión: se abandona el print server; va **comandera Bluetooth + RawBT**.
+**Lo ultimo que se hizo (2026-11-21/25, sesión en la nube):**
+- **Caída de Supabase (20/11 → 21/11):** el proyecto compartido (`Sales Chatbot RAG`) quedó "No
+  saludable" (base, login, REST). Causa: `ImpresoraTaberna.exe` (UA `Bun/1.4.3`) hacía ~13 consultas
+  por minuto: ~9.000 de ~9.500 pedidos HTTP diarios. Bug en `print-server/src/cola.ts`: `suscribir()`
+  hace `removeChannel` del canal viejo, eso dispara `CLOSED` en su callback y agenda otra
+  suscripción a los 5 s → bucle infinito, con `procesarPendientes()` en cada `SUBSCRIBED`.
+  Empezaba cada día cerca de las 7 h, al prender la compu.
+- Arreglo (con OK de Lucas): restart del proyecto por la Management API; `banned_until = 2999` para
+  `impresion@lataberna.com`; `sgp.configuracion.modo_impresion = 'navegador'`. Todo sano, sin trabajos pendientes.
+- Mientras no llegue la Bluetooth: desde la compu, al confirmar se abre el diálogo de imprimir (USB);
+  desde el celu, Cancelar y reimprimir con 🖨️ en la compu. El mensaje para la empleada ya se mandó.
+- **Ticket más grande (SIN SUBIR a prod):** `src/index.css` (`@media print`): cantidad + producto en
+  22 px negrita; notas en 22 px sin negrita; columnas 12/66/22 %; 58 mm → 18 px. El resto sin tocar.
+  Captura `ticket-prueba-22px.png` (no versionada). Los nombres largos (49 letras) ocupan 4–5 renglones.
 **Proximo paso concreto:**
-1. Logo: Lucas lo pega en el chat → reemplazar `public/logo-taberna.png` y redeploy; el botón
-   en Configuración → Local (migración 013 + Storage) va después.
-2. Charlar el margen (un % para todo o por categoría).
-3. Impresora IT03 y primer uso (ver Pendientes del dueño).
-4. Deuda: `useDashboardStats` trae como máximo 1000 pedidos por consulta (paginar).
-**Bloqueantes:** ninguno conocido.
+1. Lucas decide sobre el ticket: 22 px tal cual / acortar nombres largos en Productos (lo recomendado)
+   / bajar a 18 px. Después, deploy desde su compu (comando de CLAUDE.md).
+2. Llega la comandera Bluetooth (80 mm, ESC/POS) → RawBT en el celu de ella, emparejar, probar
+   un pedido (modo `navegador`, ya activo).
+3. El print server queda retirado: no arreglar `cola.ts` salvo que se pida. Para reactivarlo:
+   arreglar el bucle, desbanear el usuario y volver `modo_impresion` a `servidor`.
+4. Logo, margen y deuda de `useDashboardStats` (1000 pedidos): siguen como estaban.
+**Bloqueantes:** ninguno.
 **Pendientes del dueño:**
-- Mirar la parte de atrás de la IT03 (RJ45 o USB) e instalar RawBT en el celu.
-- Pasar el logo de la Taberna (pegarlo en el chat de la sesión; ver Fase 7 → logo).
-- Opcional: placeholder del login (`usuario@sgc-taberna.com`) y textos del script → `@lataberna.com`.
+- **Borrar el token `diagnostico-claude`** en Supabase (Account preferences → Access Tokens) y quitar
+  la credencial de `api.supabase.com` del entorno de la nube.
+- Comprar la comandera Bluetooth. Pasar el logo de la Taberna.
 **Avisos:**
-- Nuevos usuarios de la caja: darles el rol con el `UPDATE auth.users ... WHERE email = '...'`
-  (el script solo cubre `@sgc-taberna.com`). Salir y volver a entrar para que el rol llegue al token.
-- El SQL Editor de Supabase solo muestra el resultado de la última sentencia.
-- `.env` sigue versionado (anon key pública por diseño); sacarlo exige ajustar el deploy.
+- La base es compartida y gratis: cualquier app que consulte en bucle tira abajo a las otras.
+  Ante "no deja entrar": revisar la salud del proyecto antes que el VPS.
+- Nuevos usuarios de la caja: rol con `UPDATE auth.users ...` (ver abajo). Salir y volver a entrar.
+- El VPS levanta con `docker compose` (plugin v2), no `docker-compose` v1 como dice CLAUDE.md.
 
 ---
 
@@ -89,7 +92,7 @@ Anotados tal como los dijo. **Hecho 2026-10-20 (`d0eddb3`): menú, pantalla prin
 |------|--------|-----------------|-------|
 | 1-5 Roadmap GSD (POS, KDS, productos, reportes) | hecho | 2026-04-20 | `.planning/ROADMAP.md` |
 | Auditoría Omni + remediación | hecho | 2026-10-19 | `AUDITORIA-OMNI-2026-10-19.md` |
-| Impresión (ticket 80 mm, RawBT, print server) | hecho (sin hardware) | 2026-10-19 | `print-server/README.md` |
+| Impresión (ticket 80 mm, RawBT, print server) | print server retirado (tiró la base); va Bluetooth + RawBT | 2026-11-21 | `print-server/README.md` |
 | UI estilo Panel | hecho | 2026-10-19 | `docs/notas/estilo-panel.md` |
 | Configuración | hecho | 2026-10-19 | migración 012 |
 | 6 - Deploy producción | hecho (falta primer uso) | 2026-10-20 | `docs/PUESTA-EN-MARCHA.md` |
@@ -124,3 +127,5 @@ Anotados tal como los dijo. **Hecho 2026-10-20 (`d0eddb3`): menú, pantalla prin
 - 2026-10-19 — Estilo Panel con acento naranja Taberna; barra de abajo en celu, menú lateral desde lg.
 - 2026-10-19 — Débito y transferencia unificados en Caja ("Déb / Transfer"), como en abril.
 - 2026-10-19 — La base arranca de cero (los pedidos viejos eran de prueba).
+- 2026-11-21 — Print server retirado (su bucle de reconexión tiró la base compartida); impresión con comandera Bluetooth + RawBT. Usuario de impresión baneado.
+- 2026-11-21 — Ticket: productos y notas a 22 px (lo que lee la cocina); el resto igual.
