@@ -68,7 +68,7 @@ export interface OrderStatusLog {
 // Montos en pesos. Los totales de pagos_personal los llena un trigger de la base.
 export type TipoConcepto = 'extra' | 'descuento'
 export type ModoConcepto = 'fijo' | 'porcentaje' | 'por_unidad' | 'dias_de_sueldo'
-export type EstadoPago = 'borrador' | 'pagado'
+export type EstadoPago = 'borrador' | 'pagado' | 'anulado'
 export type MedioPagoPersonal = 'efectivo' | 'transferencia'
 export type TipoNovedad = 'inasistencia' | 'llegada_tarde' | 'adelanto' | 'charla' | 'otro'
 
@@ -113,6 +113,8 @@ export interface PagoPersonal {
   medio_pago: MedioPagoPersonal | null
   recibo_ruta: string | null
   notas: string | null
+  anulado_at: string | null
+  anulado_motivo: string | null
   created_at: string
   updated_at: string
   deleted_at: string | null

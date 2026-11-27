@@ -6,7 +6,7 @@ import { mensajeDeExcepcion, textoError, type Resultado } from './errores'
 
 interface DatosFicha {
   empleado: Empleado | null
-  /** Pagos ya pagados, el más reciente primero. */
+  /** Pagos pagados y anulados, el más reciente primero. */
   pagos: PagoPersonal[]
   novedades: NovedadPersonal[]
 }
@@ -25,7 +25,7 @@ export function useFichaEmpleada(empleadoId: string) {
   const cargar = useCallback(async (): Promise<DatosFicha> => {
     const [emp, pagos, novedades] = await Promise.all([
       supabase.from('empleados').select('*').eq('id', empleadoId).is('deleted_at', null).maybeSingle(),
-      supabase.from('pagos_personal').select('*').eq('empleado_id', empleadoId).eq('estado', 'pagado')
+      supabase.from('pagos_personal').select('*').eq('empleado_id', empleadoId).in('estado', ['pagado', 'anulado'])
         .is('deleted_at', null).order('semana_desde', { ascending: false }),
       supabase.from('novedades_personal').select('*').eq('empleado_id', empleadoId)
         .is('deleted_at', null).order('fecha', { ascending: false }),
@@ -65,5 +65,17 @@ export function useFichaEmpleada(empleadoId: string) {
     }
   }
 
-  return { ...datos, cargando, error, recargar, crearNovedad, quitarNovedad }
+  /** Borrado lógico de la empleada. Si tiene pagos hechos la base lo rechaza con su mensaje, que se muestra tal cual. */
+  const borrarEmpleada = async (): Promise<Resultado> => {
+    try {
+      const { error: err } = await supabase.from('empleados')
+        .update({ deleted_at: new Date().toISOString() }).eq('id', empleadoId)
+      if (err) return { error: err.message }
+      return { error: null }
+    } catch (e) {
+      return { error: mensajeDeExcepcion(e) }
+    }
+  }
+
+  return { ...datos, cargando, error, recargar, crearNovedad, quitarNovedad, borrarEmpleada }
 }

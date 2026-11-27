@@ -144,6 +144,30 @@ export function itemDeConcepto(
 
 // ─── Estado y propuesta ──────────────────────────────────────────────
 
+/** Pagos que cuentan: los anulados no cuentan para el estado, el conteo ni el total. */
+export function pagosVigentes<T extends Pick<PagoPersonal, 'estado'>>(pagos: T[]): T[] {
+  return pagos.filter((p) => p.estado !== 'anulado')
+}
+
+/** Cuántas empleadas ya cobraron esa semana y cuánto se pagó en total (sin anulados). */
+export function resumenSemana(
+  empleados: Pick<Empleado, 'id'>[],
+  pagos: Pick<PagoPersonal, 'empleado_id' | 'semana_desde' | 'estado' | 'total_a_cobrar'>[],
+  semanaDesde: string,
+): { pagadas: number; totalPagado: number } {
+  let pagadas = 0
+  let totalPagado = 0
+  const vigentes = pagosVigentes(pagos)
+  for (const e of empleados) {
+    const pago = vigentes.find((p) => p.empleado_id === e.id && p.semana_desde === semanaDesde)
+    if (pago?.estado === 'pagado') {
+      pagadas += 1
+      totalPagado += pago.total_a_cobrar
+    }
+  }
+  return { pagadas, totalPagado }
+}
+
 export function estadoEmpleada(
   empleado: Pick<Empleado, 'id' | 'fecha_ingreso'>,
   vencida: Semana,

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { ConceptoPago, Empleado, NovedadPersonal } from '@/types/database.types'
 import {
   avisoTotalNegativo, calcularTotales, novedadesDescontadas, estadoEmpleada, hoyArgentina, itemDeConcepto, montoItem,
-  moverSemana, proponerItems, semanaDePago, semanaVencida, sumarDias,
+  moverSemana, pagosVigentes, proponerItems, resumenSemana, semanaDePago, semanaVencida, sumarDias,
 } from './calculos'
 
 const ANA: Empleado = {
@@ -173,5 +173,26 @@ describe('ítems propuestos', () => {
   it('si se borraron los conceptos semilla, igual arma los ítems con el nombre por defecto', () => {
     const n = novedad({ id: 'n1', tipo: 'adelanto', fecha: '2026-11-22', monto: 1000 })
     expect(proponerItems(ANA, [], [n], semana).items[0]).toMatchObject({ nombre: 'Adelanto', concepto_id: null })
+  })
+})
+
+describe('pagos anulados', () => {
+  const vencida = { desde: '2026-11-21', hasta: '2026-11-27' }
+  const base = { empleado_id: 'ana', semana_desde: '2026-11-21', total_a_cobrar: 181667 }
+  const anulado = { ...base, estado: 'anulado' as const }
+  const pagado = { ...base, estado: 'pagado' as const, total_a_cobrar: 176667 }
+
+  it('un pago anulado no deja a la empleada al día: vuelve a Semana por pagar', () => {
+    expect(estadoEmpleada(ANA, vencida, [anulado], [])).toBe('por_pagar')
+  })
+
+  it('con el anulado y el pago nuevo, cuenta solo el nuevo', () => {
+    expect(estadoEmpleada(ANA, vencida, [anulado, pagado], [])).toBe('al_dia')
+    expect(pagosVigentes([anulado, pagado])).toEqual([pagado])
+  })
+
+  it('"Pagadas" y "Total pagado" no suman los anulados', () => {
+    expect(resumenSemana([ANA], [anulado], vencida.desde)).toEqual({ pagadas: 0, totalPagado: 0 })
+    expect(resumenSemana([ANA], [anulado, pagado], vencida.desde)).toEqual({ pagadas: 1, totalPagado: 176667 })
   })
 })
