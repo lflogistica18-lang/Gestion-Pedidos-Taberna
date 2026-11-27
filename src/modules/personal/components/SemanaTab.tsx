@@ -8,7 +8,7 @@ import { useConfiguracion } from '@/shared/store/useConfiguracion'
 import type { ConceptoPago, Empleado } from '@/types/database.types'
 import { useAbrirRecibo } from '../hooks/useAbrirRecibo'
 import { usePersonalSemana } from '../hooks/usePersonalSemana'
-import { estadoEmpleada, hoyArgentina, moverSemana, semanaVencida } from '../lib/calculos'
+import { estadoEmpleada, hoyArgentina, moverSemana, resumenSemana, semanaVencida } from '../lib/calculos'
 import { ModalPagarSemana } from './ModalPagarSemana'
 import { NavegadorSemana } from './NavegadorSemana'
 import { TarjetaEmpleada } from './TarjetaEmpleada'
@@ -33,8 +33,7 @@ export function SemanaTab({ empleados, conceptos }: Props) {
 
   const activas = empleados.filter((e) => e.active)
   const pagoDe = (id: string) => datos.pagos.find((p) => p.empleado_id === id && p.semana_desde === semana.desde)
-  const pagadas = activas.filter((e) => pagoDe(e.id)?.estado === 'pagado')
-  const totalPagado = pagadas.reduce((s, e) => s + (pagoDe(e.id)?.total_a_cobrar ?? 0), 0)
+  const { pagadas, totalPagado } = resumenSemana(activas, datos.pagos, semana.desde)
 
   let contenido
   if (cargando) {
@@ -47,7 +46,7 @@ export function SemanaTab({ empleados, conceptos }: Props) {
     contenido = (
       <>
         <div className="mb-4 grid grid-cols-2 gap-3">
-          <TarjetaDato etiqueta="Pagadas" valor={`${pagadas.length} de ${activas.length}`} />
+          <TarjetaDato etiqueta="Pagadas" valor={`${pagadas} de ${activas.length}`} />
           <TarjetaDato etiqueta="Total pagado" valor={pesos(totalPagado)} />
         </div>
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

@@ -34,7 +34,7 @@ function deItemGuardado(i: PagoPersonalItem): ItemPropuesto {
 }
 
 export function PagarSemanaContenido({ empleado, semana, pagoInicial, conceptos, novedades, onCerrar, onCambio }: Props) {
-  const { cargarItems, guardarBorrador, marcarPagado, emitirRecibo } = usePagos()
+  const { cargarItems, guardarBorrador, marcarPagado, emitirRecibo, descartarBorrador } = usePagos()
   const local = useConfiguracion((s) => s.config.nombre_local)
   const propuesta = useMemo(() => proponerItems(empleado, conceptos, novedades, semana), [empleado, conceptos, novedades, semana])
 
@@ -50,6 +50,7 @@ export function PagarSemanaContenido({ empleado, semana, pagoInicial, conceptos,
   const [errorRecibo, setErrorRecibo] = useState<string | null>(null)
   const [avisoPago, setAvisoPago] = useState<string | null>(null)
   const [confirmando, setConfirmando] = useState(false)
+  const [descartando, setDescartando] = useState(false)
 
   useEffect(() => {
     if (!pagoInicial) return
@@ -89,6 +90,22 @@ export function PagarSemanaContenido({ empleado, semana, pagoInicial, conceptos,
       return
     }
     mostrarToast('Borrador guardado', 'exito')
+    onCerrar()
+  }
+
+  const descartar = async () => {
+    if (!pago) return
+    setOcupado(true)
+    setError(null)
+    const r = await descartarBorrador(pago.id)
+    setOcupado(false)
+    setDescartando(false)
+    if (r.error) {
+      setError(r.error)
+      return
+    }
+    mostrarToast('Borrador descartado', 'exito')
+    onCambio()
     onCerrar()
   }
 
@@ -160,12 +177,27 @@ export function PagarSemanaContenido({ empleado, semana, pagoInicial, conceptos,
       <ControlSegmentado<MedioPagoPersonal> etiqueta="Medio de pago" tono="acento" opciones={MEDIOS} value={medio} onChange={setMedio} />
       {error && <AvisoEstado tono="rojo" titulo="No se pudo completar">{error}</AvisoEstado>}
       <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+        {pago && (
+          <Boton variante="peligro" className="sm:mr-auto" onClick={() => setDescartando(true)} disabled={bloqueado}>
+            Descartar borrador
+          </Boton>
+        )}
         <Boton onClick={() => void guardar()} disabled={bloqueado || totales.negativo}>Guardar borrador</Boton>
         <Boton variante="primario" onClick={() => setConfirmando(true)} disabled={bloqueado || totales.negativo || medio === ''}>
           {ocupado ? 'Guardando…' : 'Marcar pagado'}
         </Boton>
       </div>
       {medio === '' && <p className="text-center text-xs text-texto-secundario">Elegí cómo se paga para poder marcar el pago.</p>}
+      <Modal open={descartando} onClose={() => setDescartando(false)} title="Descartar borrador">
+        <div className="space-y-4">
+          <p className="text-sm text-texto-primario">¿Descartar el borrador de {empleado.nombre}? Se pierde lo cargado en este pago.</p>
+          <p className="text-sm text-texto-secundario">La semana vuelve a quedar sin pago. Las faltas y adelantos siguen pendientes.</p>
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Boton onClick={() => setDescartando(false)}>Volver</Boton>
+            <Boton variante="peligro" onClick={() => void descartar()} disabled={ocupado}>Descartar borrador</Boton>
+          </div>
+        </div>
+      </Modal>
       <Modal open={confirmando} onClose={() => setConfirmando(false)} title="Marcar como pagado">
         <div className="space-y-4">
           <p className="text-sm text-texto-primario">¿Marcar como pagado? Después no se puede modificar.</p>

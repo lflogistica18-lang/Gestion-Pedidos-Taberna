@@ -128,5 +128,36 @@ export function usePagos() {
     }
   }
 
-  return { cargarItems, guardarBorrador, marcarPagado, emitirRecibo, urlRecibo }
+  /** Anula un pago pagado con motivo (3 a 200 letras): la base libera las novedades y la semana vuelve a quedar por pagar. */
+  const anularPago = async (pagoId: string, motivo: string): Promise<RespuestaPago> => {
+    try {
+      const { data, error } = await supabase.rpc('anular_pago_personal', { p_pago_id: pagoId, p_motivo: motivo.trim() })
+      if (error) return { error: textoError(error), pago: null }
+      return { error: null, pago: data as PagoPersonal }
+    } catch (e) {
+      return { error: mensajeDeExcepcion(e), pago: null }
+    }
+  }
+
+  /** Descarta un borrador (borrado lógico del pago y de sus ítems). Un pago pagado no se descarta: se anula. */
+  const descartarBorrador = async (pagoId: string): Promise<{ error: string | null }> => {
+    try {
+      const ahora = new Date().toISOString()
+      const { data, error } = await supabase.from('pagos_personal')
+        .update({ deleted_at: ahora }).eq('id', pagoId).eq('estado', 'borrador').is('deleted_at', null).select('id')
+      if (error) return { error: textoError(error) }
+      if (!data || data.length !== 1) {
+        return { error: 'Este borrador ya no se puede descartar (puede que ya esté pagado). Recargá la pantalla.' }
+      }
+      // Si fallan los ítems no es un error para el usuario: el pago ya está descartado y sus
+      // ítems quedan ocultos con él (las pantallas solo leen ítems de pagos vivos). Se devuelve éxito.
+      await supabase.from('pagos_personal_items')
+        .update({ deleted_at: ahora }).eq('pago_id', pagoId).is('deleted_at', null)
+      return { error: null }
+    } catch (e) {
+      return { error: mensajeDeExcepcion(e) }
+    }
+  }
+
+  return { cargarItems, guardarBorrador, marcarPagado, emitirRecibo, urlRecibo, anularPago, descartarBorrador }
 }
