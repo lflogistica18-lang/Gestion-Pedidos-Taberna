@@ -214,3 +214,49 @@ Montos `NUMERIC(12,2)` en pesos, ≥ 0 (igual que `orders.total`). Todo en el es
 - PDF con `@react-pdf/renderer` por import dinámico (molde `depo-track/src/features/compras/components/pdf/generarPdf.ts`),
   fuente Helvetica de base (sin archivos de fuentes). Contenido: nombre del local, empleada, semana del … al …, sueldo,
   extras y descuentos uno por uno, **A cobrar** grande, medio de pago, fecha.
+
+---
+
+## Corregir errores: anular pagos y borrar empleadas (aprobado por Lucas 2026-11-27)
+
+**Qué pidió Lucas:** "precisamos que pueda editarlos y borrarlos por si se equivoca", con soft delete.
+**Decisión aprobada:** un pago pagado NO se edita (el PDF ya salió por WhatsApp): se **anula con motivo** y la semana
+vuelve a "por pagar" para rehacerlo. Igual que Anular pedido (014). Nada se borra de verdad.
+
+Ejemplo: Ana cobró $181.667 pero eran 2 horas extra, no 3. Jaqui abre la ficha de Ana → Recibos → **Anular** → motivo
+"eran 2 horas extra" → la semana de Ana vuelve a "Semana por pagar", la inasistencia vuelve a aparecer sola, carga 2 horas
+→ $176.667 → Marcar pagado → recibo nuevo. En la ficha quedan los dos: el viejo con sello **ANULADO** y el motivo.
+
+### Contrato — base (migración `017_anular_pago_personal.sql` + rollback + casos en `supabase/pruebas/017_prueba.sql`)
+- `sgp.pagos_personal`: `estado` admite `'anulado'`; columnas nuevas `anulado_at TIMESTAMPTZ`, `anulado_motivo TEXT`
+  (CHECK: si estado='anulado' → motivo con 3 a 200 caracteres sin espacios de borde y anulado_at no nulo).
+- Índice único `(empleado_id, semana_desde)` pasa a `WHERE deleted_at IS NULL AND estado <> 'anulado'` (así se rehace la semana).
+- Candado: `pagado → anulado` es la ÚNICA transición permitida desde pagado (además de la de recibo_ruta que ya existe);
+  solo pueden cambiar `estado`, `anulado_motivo`, `anulado_at` (lo fija el trigger con now()) y `updated_at`.
+  Un pago `anulado` no se toca nunca más. `borrador → anulado` no se permite (el borrador se descarta con `deleted_at`).
+  Un pago pagado o anulado no admite `deleted_at`.
+- Totales: no se recalculan si OLD.estado es pagado o anulado. Ítems: candado también para pagos anulados.
+- RPC `sgp.anular_pago_personal(p_pago_id UUID, p_motivo TEXT) RETURNS sgp.pagos_personal`, SECURITY INVOKER,
+  `search_path=''`, solo `es_taberna()` (si no, error en castellano): pasa el pago a anulado y libera sus novedades
+  (`UPDATE sgp.novedades_personal SET pago_id = NULL WHERE pago_id = p_pago_id`), en una sola transacción.
+  GRANT EXECUTE a authenticated, REVOKE a anon/PUBLIC.
+- `sgp.empleados`: poner `deleted_at` ("Borrar empleada") solo si no tiene pagos en estado `pagado` (los anulados no
+  cuentan); si tiene → error "Esta empleada tiene pagos hechos: usá Dar de baja para guardar su historial." (trigger).
+- Sin DELETE, sin policies nuevas salvo que hagan falta; RLS igual que 016. Verificación final `OK | FALTA`.
+  Regenerar `supabase/instalar_sgp_desde_cero.sql` (001–017 + seed).
+
+### Contrato — pantallas (`src/modules/personal/**`, `src/types/database.types.ts`)
+- Tipos: `EstadoPago` suma `'anulado'`; `anulado_at`, `anulado_motivo` en `PagoPersonal`; RPC en `Functions`.
+- Ficha de la empleada (`ListaRecibos`): muestra pagados y anulados; el anulado con `Pastilla` "Anulado", el motivo y la
+  fecha, el PDF se sigue pudiendo abrir. Cada pagado tiene botón **Anular** → Modal con motivo obligatorio (3–200) y el
+  aviso "La semana vuelve a quedar por pagar. El recibo queda guardado como anulado." → llama la RPC → toast y recarga.
+- Semana (`usePersonalSemana` + `calculos.ts`): los anulados no cuentan (ni estado, ni "Pagadas", ni "Total pagado").
+  Test nuevo en `calculos.test.ts` para eso.
+- Pagar semana: si existe un borrador, botón **Descartar borrador** con confirmación (pone `deleted_at` al pago y a sus ítems).
+- Empleada: botón **Borrar empleada** (en la ficha, variante peligro, con confirmación "Solo para cargas por error").
+  Si la base responde el error de pagos hechos, se muestra tal cual. Al borrar vuelve a `/personal`.
+- Errores siempre visibles (`EstadoError`/`mostrarToast`), estilo Panel, 44 px, probado a 390 px.
+
+### Orden
+`base` y `pantallas` en paralelo (la firma de la RPC y las columnas están fijadas arriba) → `revisor` → el orquestador
+aplica 017 con backup y prueba → Merge de Lucas → publicar con su OK. Los datos de "Prueba" los borra Lucas desde la app.
