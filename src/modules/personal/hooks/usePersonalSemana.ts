@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import { supabase } from '@/shared/lib/supabase'
 import type { NovedadPersonal, PagoPersonal } from '@/types/database.types'
+import { pagosVigentes } from '../lib/calculos'
 import { useCarga } from './useCarga'
 
 interface DatosSemana {
@@ -21,7 +22,8 @@ export function usePersonalSemana(semanaDesde: string, vencidaDesde: string) {
     if (pagos.error) throw new Error(pagos.error.message)
     if (novedades.error) throw new Error(novedades.error.message)
     return {
-      pagos: (pagos.data ?? []) as PagoPersonal[],
+      // Los anulados no cuentan: la semana vuelve a quedar por pagar
+      pagos: pagosVigentes((pagos.data ?? []) as PagoPersonal[]),
       novedadesPendientes: (novedades.data ?? []) as NovedadPersonal[],
     }
   }, [semanaDesde, vencidaDesde])
