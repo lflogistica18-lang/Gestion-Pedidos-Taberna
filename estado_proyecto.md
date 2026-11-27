@@ -18,7 +18,9 @@ recibo PDF, conceptos, novedades; `DISENO-pagos-personal.md`), logo cargable des
 La Taberna como logo de base e ícono de la app (`docs/marca/`). Migraciones 015/016 aplicadas. Lucas probó Personal en
 prod: "anda" (empleada "Prueba", $181.667, recibo en `sgp-recibos`). Imágenes de vuelta atrás: `sgp-taberna:anterior-e7e4919`
 y `anterior-30874e4` (borrar con `docker rmi` tras unos días OK). Queda `sgp-taberna-staging` (127.0.0.1:8092, sin dominio).
-Pendiente: borrar los datos de "Prueba" cuando Lucas avise (pago pagado = solo por SQL; también el objeto del recibo).
+**Tarde (`ae7911a`, PR #14, migración 017):** anular pago con motivo (la semana vuelve a por pagar), descartar borrador y
+borrar empleada cargada por error (no deja si tiene pagos pagados). Lucas lo probó anulando el pago de "Prueba" y
+borrándola: anda. Imagen de vuelta atrás `anterior-2746127`; backup en `~/.config/omni/backups/taberna-personal-antes-017-2026-11-27.json`.
 
 **Fase anterior:** 8 cerrada y EN USO REAL en el local (`e7e4919`, PR #9). Lucas confirmó el 2026-11-25: "todo funciona".
 **Cómo está funcionando hoy (verificado en la base el 2026-11-25):**
@@ -36,7 +38,7 @@ Pendiente: borrar los datos de "Prueba" cuando Lucas avise (pago pagado = solo p
   derecha (opción B); menú recogible. **Pedidos:** último primero, Editar (mismo pedido, ticket "PEDIDO MODIFICADO") y Anular
   con motivo, por RPC. **PWA** se actualiza sola; pedido nuevo en Local; Delivery exige nombre y dirección; ticket a 22 px.
 **Proximo paso concreto:**
-1. ~~Logo~~ hecho 2026-11-27. Borrar datos de "Prueba" con el OK de Lucas.
+1. ~~Logo~~ y ~~corregir pagos~~ hechos 2026-11-27. Borrar imágenes `anterior-*` tras unos días OK.
 2. Merge de `ticket-programita-letra-grande` (código del programita + este estado): no cambia la app publicada ni pide
    deploy, es para que master tenga lo que ya corre en el local. Link: `.../compare/master...ticket-programita-letra-grande`.
 3. Lucas: cambiar la contraseña de `ventas@lataberna.com` (quedó a la vista en una captura del chat).
