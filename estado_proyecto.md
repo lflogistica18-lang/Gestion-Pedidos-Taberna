@@ -17,9 +17,12 @@
 "todo funciona". **SIGUE: cargar el logo de la Taberna** (sección "Logo — próximo paso", abajo).
 **Cómo está funcionando hoy (verificado en la base el 2026-11-25):**
 - **Impresión automática por la compu:** `modo_impresion = 'servidor'`. Los celus y la tablet confirman y el ticket sale solo.
-  El programita `ImpresoraTaberna.exe` se rehízo sin tiempo real (rama `print-server-sin-bucle`, 4 commits, **sin Merge**):
-  un solo ciclo que pregunta cada 4 s y, si algo falla, espera 5 s → 5 min; ver `print-server/README.md` "Por qué no usa
-  tiempo real". Usuario `impresion@lataberna.com` desbloqueado. 14 tickets impresos, cola en 0.
+  El programita `ImpresoraTaberna.exe` se rehízo sin tiempo real (en master, PR #10): un solo ciclo que pregunta cada 4 s
+  y, si algo falla, espera 5 s → 5 min; ver `print-server/README.md` "Por qué no usa tiempo real". Usuario
+  `impresion@lataberna.com` desbloqueado.
+- **Ticket del programita con letra grande (2026-11-27, instalado en el local, Lucas: "sale bien"):** productos, tipo,
+  cliente, dirección y notas en doble alto + negrita, y "PEDIDO MODIFICADO" si el pedido fue editado. La comandera acepta
+  el doble alto solo. Rama `ticket-programita-letra-grande` (**sin Merge**), exe `ImpresoraTaberna-letra-grande.exe`.
 - En modo `servidor` quedan dormidos (siguen en el código para el modo `navegador`): la opción "¿Este aparato imprime?", la franja
   "Para imprimir" y la pregunta "¿Salió el ticket?" (`PROVISORIO-WIFI`). Vuelta atrás: Configuración → Impresión → navegador.
 - **Roles:** `taberna` (admin, jaqui@) y `taberna_pedidos` (ventas@: solo Pedido + e Historial). Migraciones 013 y 014 aplicadas.
@@ -28,8 +31,8 @@
   con motivo, por RPC. **PWA** se actualiza sola; pedido nuevo en Local; Delivery exige nombre y dirección; ticket a 22 px.
 **Proximo paso concreto:**
 1. **Logo** (lo pidió Lucas el 2026-11-25): ver la sección de abajo. Falta que Lucas pase el archivo.
-2. Merge de `print-server-sin-bucle` (código del programita + este estado): no cambia la app publicada, es para que master
-   tenga lo que ya corre en el local. Link: `.../compare/master...print-server-sin-bucle`.
+2. Merge de `ticket-programita-letra-grande` (código del programita + este estado): no cambia la app publicada ni pide
+   deploy, es para que master tenga lo que ya corre en el local. Link: `.../compare/master...ticket-programita-letra-grande`.
 3. Lucas: cambiar la contraseña de `ventas@lataberna.com` (quedó a la vista en una captura del chat).
 4. Margen (charlar); deuda `useDashboardStats` (máx. 1000 pedidos); Caja: ¿contar al entregar? ("de momento" al confirmar).
 5. Impresión directa RawBT/WiFi: ya no urge (la compu imprime sola); se retoma si compran impresora WiFi.

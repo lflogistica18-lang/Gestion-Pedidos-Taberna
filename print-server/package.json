@@ -13,7 +13,7 @@
     "dev": "tsx src/index.ts",
     "prueba": "tsx src/prueba.ts",
     "prueba:prod": "node dist/prueba.js",
-    "test": "tsx --test src/sondeo.test.ts src/relevo.test.ts",
+    "test": "tsx --test src/sondeo.test.ts src/relevo.test.ts src/ticket.test.ts",
     "test:windows": "tsx --test src/relevo.windows.test.ts",
     "exe":"node scripts/exe.mjs"
   },
