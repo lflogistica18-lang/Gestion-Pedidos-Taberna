@@ -13,8 +13,14 @@
 
 ## DÓNDE QUEDAMOS — leer primero al retomar (maximo 40 lineas)
 
-**Fase actual:** 8 cerrada y EN USO REAL en el local (app en producción `e7e4919`, PR #9). Lucas confirmó el 2026-11-25:
-"todo funciona". **SIGUE: cargar el logo de la Taberna** (sección "Logo — próximo paso", abajo).
+**2026-11-27 — Personal + logo EN PRODUCCIÓN (`2746127`, PRs #12 y #13):** sección Personal (pagos semanales con
+recibo PDF, conceptos, novedades; `DISENO-pagos-personal.md`), logo cargable desde Configuración (015) y logo real de
+La Taberna como logo de base e ícono de la app (`docs/marca/`). Migraciones 015/016 aplicadas. Lucas probó Personal en
+prod: "anda" (empleada "Prueba", $181.667, recibo en `sgp-recibos`). Imágenes de vuelta atrás: `sgp-taberna:anterior-e7e4919`
+y `anterior-30874e4` (borrar con `docker rmi` tras unos días OK). Queda `sgp-taberna-staging` (127.0.0.1:8092, sin dominio).
+Pendiente: borrar los datos de "Prueba" cuando Lucas avise (pago pagado = solo por SQL; también el objeto del recibo).
+
+**Fase anterior:** 8 cerrada y EN USO REAL en el local (`e7e4919`, PR #9). Lucas confirmó el 2026-11-25: "todo funciona".
 **Cómo está funcionando hoy (verificado en la base el 2026-11-25):**
 - **Impresión automática por la compu:** `modo_impresion = 'servidor'`. Los celus y la tablet confirman y el ticket sale solo.
   El programita `ImpresoraTaberna.exe` se rehízo sin tiempo real (en master, PR #10): un solo ciclo que pregunta cada 4 s
@@ -30,7 +36,7 @@
   derecha (opción B); menú recogible. **Pedidos:** último primero, Editar (mismo pedido, ticket "PEDIDO MODIFICADO") y Anular
   con motivo, por RPC. **PWA** se actualiza sola; pedido nuevo en Local; Delivery exige nombre y dirección; ticket a 22 px.
 **Proximo paso concreto:**
-1. **Logo** (lo pidió Lucas el 2026-11-25): ver la sección de abajo. Falta que Lucas pase el archivo.
+1. ~~Logo~~ hecho 2026-11-27. Borrar datos de "Prueba" con el OK de Lucas.
 2. Merge de `ticket-programita-letra-grande` (código del programita + este estado): no cambia la app publicada ni pide
    deploy, es para que master tenga lo que ya corre en el local. Link: `.../compare/master...ticket-programita-letra-grande`.
 3. Lucas: cambiar la contraseña de `ventas@lataberna.com` (quedó a la vista en una captura del chat).
