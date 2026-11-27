@@ -63,3 +63,86 @@ export interface OrderStatusLog {
   new_status: string
   created_at: string
 }
+
+// ─── Personal (migración 016) ───────────────────────────────────
+// Montos en pesos. Los totales de pagos_personal los llena un trigger de la base.
+export type TipoConcepto = 'extra' | 'descuento'
+export type ModoConcepto = 'fijo' | 'porcentaje' | 'por_unidad' | 'dias_de_sueldo'
+export type EstadoPago = 'borrador' | 'pagado'
+export type MedioPagoPersonal = 'efectivo' | 'transferencia'
+export type TipoNovedad = 'inasistencia' | 'llegada_tarde' | 'adelanto' | 'charla' | 'otro'
+
+export interface Empleado {
+  id: string
+  nombre: string
+  telefono: string | null
+  sueldo_semanal: number
+  dias_por_semana: number
+  fecha_ingreso: string | null
+  notas: string | null
+  active: boolean
+  created_at: string
+  updated_at: string
+  deleted_at: string | null
+}
+
+export interface ConceptoPago {
+  id: string
+  nombre: string
+  tipo: TipoConcepto
+  modo: ModoConcepto
+  valor: number
+  active: boolean
+  created_at: string
+  updated_at: string
+  deleted_at: string | null
+}
+
+export interface PagoPersonal {
+  id: string
+  empleado_id: string
+  semana_desde: string
+  semana_hasta: string
+  sueldo_semanal: number
+  dias_por_semana: number
+  total_extras: number
+  total_descuentos: number
+  total_a_cobrar: number
+  estado: EstadoPago
+  pagado_at: string | null
+  medio_pago: MedioPagoPersonal | null
+  recibo_ruta: string | null
+  notas: string | null
+  created_at: string
+  updated_at: string
+  deleted_at: string | null
+}
+
+export interface PagoPersonalItem {
+  id: string
+  pago_id: string
+  concepto_id: string | null
+  nombre: string
+  tipo: TipoConcepto
+  modo: ModoConcepto
+  valor: number
+  cantidad: number
+  monto: number
+  novedad_id: string | null
+  created_at: string
+  deleted_at: string | null
+}
+
+export interface NovedadPersonal {
+  id: string
+  empleado_id: string
+  fecha: string
+  tipo: TipoNovedad
+  detalle: string
+  monto: number | null
+  descontar: boolean
+  pago_id: string | null
+  created_at: string
+  updated_at: string
+  deleted_at: string | null
+}

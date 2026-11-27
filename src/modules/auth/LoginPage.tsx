@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 import { useAuth } from './hooks/useAuth'
 import { AvisoEstado, Boton, Entrada } from '@/shared/components/panel'
+import { LogoLocal } from '@/shared/components/LogoLocal'
 
 export default function LoginPage() {
   const { signIn, isAuthenticated, loading: authLoading } = useAuth()
@@ -45,7 +46,7 @@ export default function LoginPage() {
       <div className="w-full max-w-100 rounded-2xl border border-borde-sutil bg-bg-tarjeta p-6 shadow-tarjeta sm:p-8">
         {/* Logo / Marca */}
         <div className="mb-6 text-center">
-          <img src="/logo-taberna.png" alt="" className="mx-auto size-16 rounded-2xl object-cover" />
+          <LogoLocal className="mx-auto size-16 rounded-2xl" />
           <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-texto-primario">La Taberna</h1>
           <p className="text-sm text-texto-secundario">Sistema de gestión</p>
         </div>

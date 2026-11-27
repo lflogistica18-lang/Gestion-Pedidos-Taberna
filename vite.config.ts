@@ -10,6 +10,10 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      workbox: {
+        // El PDF de recibos pesa ~1,2 MB: se baja solo cuando el admin genera un recibo.
+        globIgnores: ['**/react-pdf*.js', '**/ReciboPdf*.js', '**/generarRecibo*.js'],
+      },
       manifest: {
         name: 'SGP - Sistema de Gestión de Pedidos',
         short_name: 'SGP',

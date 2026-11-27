@@ -22,6 +22,10 @@ export interface Configuracion {
   cocina_activa: boolean
   /** Medios de pago que ofrece la Caja, en este orden. */
   medios_pago: PaymentMethod[]
+  /** URL pública del logo subido desde Configuración (migración 015); null = el archivo fijo. */
+  logo_url: string | null
+  /** Día de pago del personal: 0 = domingo … 5 = viernes (migración 016). */
+  dia_pago: number
 }
 
 export const CONFIGURACION_POR_DEFECTO: Configuracion = {
@@ -33,6 +37,8 @@ export const CONFIGURACION_POR_DEFECTO: Configuracion = {
   pie_ticket: '¡Gracias por su compra!',
   cocina_activa: false,
   medios_pago: ['efectivo', 'transferencia'],
+  logo_url: null,
+  dia_pago: 5,
 }
 
 // Débito y transferencia se ofrecen juntos como "Déb / Transfer" (decisión del local,

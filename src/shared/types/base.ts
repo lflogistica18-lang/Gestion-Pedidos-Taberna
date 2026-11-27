@@ -20,6 +20,8 @@ export interface CampoSchema {
   obligatorio?: boolean
   opciones?: string[] // para tipo select
   placeholder?: string
+  /** Número que no es plata (ej. días): no se muestra el "= $X" debajo. */
+  sinMonto?: boolean
 }
 
 // Estado de una operacion async

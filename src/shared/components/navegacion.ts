@@ -3,7 +3,7 @@
 // Depende de la configuración del local (Cocina visible o no) y del rol
 // (el rol solo pedidos no ve Caja, Cocina, Productos ni Configuración).
 
-import { ChefHat, ClipboardList, Package, PlusCircle, Settings, Wallet, type LucideIcon } from 'lucide-react'
+import { ChefHat, ClipboardList, Package, PlusCircle, Settings, Users, Wallet, type LucideIcon } from 'lucide-react'
 import { useConfiguracion } from '@/shared/store/useConfiguracion'
 import { useAuth } from '@/modules/auth/hooks/useAuth'
 
@@ -27,6 +27,7 @@ export function itemsNavegacion(cocinaActiva: boolean, esAdmin: boolean): ItemNa
     ...(cocinaActiva ? [{ to: '/kds', label: 'Cocina', icono: ChefHat, seccion: 'operacion', soloAdmin: true } satisfies ItemNavegacion] : []),
     { to: '/orders', label: 'Historial', icono: ClipboardList, seccion: 'gestion' },
     { to: '/products', label: 'Productos', icono: Package, seccion: 'gestion', soloAdmin: true },
+    { to: '/personal', label: 'Personal', icono: Users, seccion: 'gestion', enBarraInferior: false, soloAdmin: true },
     { to: '/config', label: 'Configuración', icono: Settings, seccion: 'ajustes', enBarraInferior: false, soloAdmin: true },
   ]
   return esAdmin ? todos : todos.filter((i) => !i.soloAdmin)

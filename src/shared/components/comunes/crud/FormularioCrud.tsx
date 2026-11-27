@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { AreaTexto, AvisoEstado, Boton, Entrada, Selector } from '@/shared/components/panel'
+import { pesos } from '@/shared/lib/formato'
+import { leerNumeroAR } from '@/shared/lib/numeros'
 import type { CampoSchema } from '@/shared/types/base'
 
 interface Props {
@@ -14,11 +16,16 @@ interface Props {
   onCancelar: () => void
 }
 
-/** Deja pasar solo dígitos y un punto decimal (acepta la coma del teclado argentino). */
+/** Deja pasar dígitos, puntos y comas tal como los escribe la persona (se interpreta al guardar). */
 function limpiarNumero(texto: string): string {
-  const conPunto = texto.replace(',', '.').replace(/[^\d.]/g, '')
-  const [entero, ...decimales] = conPunto.split('.')
-  return decimales.length > 0 ? `${entero}.${decimales.join('')}` : entero
+  return texto.replace(/[^\d.,]/g, '')
+}
+
+/** Lo que se entendió del número escrito, para que el error se vea antes de guardar. */
+function interpretado(texto: string): string | undefined {
+  if (texto === '') return undefined
+  const n = leerNumeroAR(texto)
+  return n === null ? 'No se entiende como número' : `= ${pesos(n)}`
 }
 
 /** Cuerpo del Modal de alta/edición: un control por campo del schema. */
@@ -84,7 +91,7 @@ export function FormularioCrud({ campos, inicial, validar, onEnviar, onListo, on
           )
         }
         if (campo.tipo === 'numero') {
-          return <Entrada key={campo.nombre} {...comunes} type="text" inputMode="decimal" value={valor} placeholder={campo.placeholder} onChange={e => onCambiar(campo.nombre, limpiarNumero(e.target.value))} />
+          return <Entrada key={campo.nombre} {...comunes} type="text" inputMode="decimal" ayuda={campo.sinMonto ? undefined : interpretado(valor)} value={valor} placeholder={campo.placeholder} onChange={e => onCambiar(campo.nombre, limpiarNumero(e.target.value))} />
         }
         return <Entrada key={campo.nombre} {...comunes} type={campo.tipo === 'fecha' ? 'date' : 'text'} value={valor} placeholder={campo.placeholder} onChange={e => onCambiar(campo.nombre, e.target.value)} />
       })}

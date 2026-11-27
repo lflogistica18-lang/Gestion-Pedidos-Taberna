@@ -12,6 +12,7 @@ import { useProducts } from './hooks/useProducts'
 import { useUpsertProduct, useToggleProduct, productSchema } from './hooks/useUpsertProduct'
 import { useCategories } from './hooks/useCategories'
 import { CrudManager } from '@/shared/components/comunes/CrudManager'
+import { leerNumeroAR } from '@/shared/lib/numeros'
 import type { CampoSchema } from '@/shared/types/base'
 import type { Product } from '@/types/database.types'
 
@@ -65,8 +66,8 @@ export default function ProductsPage() {
       const result = await upsert({
         name: datos.name || '',
         category: datos.category || '',
-        price: Number(datos.price) || 0,
-        cost: Number(datos.cost) || 0
+        price: leerNumeroAR(String(datos.price ?? '')) ?? 0,
+        cost: leerNumeroAR(String(datos.cost ?? '')) ?? 0
       })
       if (!result) return { error: 'Error al crear producto' }
       refetch()
@@ -81,8 +82,8 @@ export default function ProductsPage() {
       const result = await upsert({
         name: datos.name || '',
         category: datos.category || '',
-        price: Number(datos.price) || 0,
-        cost: Number(datos.cost) || 0
+        price: leerNumeroAR(String(datos.price ?? '')) ?? 0,
+        cost: leerNumeroAR(String(datos.cost ?? '')) ?? 0
       }, id)
       if (!result) return { error: 'Error al actualizar producto' }
       refetch()
@@ -196,8 +197,8 @@ export default function ProductsPage() {
               const r = productSchema.safeParse({
                 name: d.name,
                 category: d.category,
-                price: Number(d.price),
-                cost: Number(d.cost ?? 0),
+                price: leerNumeroAR(String(d.price ?? '')) ?? NaN,
+                cost: leerNumeroAR(String(d.cost ?? '')) ?? (String(d.cost ?? '').trim() === '' ? 0 : NaN),
               })
               return r.success ? null : r.error.issues[0].message
             }}
