@@ -6,7 +6,7 @@ import { CONFIGURACION_POR_DEFECTO, ORDEN_PAGOS, type Configuracion } from '@/sh
 // Si la base falla se usan los valores por defecto y se expone el error: la Caja
 // tiene que seguir vendiendo aunque no se pueda leer la configuración.
 
-const COLUMNAS = 'nombre_local, direccion, telefono, modo_impresion, papel_mm, pie_ticket, cocina_activa, medios_pago'
+const COLUMNAS = 'nombre_local, direccion, telefono, modo_impresion, papel_mm, pie_ticket, cocina_activa, medios_pago, logo_url, dia_pago'
 
 interface ConfiguracionStore {
   config: Configuracion

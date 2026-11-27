@@ -7,6 +7,7 @@
 import { NavLink } from 'react-router-dom'
 import { LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { cn } from '@/shared/lib/cn'
+import { LogoLocal } from './LogoLocal'
 import { TITULOS_SECCION, useItemsNavegacion, type SeccionMenu } from './navegacion'
 import { useMenu } from '@/shared/store/useMenu'
 import { useConfirmarSalida } from './useConfirmarSalida'
@@ -37,7 +38,7 @@ export function MenuLateral({ email, onSalir }: MenuLateralProps) {
       )}
     >
       <div className={cn('flex shrink-0 items-center pb-3 pt-4', recogido ? 'flex-col gap-2 px-3' : 'gap-2.5 px-5')}>
-        <img src="/logo-taberna.png" alt={recogido ? 'La Taberna' : ''} className="size-9 shrink-0 rounded-lg object-cover" />
+        <LogoLocal alt={recogido ? 'La Taberna' : ''} className="size-9 rounded-lg" />
         {!recogido && <span className="min-w-0 flex-1 truncate text-lg font-bold tracking-tight text-menu-texto">La Taberna</span>}
         <button
           type="button"

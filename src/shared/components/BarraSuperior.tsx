@@ -6,6 +6,7 @@
 
 import { useLocation } from 'react-router-dom'
 import { MenuUsuario } from './MenuUsuario'
+import { LogoLocal } from './LogoLocal'
 import { Reloj } from './Reloj'
 import { ChevronRight } from 'lucide-react'
 import { seccionDeRuta, tituloDeRuta, useItemsNavegacion } from './navegacion'
@@ -25,7 +26,7 @@ export function BarraSuperior({ email, onSalir }: BarraSuperiorProps) {
     <header className="z-20 flex h-14 shrink-0 items-center gap-3 border-b border-borde-sutil bg-bg-tarjeta px-4 lg:px-6">
       {/* < lg: marca */}
       <div className="flex min-w-0 items-center gap-2.5 lg:hidden">
-        <img src="/logo-taberna.png" alt="" className="size-8 shrink-0 rounded-lg object-cover" />
+        <LogoLocal className="size-8 rounded-lg" />
         <span className="truncate text-base font-bold tracking-tight text-texto-primario">La Taberna</span>
       </div>
       {/* ≥ lg: ruta chica. El título grande lo pone el EncabezadoPagina de cada pantalla */}

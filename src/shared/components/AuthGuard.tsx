@@ -2,6 +2,7 @@ import { Navigate } from 'react-router-dom'
 import { Lock } from 'lucide-react'
 import { useAuth, ROL_ADMIN, ROL_PEDIDOS } from '@/modules/auth/hooks/useAuth'
 import { Boton } from './panel'
+import { LogoLocal } from './LogoLocal'
 
 interface AuthGuardProps {
   children: React.ReactNode
@@ -17,7 +18,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
   if (loading) {
     return (
       <div className="flex h-dvh items-center justify-center bg-bg-principal" role="status" aria-label="Cargando">
-        <img src="/logo-taberna.png" alt="" className="size-16 animate-pulse rounded-2xl object-cover" />
+        <LogoLocal className="size-16 animate-pulse rounded-2xl" />
       </div>
     )
   }

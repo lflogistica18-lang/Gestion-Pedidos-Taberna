@@ -9,6 +9,8 @@ import ProductsPage from '@/modules/products/products-page'
 import OrdersPage from '@/modules/orders/orders-page'
 import ReportsPage from '@/modules/reports/reports-page'
 import ConfigPage from '@/modules/config/config-page'
+import PersonalPage from '@/modules/personal/personal-page'
+import FichaEmpleadaPage from '@/modules/personal/ficha-empleada-page'
 
 export const router = createBrowserRouter([
   // Ruta pública — login
@@ -31,6 +33,8 @@ export const router = createBrowserRouter([
       { path: 'products', element: <RutaAdmin><ProductsPage /></RutaAdmin> },
       { path: 'orders', element: <OrdersPage /> },
       { path: 'reports', element: <RutaAdmin><ReportsPage /></RutaAdmin> },
+      { path: 'personal', element: <RutaAdmin><PersonalPage /></RutaAdmin> },
+      { path: 'personal/:id', element: <RutaAdmin><FichaEmpleadaPage /></RutaAdmin> },
       { path: 'config', element: <RutaAdmin><ConfigPage /></RutaAdmin> },
     ],
   },
