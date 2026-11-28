@@ -13,6 +13,11 @@
 
 ## DÓNDE QUEDAMOS — leer primero al retomar (maximo 40 lineas)
 
+**Último cambio (2026-11-28):** Personal con medio de pago en adelantos y pago dividido efectivo + transferencia
+EN PRODUCCIÓN (`9876764`, PR #16, migración 018 aplicada y probada 39/39; diseño en `DISENO-pagos-personal.md`).
+Backup previo en `~/.config/omni/backups/taberna-018/`; imagen anterior `sgp-taberna:anterior-1371c8d`. Falta que
+Lucas mire "Pagar semana" en el celu (sin confirmar). Lo pagado de más/de menos NO se arrastra a la semana siguiente.
+
 **Fase actual:** 8 cerrada y EN USO REAL en el local (app en producción `e7e4919`, PR #9). Lucas confirmó el 2026-11-25:
 "todo funciona". **SIGUE: cargar el logo de la Taberna** (sección "Logo — próximo paso", abajo).
 **Cómo está funcionando hoy (verificado en la base el 2026-11-25):**
