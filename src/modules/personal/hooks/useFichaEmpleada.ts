@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import { supabase } from '@/shared/lib/supabase'
-import type { Empleado, NovedadPersonal, PagoPersonal, TipoNovedad } from '@/types/database.types'
+import type { Empleado, MedioAdelanto, NovedadPersonal, PagoPersonal, TipoNovedad } from '@/types/database.types'
 import { useCarga } from './useCarga'
 import { mensajeDeExcepcion, textoError, type Resultado } from './errores'
 
@@ -16,6 +16,8 @@ export interface DatosNovedad {
   tipo: TipoNovedad
   detalle: string
   monto: number | null
+  /** Obligatorio en adelantos; null en el resto. */
+  medio_pago: MedioAdelanto | null
   descontar: boolean
 }
 

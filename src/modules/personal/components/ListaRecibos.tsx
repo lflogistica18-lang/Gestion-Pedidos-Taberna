@@ -3,7 +3,7 @@ import { Boton, Pastilla } from '@/shared/components/panel'
 import { fechaCorta, pesos } from '@/shared/lib/formato'
 import type { Empleado, PagoPersonal } from '@/types/database.types'
 import { useAbrirRecibo } from '../hooks/useAbrirRecibo'
-import { ETIQUETA_MEDIO } from '../lib/recibo'
+import { textoDiferencia, textoMedioPagado } from '../lib/recibo'
 import { ModalAnularPago } from './ModalAnularPago'
 
 interface Props {
@@ -35,10 +35,11 @@ export function ListaRecibos({ empleado, pagos, onCambio }: Props) {
               <p className={anulado ? 'mt-1 text-lg font-bold text-texto-secundario line-through' : 'mt-1 text-lg font-bold text-texto-primario'}>
                 {pesos(p.total_a_cobrar)}
               </p>
-              <p className="text-xs text-texto-secundario">
-                {p.medio_pago ? ETIQUETA_MEDIO[p.medio_pago] : '—'}
+              <p className="break-words text-xs text-texto-secundario">
+                {textoMedioPagado(p)}
                 {p.pagado_at ? ` · ${fechaCorta(p.pagado_at)}` : ''}
               </p>
+              {!anulado && textoDiferencia(p) && <p className="text-xs text-tono-ambar-texto">{textoDiferencia(p)}</p>}
               {anulado && (
                 <p className="mt-2 break-words text-sm text-texto-primario">
                   Anulado{p.anulado_at ? ` el ${fechaCorta(p.anulado_at)}` : ''}: {p.anulado_motivo ?? 'sin motivo'}

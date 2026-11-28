@@ -2,6 +2,7 @@ import { Download, FileText, Share2 } from 'lucide-react'
 import { AvisoEstado, Boton, mostrarToast } from '@/shared/components/panel'
 import { pesos } from '@/shared/lib/formato'
 import type { PagoPersonal } from '@/types/database.types'
+import { textoDiferencia, textoMedioPagado } from '../lib/recibo'
 import { compartirArchivo, descargarArchivo, nombreArchivoRecibo } from '../pdf/compartir'
 
 interface Props {
@@ -35,6 +36,8 @@ export function ResultadoRecibo({ pago, empleada, recibo, errorRecibo, generando
     <div className="space-y-4">
       <AvisoEstado tono="verde" titulo="Pago registrado">
         {empleada} cobra {pesos(pago.total_a_cobrar)}.
+        {pago.monto_efectivo !== null || pago.monto_transferencia !== null ? ` Pagado: ${textoMedioPagado(pago)}.` : ''}
+        {textoDiferencia(pago) ? ` ${textoDiferencia(pago)}.` : ''}
       </AvisoEstado>
       {aviso && <AvisoEstado tono="ambar" titulo="Falta marcar novedades">{aviso}</AvisoEstado>}
       {errorRecibo && (

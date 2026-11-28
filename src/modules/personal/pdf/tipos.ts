@@ -20,5 +20,14 @@ export interface DatosRecibo {
   totalDescuentos: number
   total: number
   medioPago: string
+  /** Lo pagado por cada medio; null en pagos viejos que solo tienen el medio. */
+  montosPagados: MontosPagados | null
   pagadoAt: string | null
+}
+
+export interface MontosPagados {
+  efectivo: number
+  transferencia: number
+  /** Pagado menos lo calculado (positivo = de más). */
+  diferencia: number
 }

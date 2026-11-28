@@ -260,3 +260,76 @@ Ejemplo: Ana cobró $181.667 pero eran 2 horas extra, no 3. Jaqui abre la ficha 
 ### Orden
 `base` y `pantallas` en paralelo (la firma de la RPC y las columnas están fijadas arriba) → `revisor` → el orquestador
 aplica 017 con backup y prueba → Merge de Lucas → publicar con su OK. Los datos de "Prueba" los borra Lucas desde la app.
+
+---
+
+## Medio de pago: adelantos y pago dividido (aprobado por Lucas 2026-11-28)
+
+**Qué pidió Lucas:** "el pago al personal puede ser mediante transferencia o efectivo, los adelantos también", y
+"dividir el restante: le quedan 180 mil de los 20 mil de adelanto y se le paga 100 por transferencia y 80 en efectivo".
+**Decisión de Lucas:** se cargan **los dos montos** a mano y la app **no bloquea** si no suman el total: avisa
+"cobra $X de más / de menos" y deja marcar pagado igual (sirve para redondeos y pagos de más).
+
+Ejemplo: Ana, sueldo $200.000. El martes 24/11 se le transfieren $20.000 → novedad Adelanto, **Transferencia**
+(obligatorio). El viernes el pago propone "Adelanto 24/11 · Transferencia −$20.000" → a cobrar **$180.000**. Se cargan
+Transferencia $100.000 y Efectivo $90.000 → aviso ámbar "Cobra $10.000 de más que lo calculado" → Marcar pagado deja.
+El recibo dice lo calculado, lo pagado por cada medio y la diferencia.
+
+Fuera de alcance: lo pagado de más o de menos **no se arrastra** a la semana siguiente (si hace falta, se carga a mano,
+p. ej. como adelanto). Un adelanto es una sola entrega: un solo medio. Los pagos y adelantos ya cargados no cambian.
+
+### Contrato — base (`supabase/migrations/018_medio_pago_personal.sql` + `.rollback.sql` + `supabase/pruebas/018_prueba.sql`)
+- `sgp.novedades_personal.medio_pago TEXT NULL`, CHECK `medio_pago IS NULL OR medio_pago IN ('efectivo','transferencia')`
+  y CHECK `tipo = 'adelanto' OR medio_pago IS NULL`. **Obligatorio solo al INSERTAR un adelanto nuevo** (trigger BEFORE
+  INSERT, mensaje "Elegí cómo se dio el adelanto: efectivo o transferencia."): los adelantos viejos sin medio siguen
+  válidos y se pueden actualizar (p. ej. poner `pago_id`).
+- `sgp.pagos_personal`: `monto_efectivo NUMERIC(12,2) NULL CHECK ≥ 0`, `monto_transferencia NUMERIC(12,2) NULL CHECK ≥ 0`.
+  `medio_pago` admite `'dividido'` (además de efectivo y transferencia). **Sin CHECK de que sumen el total.**
+- Candado (`sgp.pagos_personal_candado`, se reescribe partiendo de la versión de 017, sin perder nada de lo de 017):
+  - En un borrador se pueden guardar los montos libremente (es lo que recuerda el borrador).
+  - Al pasar `borrador → pagado`:
+    - si viene **algún monto** (no nulo): exige `coalesce(ef,0) + coalesce(tr,0) > 0` (si no: "Cargá cuánto se pagó en
+      efectivo o por transferencia."), normaliza nulos a 0 y **deriva `medio_pago`**: los dos > 0 → `dividido`; solo
+      efectivo → `efectivo`; solo transferencia → `transferencia` (lo que haya mandado la pantalla en `medio_pago` se pisa).
+    - si **no viene ningún monto** y sí `medio_pago` (efectivo/transferencia: la app vieja, mientras no se publica la
+      nueva): pone el monto de ese medio = `NEW.total_a_cobrar` y el otro en 0. Si no viene nada: el error de siempre.
+  - Pagado y anulado: igual que 017 (los montos nuevos quedan cubiertos por las comparaciones `to_jsonb`).
+- Nada de policies nuevas ni DELETE; RLS igual que 016. Verificación final `OK | FALTA` (columnas, CHECKs, trigger de
+  adelanto, candado con 'dividido', sin policies DELETE ni abiertas). Idempotente.
+- Rollback: quita trigger y columnas, restaura el candado de 017 y el CHECK de `medio_pago` sin 'dividido'; antes,
+  pasa cada 'dividido' al medio con más monto (comentado en el archivo).
+- Prueba (molde `017_prueba.sql`, BEGIN…ROLLBACK, `RESULTADO_PRUEBA total= ok= mal=`): adelanto nuevo sin medio → error;
+  con medio OK; adelanto viejo sin medio se actualiza OK; medio en novedad que no es adelanto → error; borrador guarda
+  montos; pagar con los dos → `dividido`; solo uno → ese medio; con diferencia (de más y de menos) → OK; montos en 0 →
+  error; camino viejo (solo `medio_pago`) → copia el total; pagado no deja cambiar montos; ventas@ no ve nada.
+- Regenerar `supabase/instalar_sgp_desde_cero.sql` (001–018 + seed).
+
+### Contrato — pantallas (`src/modules/personal/**`, `src/types/database.types.ts`)
+- Tipos: `MedioPagoPersonal` suma `'dividido'`; `MedioAdelanto = 'efectivo' | 'transferencia'`; `PagoPersonal` suma
+  `monto_efectivo`, `monto_transferencia` (`number | null`); `NovedadPersonal` suma `medio_pago: MedioAdelanto | null`.
+- **Refactor previo:** las etiquetas de medio viven una sola vez en `lib/etiquetas.ts` (`ETIQUETA_MEDIO` con Dividido y
+  la lista de opciones Efectivo/Transferencia); `recibo.ts`, `ListaRecibos.tsx` y `PagarSemanaContenido.tsx` la importan.
+- Novedad (`ModalNovedad`, `useFichaEmpleada.DatosNovedad`): si el tipo es Adelanto, `ControlSegmentado`
+  Efectivo/Transferencia obligatorio (sin elegir → "Elegí cómo se dio el adelanto"). `ListaNovedades`: "$20.000 ·
+  Transferencia" (sin medio, como hoy).
+- `calculos.ts` + tests:
+  - `proponerItems`: el ítem de adelanto se llama `"<Concepto> DD/MM · <Medio>"` (sin medio: `"<Concepto> DD/MM"`),
+    cortado a 40 caracteres (límite de la base).
+  - `repartoPago(total, efectivo, transferencia)` → `{ pagado, diferencia, sentido: 'justo'|'de_mas'|'de_menos', medio:
+    MedioPagoPersonal | null, valido }` (`valido` = pagado > 0; `medio` igual que la regla de la base). Montos nulos = 0,
+    redondeo a pesos enteros.
+- Pagar semana (`PagarSemanaContenido` + `usePagos`): el selector de medio se reemplaza por dos campos **Efectivo $** y
+  **Transferencia $** (`Entrada`, `inputMode="decimal"`, `leerNumero` / `ayudaMonto` / `errorTopeMonto`) y dos atajos
+  **Todo efectivo** / **Todo transferencia** (llenan ese campo con el total y vacían el otro). Debajo: aviso ámbar si hay
+  diferencia ("Cobra $10.000 de más que lo calculado" / "de menos"). **Marcar pagado** solo se bloquea si lo pagado es 0.
+  Confirmación: "Ana cobra $190.000: $100.000 por transferencia y $90.000 en efectivo." + la diferencia si la hay.
+  `guardarBorrador` guarda los montos; al abrir un borrador se precargan. `marcarPagado(pagoId, montos, novedadIds)`
+  manda `estado: 'pagado'` + los dos montos (el medio lo pone la base).
+- Recibo (`recibo.ts`, `pdf/tipos.ts`, `ReciboPdf.tsx`, `ResultadoRecibo.tsx`, `ListaRecibos.tsx`): con montos muestra
+  "A cobrar" (lo calculado), lo pagado en efectivo y por transferencia (solo los > 0) y la diferencia si la hay; sin
+  montos (pagos viejos) muestra el medio como hoy.
+- No tocar: `Receipt.tsx`, `@media print`, `print-server/`. Estilo Panel, 44 px, inputs 16 px.
+
+### Orden
+`base` y `pantallas` en paralelo (columnas fijadas arriba) → `revisor` → el orquestador revisa la 018 línea por línea,
+la prueba y la aplica con backup y OK de Lucas → QA del pago a 390 px → Merge de Lucas → publicar con su OK.

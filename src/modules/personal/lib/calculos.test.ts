@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { ConceptoPago, Empleado, NovedadPersonal } from '@/types/database.types'
 import {
   avisoTotalNegativo, calcularTotales, novedadesDescontadas, estadoEmpleada, hoyArgentina, itemDeConcepto, montoItem,
-  moverSemana, pagosVigentes, proponerItems, resumenSemana, semanaDePago, semanaVencida, sumarDias,
+  moverSemana, nombreAdelanto, pagosVigentes, repartoPago, proponerItems, resumenSemana, semanaDePago, semanaVencida, sumarDias,
 } from './calculos'
 
 const ANA: Empleado = {
@@ -20,7 +20,7 @@ const PRESENTISMO = concepto({ id: 'c-pre', nombre: 'Presentismo', tipo: 'extra'
 
 function novedad(n: Partial<NovedadPersonal> & Pick<NovedadPersonal, 'id' | 'tipo' | 'fecha'>): NovedadPersonal {
   return {
-    empleado_id: 'ana', detalle: '', monto: null, descontar: false, pago_id: null,
+    empleado_id: 'ana', detalle: '', monto: null, medio_pago: null, descontar: false, pago_id: null,
     created_at: '', updated_at: '', deleted_at: null, ...n,
   }
 }
@@ -137,7 +137,7 @@ describe('ítems propuestos', () => {
       novedad({ id: 'n2', tipo: 'inasistencia', fecha: '2026-11-25', descontar: true }),
       novedad({ id: 'n3', tipo: 'inasistencia', fecha: '2026-11-24', descontar: false }),
       novedad({ id: 'n4', tipo: 'inasistencia', fecha: '2026-11-10', descontar: true }),
-      novedad({ id: 'n5', tipo: 'adelanto', fecha: '2026-11-22', monto: 40000 }),
+      novedad({ id: 'n5', tipo: 'adelanto', fecha: '2026-11-22', monto: 40000, medio_pago: 'transferencia' }),
       novedad({ id: 'n6', tipo: 'adelanto', fecha: '2026-11-20', monto: 10000, pago_id: 'otro' }),
       novedad({ id: 'n7', tipo: 'adelanto', fecha: '2026-12-02', monto: 5000 }),
       novedad({ id: 'n8', tipo: 'inasistencia', fecha: '2026-11-26', descontar: true, empleado_id: 'otra' }),
@@ -145,7 +145,7 @@ describe('ítems propuestos', () => {
     const p = proponerItems(ANA, conceptos, novedades, semana)
     expect(p.items).toHaveLength(2)
     expect(p.items[0]).toMatchObject({ nombre: 'Inasistencia', cantidad: 2, monto: 66667, valor: 0, concepto_id: 'c-falta' })
-    expect(p.items[1]).toMatchObject({ nombre: 'Adelanto', monto: 40000, novedad_id: 'n5', concepto_id: 'c-adel' })
+    expect(p.items[1]).toMatchObject({ nombre: 'Adelanto 22/11 · Transferencia', monto: 40000, novedad_id: 'n5', concepto_id: 'c-adel' })
     expect(p.novedadIds).toEqual(['n1', 'n2', 'n5'])
   })
 
@@ -156,7 +156,7 @@ describe('ítems propuestos', () => {
     ]
     const p = proponerItems(ANA, conceptos, novedades, semana)
     expect(novedadesDescontadas(p.items, p)).toEqual(['n1', 'n5'])
-    expect(novedadesDescontadas(p.items.filter((i) => i.nombre !== 'Adelanto'), p)).toEqual(['n1'])
+    expect(novedadesDescontadas(p.items.filter((i) => i.novedad_id === null), p)).toEqual(['n1'])
     expect(novedadesDescontadas(p.items.filter((i) => i.nombre !== 'Inasistencia'), p)).toEqual(['n5'])
     expect(novedadesDescontadas([], p)).toEqual([])
   })
@@ -172,7 +172,57 @@ describe('ítems propuestos', () => {
 
   it('si se borraron los conceptos semilla, igual arma los ítems con el nombre por defecto', () => {
     const n = novedad({ id: 'n1', tipo: 'adelanto', fecha: '2026-11-22', monto: 1000 })
-    expect(proponerItems(ANA, [], [n], semana).items[0]).toMatchObject({ nombre: 'Adelanto', concepto_id: null })
+    expect(proponerItems(ANA, [], [n], semana).items[0]).toMatchObject({ nombre: 'Adelanto 22/11', concepto_id: null })
+  })
+})
+
+describe('nombre del adelanto', () => {
+  it('lleva fecha DD/MM y el medio', () => {
+    expect(nombreAdelanto('Adelanto', '2026-11-24', 'efectivo')).toBe('Adelanto 24/11 · Efectivo')
+    expect(nombreAdelanto('Adelanto', '2026-11-24', 'transferencia')).toBe('Adelanto 24/11 · Transferencia')
+  })
+
+  it('sin medio (adelanto viejo) no lleva medio', () => {
+    expect(nombreAdelanto('Adelanto', '2026-11-24', null)).toBe('Adelanto 24/11')
+  })
+
+  it('se corta a 40 caracteres', () => {
+    const n = nombreAdelanto('Adelanto extraordinario de fin de año', '2026-11-24', 'transferencia')
+    expect(n).toHaveLength(40)
+    expect(n.startsWith('Adelanto extraordinario de fin de año 2')).toBe(true)
+  })
+})
+
+describe('reparto del pago', () => {
+  it('justo: lo pagado coincide con lo calculado', () => {
+    expect(repartoPago(180000, 80000, 100000)).toEqual({ pagado: 180000, diferencia: 0, sentido: 'justo', medio: 'dividido', valido: true })
+  })
+
+  it('de más', () => {
+    expect(repartoPago(180000, 90000, 100000)).toMatchObject({ pagado: 190000, diferencia: 10000, sentido: 'de_mas', valido: true })
+  })
+
+  it('de menos', () => {
+    expect(repartoPago(180000, 50000, 100000)).toMatchObject({ pagado: 150000, diferencia: -30000, sentido: 'de_menos' })
+  })
+
+  it('un solo medio', () => {
+    expect(repartoPago(180000, 180000, null)).toMatchObject({ medio: 'efectivo', sentido: 'justo' })
+    expect(repartoPago(180000, null, 180000)).toMatchObject({ medio: 'transferencia', sentido: 'justo' })
+    expect(repartoPago(180000, 0, 180000)).toMatchObject({ medio: 'transferencia' })
+  })
+
+  it('los dos medios dan dividido', () => {
+    expect(repartoPago(100, 40, 60).medio).toBe('dividido')
+  })
+
+  it('ceros o nulos no es válido', () => {
+    expect(repartoPago(180000, null, null)).toMatchObject({ pagado: 0, medio: null, valido: false, sentido: 'de_menos' })
+    expect(repartoPago(180000, 0, 0).valido).toBe(false)
+  })
+
+  it('redondea a pesos enteros', () => {
+    expect(repartoPago(100, 50.4, 49.4)).toMatchObject({ pagado: 99, diferencia: -1, sentido: 'de_menos' })
   })
 })
 

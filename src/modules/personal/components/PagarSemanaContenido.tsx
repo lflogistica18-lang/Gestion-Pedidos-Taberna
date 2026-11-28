@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
-import { AvisoEstado, Boton, ControlSegmentado, Modal, mostrarToast } from '@/shared/components/panel'
+import { AvisoEstado, Boton, Entrada, Modal, mostrarToast } from '@/shared/components/panel'
 import { pesos } from '@/shared/lib/formato'
 import { useConfiguracion } from '@/shared/store/useConfiguracion'
-import type { ConceptoPago, Empleado, MedioPagoPersonal, NovedadPersonal, PagoPersonal, PagoPersonalItem } from '@/types/database.types'
-import { usePagos } from '../hooks/usePagos'
+import type { ConceptoPago, Empleado, NovedadPersonal, PagoPersonal, PagoPersonalItem } from '@/types/database.types'
+import { usePagos, type MontosPago } from '../hooks/usePagos'
 import {
-  avisoTotalNegativo, calcularTotales, novedadesDescontadas, proponerItems, type ItemPropuesto, type Semana,
+  avisoTotalNegativo, calcularTotales, novedadesDescontadas, proponerItems, repartoPago, type ItemPropuesto, type Semana,
 } from '../lib/calculos'
+import { ayudaMonto, errorTopeMonto, leerNumero } from '../lib/etiquetas'
 import { AgregarConcepto } from './AgregarConcepto'
 import { ItemsPago } from './ItemsPago'
 import { ResultadoRecibo } from './ResultadoRecibo'
@@ -21,16 +22,37 @@ interface Props {
   onCambio: () => void
 }
 
-const MEDIOS: { value: MedioPagoPersonal; label: string }[] = [
-  { value: 'efectivo', label: 'Efectivo' },
-  { value: 'transferencia', label: 'Transferencia' },
-]
+/** Texto de un campo de monto: vacío, o el número como vino guardado. */
+function textoMontoGuardado(n: number | null): string {
+  return n === null ? '' : String(n)
+}
+
+/** Error de un campo de monto (texto raro, negativo o pasado del tope), o undefined si está bien. */
+function errorCampoMonto(texto: string, que: string): string | undefined {
+  if (texto.trim() === '') return undefined
+  const n = leerNumero(texto)
+  if (n === null) return 'No se entiende como número'
+  if (n < 0) return `${que} no puede ser negativo`
+  return errorTopeMonto(n, que) ?? undefined
+}
+
+function textoDiferenciaCobro(diferencia: number): string {
+  return `${pesos(Math.abs(diferencia))} ${diferencia > 0 ? 'de más' : 'de menos'} que lo calculado`
+}
 
 function deItemGuardado(i: PagoPersonalItem): ItemPropuesto {
   return {
     concepto_id: i.concepto_id, nombre: i.nombre, tipo: i.tipo, modo: i.modo, valor: i.valor,
     cantidad: i.cantidad, monto: i.monto, novedad_id: i.novedad_id,
   }
+}
+
+function textoConfirmacion(nombre: string, m: MontosPago): string {
+  const ef = Math.round(m.efectivo ?? 0)
+  const tr = Math.round(m.transferencia ?? 0)
+  if (ef > 0 && tr > 0) return `${nombre} cobra ${pesos(ef + tr)}: ${pesos(tr)} por transferencia y ${pesos(ef)} en efectivo.`
+  if (tr > 0) return `${nombre} cobra ${pesos(tr)} por transferencia.`
+  return `${nombre} cobra ${pesos(ef)} en efectivo.`
 }
 
 export function PagarSemanaContenido({ empleado, semana, pagoInicial, conceptos, novedades, onCerrar, onCambio }: Props) {
@@ -42,7 +64,8 @@ export function PagarSemanaContenido({ empleado, semana, pagoInicial, conceptos,
   const [items, setItems] = useState<ItemPropuesto[]>(pagoInicial ? [] : propuesta.items)
   const [cargandoItems, setCargandoItems] = useState(pagoInicial !== null)
   const [pago, setPago] = useState<PagoPersonal | null>(pagoInicial)
-  const [medio, setMedio] = useState<MedioPagoPersonal | ''>('')
+  const [efectivo, setEfectivo] = useState(() => textoMontoGuardado(pagoInicial?.monto_efectivo ?? null))
+  const [transferencia, setTransferencia] = useState(() => textoMontoGuardado(pagoInicial?.monto_transferencia ?? null))
   const [ocupado, setOcupado] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pagado, setPagado] = useState<PagoPersonal | null>(null)
@@ -68,6 +91,18 @@ export function PagarSemanaContenido({ empleado, semana, pagoInicial, conceptos,
   const totales = calcularTotales(empleado.sueldo_semanal, items)
   const aviso = avisoTotalNegativo(empleado.sueldo_semanal, items)
   const bloqueado = ocupado || cargandoItems
+  const errorEfectivo = errorCampoMonto(efectivo, 'El efectivo')
+  const errorTransferencia = errorCampoMonto(transferencia, 'La transferencia')
+  // Se guarda en pesos enteros, igual que lo que muestra repartoPago (si no, la base y la pantalla difieren en centavos)
+  const redondear = (n: number | null) => (n === null ? null : Math.round(n))
+  const montos: MontosPago = { efectivo: redondear(leerNumero(efectivo)), transferencia: redondear(leerNumero(transferencia)) }
+  const reparto = repartoPago(totales.total, montos.efectivo, montos.transferencia)
+  const montosMal = errorEfectivo !== undefined || errorTransferencia !== undefined
+  const todoEn = (medio: 'efectivo' | 'transferencia') => {
+    const total = String(Math.max(0, totales.total))
+    setEfectivo(medio === 'efectivo' ? total : '')
+    setTransferencia(medio === 'transferencia' ? total : '')
+  }
 
   const generarRecibo = async (p: PagoPersonal) => {
     setOcupado(true)
@@ -81,7 +116,7 @@ export function PagarSemanaContenido({ empleado, semana, pagoInicial, conceptos,
   const guardar = async () => {
     setOcupado(true)
     setError(null)
-    const r = await guardarBorrador(empleado, semana, items, pago?.id ?? null)
+    const r = await guardarBorrador(empleado, semana, items, pago?.id ?? null, montos)
     if (r.pago) setPago(r.pago)
     setOcupado(false)
     onCambio()
@@ -110,11 +145,11 @@ export function PagarSemanaContenido({ empleado, semana, pagoInicial, conceptos,
   }
 
   const pagar = async () => {
-    if (medio === '') return
+    if (!reparto.valido || montosMal) return
     setConfirmando(false)
     setOcupado(true)
     setError(null)
-    const g = await guardarBorrador(empleado, semana, items, pago?.id ?? null)
+    const g = await guardarBorrador(empleado, semana, items, pago?.id ?? null, montos)
     if (g.pago) setPago(g.pago)
     if (g.error || !g.pago) {
       setError(g.error ?? 'No se pudo guardar el pago')
@@ -122,7 +157,7 @@ export function PagarSemanaContenido({ empleado, semana, pagoInicial, conceptos,
       onCambio()
       return
     }
-    const m = await marcarPagado(g.pago.id, medio, novedadesDescontadas(items, propuesta))
+    const m = await marcarPagado(g.pago.id, montos, novedadesDescontadas(items, propuesta))
     onCambio()
     if (m.error || !m.pago) {
       setError(m.error ?? 'No se pudo marcar como pagado')
@@ -174,7 +209,26 @@ export function PagarSemanaContenido({ empleado, semana, pagoInicial, conceptos,
           Extras {pesos(totales.extras)} · Descuentos {pesos(totales.descuentos)}
         </p>
       </div>
-      <ControlSegmentado<MedioPagoPersonal> etiqueta="Medio de pago" tono="acento" opciones={MEDIOS} value={medio} onChange={setMedio} />
+      <div className="space-y-3">
+        <p className="text-sm font-semibold text-texto-primario">Cómo se paga</p>
+        <div className="grid grid-cols-2 gap-3">
+          <Entrada etiqueta="Efectivo ($)" type="text" inputMode="decimal" className="min-w-0" value={efectivo}
+            error={errorEfectivo} ayuda={errorEfectivo ? undefined : ayudaMonto(efectivo)} disabled={bloqueado}
+            onChange={(e) => setEfectivo(e.target.value)} />
+          <Entrada etiqueta="Transferencia ($)" type="text" inputMode="decimal" className="min-w-0" value={transferencia}
+            error={errorTransferencia} ayuda={errorTransferencia ? undefined : ayudaMonto(transferencia)} disabled={bloqueado}
+            onChange={(e) => setTransferencia(e.target.value)} />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Boton className="min-w-0" onClick={() => todoEn('efectivo')} disabled={bloqueado}>Todo efectivo</Boton>
+          <Boton className="min-w-0" onClick={() => todoEn('transferencia')} disabled={bloqueado}>Todo transferencia</Boton>
+        </div>
+        {reparto.valido && !montosMal && reparto.sentido !== 'justo' && (
+          <AvisoEstado tono="ambar" titulo={`Cobra ${textoDiferenciaCobro(reparto.diferencia)}`}>
+            Lo pagado suma {pesos(reparto.pagado)} y lo calculado es {pesos(totales.total)}. Se puede marcar pagado igual.
+          </AvisoEstado>
+        )}
+      </div>
       {error && <AvisoEstado tono="rojo" titulo="No se pudo completar">{error}</AvisoEstado>}
       <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
         {pago && (
@@ -182,12 +236,12 @@ export function PagarSemanaContenido({ empleado, semana, pagoInicial, conceptos,
             Descartar borrador
           </Boton>
         )}
-        <Boton onClick={() => void guardar()} disabled={bloqueado || totales.negativo}>Guardar borrador</Boton>
-        <Boton variante="primario" onClick={() => setConfirmando(true)} disabled={bloqueado || totales.negativo || medio === ''}>
+        <Boton onClick={() => void guardar()} disabled={bloqueado || totales.negativo || montosMal}>Guardar borrador</Boton>
+        <Boton variante="primario" onClick={() => setConfirmando(true)} disabled={bloqueado || totales.negativo || montosMal || !reparto.valido}>
           {ocupado ? 'Guardando…' : 'Marcar pagado'}
         </Boton>
       </div>
-      {medio === '' && <p className="text-center text-xs text-texto-secundario">Elegí cómo se paga para poder marcar el pago.</p>}
+      {!reparto.valido && <p className="text-center text-xs text-texto-secundario">Cargá cuánto se paga en efectivo o por transferencia para poder marcar el pago.</p>}
       <Modal open={descartando} onClose={() => setDescartando(false)} title="Descartar borrador">
         <div className="space-y-4">
           <p className="text-sm text-texto-primario">¿Descartar el borrador de {empleado.nombre}? Se pierde lo cargado en este pago.</p>
@@ -201,7 +255,10 @@ export function PagarSemanaContenido({ empleado, semana, pagoInicial, conceptos,
       <Modal open={confirmando} onClose={() => setConfirmando(false)} title="Marcar como pagado">
         <div className="space-y-4">
           <p className="text-sm text-texto-primario">¿Marcar como pagado? Después no se puede modificar.</p>
-          <p className="text-sm text-texto-secundario">{empleado.nombre} cobra {pesos(totales.total)}.</p>
+          <p className="text-sm text-texto-secundario">{textoConfirmacion(empleado.nombre, montos)}</p>
+          {reparto.sentido !== 'justo' && (
+            <p className="text-sm text-tono-ambar-texto">Cobra {textoDiferenciaCobro(reparto.diferencia)} ({pesos(totales.total)}).</p>
+          )}
           <div className="flex flex-wrap justify-end gap-2">
             <Boton onClick={() => setConfirmando(false)}>Cancelar</Boton>
             <Boton variante="primario" onClick={() => void pagar()}>Marcar pagado</Boton>

@@ -69,7 +69,8 @@ export interface OrderStatusLog {
 export type TipoConcepto = 'extra' | 'descuento'
 export type ModoConcepto = 'fijo' | 'porcentaje' | 'por_unidad' | 'dias_de_sueldo'
 export type EstadoPago = 'borrador' | 'pagado' | 'anulado'
-export type MedioPagoPersonal = 'efectivo' | 'transferencia'
+export type MedioAdelanto = 'efectivo' | 'transferencia'
+export type MedioPagoPersonal = MedioAdelanto | 'dividido'
 export type TipoNovedad = 'inasistencia' | 'llegada_tarde' | 'adelanto' | 'charla' | 'otro'
 
 export interface Empleado {
@@ -110,6 +111,8 @@ export interface PagoPersonal {
   total_a_cobrar: number
   estado: EstadoPago
   pagado_at: string | null
+  monto_efectivo: number | null
+  monto_transferencia: number | null
   medio_pago: MedioPagoPersonal | null
   recibo_ruta: string | null
   notas: string | null
@@ -142,6 +145,7 @@ export interface NovedadPersonal {
   tipo: TipoNovedad
   detalle: string
   monto: number | null
+  medio_pago: MedioAdelanto | null
   descontar: boolean
   pago_id: string | null
   created_at: string
