@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { AreaTexto, AvisoEstado, Boton, Entrada, Modal, Selector } from '@/shared/components/panel'
-import type { TipoNovedad } from '@/types/database.types'
+import { AreaTexto, AvisoEstado, Boton, ControlSegmentado, Entrada, Modal, Selector } from '@/shared/components/panel'
+import type { MedioAdelanto, TipoNovedad } from '@/types/database.types'
 import type { DatosNovedad } from '../hooks/useFichaEmpleada'
 import { hoyArgentina } from '../lib/calculos'
-import { ETIQUETA_NOVEDAD, ayudaMonto, errorTopeMonto, leerNumero } from '../lib/etiquetas'
+import { ETIQUETA_NOVEDAD, OPCIONES_MEDIO, ayudaMonto, errorTopeMonto, leerNumero } from '../lib/etiquetas'
 
 interface Props {
   open: boolean
@@ -26,6 +26,7 @@ function FormularioNovedad({ onCancelar, onGuardar }: { onCancelar: () => void; 
   const [tipo, setTipo] = useState<TipoNovedad>('inasistencia')
   const [detalle, setDetalle] = useState('')
   const [monto, setMonto] = useState('')
+  const [medio, setMedio] = useState<MedioAdelanto | ''>('')
   const [descontar, setDescontar] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [guardando, setGuardando] = useState(false)
@@ -39,6 +40,7 @@ function FormularioNovedad({ onCancelar, onGuardar }: { onCancelar: () => void; 
       const tope = errorTopeMonto(montoNum, 'El adelanto')
       if (tope) return setError(tope)
     }
+    if (tipo === 'adelanto' && medio === '') return setError('Elegí cómo se dio el adelanto')
     setGuardando(true)
     setError(null)
     const r = await onGuardar({
@@ -46,6 +48,7 @@ function FormularioNovedad({ onCancelar, onGuardar }: { onCancelar: () => void; 
       tipo,
       detalle: detalle.trim(),
       monto: tipo === 'adelanto' ? montoNum : null,
+      medio_pago: tipo === 'adelanto' && medio !== '' ? medio : null,
       descontar: tipo === 'inasistencia' && descontar,
     })
     setGuardando(false)
@@ -68,7 +71,10 @@ function FormularioNovedad({ onCancelar, onGuardar }: { onCancelar: () => void; 
       </Selector>
       <Entrada etiqueta="Fecha" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
       {tipo === 'adelanto' && (
-        <Entrada etiqueta="Monto ($)" type="text" inputMode="decimal" ayuda={ayudaMonto(monto)} value={monto} onChange={(e) => setMonto(e.target.value)} />
+        <>
+          <Entrada etiqueta="Monto ($)" type="text" inputMode="decimal" ayuda={ayudaMonto(monto)} value={monto} onChange={(e) => setMonto(e.target.value)} />
+          <ControlSegmentado<MedioAdelanto> etiqueta="Cómo se dio" tono="acento" opciones={OPCIONES_MEDIO} value={medio} onChange={setMedio} />
+        </>
       )}
       {tipo === 'inasistencia' && (
         <label className="flex min-h-11 items-center gap-3 text-sm text-texto-primario">

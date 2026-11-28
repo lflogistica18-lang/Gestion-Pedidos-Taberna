@@ -3,7 +3,7 @@ import { Trash2 } from 'lucide-react'
 import { Boton, Modal, Pastilla } from '@/shared/components/panel'
 import { fechaCorta, pesos } from '@/shared/lib/formato'
 import type { NovedadPersonal } from '@/types/database.types'
-import { ETIQUETA_NOVEDAD } from '../lib/etiquetas'
+import { ETIQUETA_MEDIO, ETIQUETA_NOVEDAD } from '../lib/etiquetas'
 
 interface Props {
   novedades: NovedadPersonal[]
@@ -43,7 +43,7 @@ export function ListaNovedades({ novedades, onQuitar }: Props) {
                   )}
                 </div>
               </div>
-              {n.monto !== null && <p className="text-sm text-texto-primario">{pesos(n.monto)}</p>}
+              {n.monto !== null && <p className="text-sm text-texto-primario">{pesos(n.monto)}{n.medio_pago ? ` · ${ETIQUETA_MEDIO[n.medio_pago]}` : ''}</p>}
               {n.detalle && <p className="mt-1 break-words text-sm text-texto-secundario">{n.detalle}</p>}
             </div>
             {!n.pago_id && (

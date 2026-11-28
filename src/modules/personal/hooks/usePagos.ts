@@ -1,11 +1,17 @@
 import { supabase } from '@/shared/lib/supabase'
-import type { Empleado, MedioPagoPersonal, PagoPersonal, PagoPersonalItem } from '@/types/database.types'
+import type { Empleado, PagoPersonal, PagoPersonalItem } from '@/types/database.types'
 import type { ItemPropuesto, Semana } from '../lib/calculos'
 import { armarDatosRecibo, rutaRecibo } from '../lib/recibo'
 import { mensajeDeExcepcion, textoError } from './errores'
 
 const BUCKET = 'sgp-recibos'
 const SEMANA_REPETIDA = 'Ya hay un pago para esa semana'
+
+/** Lo pagado por cada medio; null = campo vacío. */
+export interface MontosPago {
+  efectivo: number | null
+  transferencia: number | null
+}
 
 export interface RespuestaPago {
   error: string | null
@@ -37,11 +43,16 @@ export function usePagos() {
    * Si el pago llegó a crearse pero algo falló después, `pago` viene igual para no duplicarlo.
    */
   const guardarBorrador = async (
-    empleado: Empleado, semana: Semana, items: ItemPropuesto[], pagoId: string | null,
+    empleado: Empleado, semana: Semana, items: ItemPropuesto[], pagoId: string | null, montos: MontosPago,
   ): Promise<RespuestaPago> => {
     try {
       let id = pagoId
-      const foto = { sueldo_semanal: empleado.sueldo_semanal, dias_por_semana: empleado.dias_por_semana }
+      const foto = {
+        sueldo_semanal: empleado.sueldo_semanal,
+        dias_por_semana: empleado.dias_por_semana,
+        monto_efectivo: montos.efectivo,
+        monto_transferencia: montos.transferencia,
+      }
       if (id) {
         const { error } = await supabase.from('pagos_personal').update(foto).eq('id', id)
         if (error) return { error: textoError(error), pago: null }
@@ -72,11 +83,13 @@ export function usePagos() {
 
   /** Paso 1 de marcar pagado: el pago queda pagado y las novedades descontadas quedan con su pago_id. */
   const marcarPagado = async (
-    pagoId: string, medio: MedioPagoPersonal, novedadIds: string[],
+    pagoId: string, montos: MontosPago, novedadIds: string[],
   ): Promise<RespuestaPago & { aviso: string | null }> => {
     try {
+      // El medio (efectivo, transferencia o dividido) lo deriva la base de los montos.
       const { data, error } = await supabase.from('pagos_personal')
-        .update({ estado: 'pagado', medio_pago: medio }).eq('id', pagoId).select('*').single()
+        .update({ estado: 'pagado', monto_efectivo: montos.efectivo, monto_transferencia: montos.transferencia })
+        .eq('id', pagoId).select('*').single()
       if (error) return { error: textoError(error), pago: null, aviso: null }
       let aviso: string | null = null
       if (novedadIds.length > 0) {

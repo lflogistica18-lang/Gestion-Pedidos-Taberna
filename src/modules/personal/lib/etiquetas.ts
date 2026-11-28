@@ -1,6 +1,6 @@
 import { pesos } from '@/shared/lib/formato'
 import { MONTO_MAXIMO, leerNumeroAR } from '@/shared/lib/numeros'
-import type { ModoConcepto, TipoConcepto, TipoNovedad } from '@/types/database.types'
+import type { MedioAdelanto, MedioPagoPersonal, ModoConcepto, TipoConcepto, TipoNovedad } from '@/types/database.types'
 
 export const ETIQUETA_TIPO: Record<TipoConcepto, string> = {
   extra: 'Extra',
@@ -21,6 +21,18 @@ export const ETIQUETA_NOVEDAD: Record<TipoNovedad, string> = {
   charla: 'Para charlar',
   otro: 'Otra',
 }
+
+export const ETIQUETA_MEDIO: Record<MedioPagoPersonal, string> = {
+  efectivo: 'Efectivo',
+  transferencia: 'Transferencia',
+  dividido: 'Dividido',
+}
+
+/** Opciones para elegir cómo se dio un adelanto (una sola entrega: un solo medio). */
+export const OPCIONES_MEDIO: { value: MedioAdelanto; label: string }[] = [
+  { value: 'efectivo', label: ETIQUETA_MEDIO.efectivo },
+  { value: 'transferencia', label: ETIQUETA_MEDIO.transferencia },
+]
 
 export const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
 

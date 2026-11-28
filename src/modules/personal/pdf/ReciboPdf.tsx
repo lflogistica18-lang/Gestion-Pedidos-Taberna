@@ -83,6 +83,32 @@ export function ReciboPdf({ datos }: { datos: DatosRecibo }) {
           <Text style={estilos.totalMonto}>{pesos(datos.total)}</Text>
         </View>
 
+        {datos.montosPagados && (
+          <View style={estilos.bloque}>
+            <Text style={estilos.seccion}>Pagado</Text>
+            {datos.montosPagados.efectivo > 0 && (
+              <View style={estilos.fila}>
+                <Text style={estilos.filaTexto}>Efectivo</Text>
+                <Text>{pesos(datos.montosPagados.efectivo)}</Text>
+              </View>
+            )}
+            {datos.montosPagados.transferencia > 0 && (
+              <View style={estilos.fila}>
+                <Text style={estilos.filaTexto}>Transferencia</Text>
+                <Text>{pesos(datos.montosPagados.transferencia)}</Text>
+              </View>
+            )}
+            {datos.montosPagados.diferencia !== 0 && (
+              <View style={estilos.fila}>
+                <Text style={estilos.filaTexto}>
+                  Diferencia con lo calculado ({datos.montosPagados.diferencia > 0 ? 'de más' : 'de menos'})
+                </Text>
+                <Text>{pesos(Math.abs(datos.montosPagados.diferencia))}</Text>
+              </View>
+            )}
+          </View>
+        )}
+
         <Text style={estilos.pie}>
           Medio de pago: {datos.medioPago}
           {datos.pagadoAt ? `  ·  Pagado el ${fechaHora(datos.pagadoAt)}` : ''}

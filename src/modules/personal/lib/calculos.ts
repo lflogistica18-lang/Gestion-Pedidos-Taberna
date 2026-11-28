@@ -3,8 +3,9 @@
 // Las fechas son texto AAAA-MM-DD y se calculan en UTC (sin corrimiento por zona).
 
 import type {
-  ConceptoPago, Empleado, ModoConcepto, NovedadPersonal, PagoPersonal, TipoConcepto,
+  ConceptoPago, Empleado, MedioAdelanto, MedioPagoPersonal, ModoConcepto, NovedadPersonal, PagoPersonal, TipoConcepto,
 } from '@/types/database.types'
+import { ETIQUETA_MEDIO } from './etiquetas'
 
 export interface Semana {
   /** Primer día (el día siguiente al día de pago anterior). */
@@ -142,6 +143,38 @@ export function itemDeConcepto(
   }
 }
 
+// ─── Reparto del pago ────────────────────────────────────────────────
+
+export interface RepartoPago {
+  /** Efectivo + transferencia, en pesos enteros. */
+  pagado: number
+  /** pagado - total a cobrar (positivo = de más). */
+  diferencia: number
+  sentido: 'justo' | 'de_mas' | 'de_menos'
+  /** Medio que va a derivar la base: dividido si hay dos montos, o el único que hay. */
+  medio: MedioPagoPersonal | null
+  /** Se puede marcar pagado: lo pagado es mayor a cero. */
+  valido: boolean
+}
+
+/** Compara lo pagado (efectivo + transferencia) con lo calculado. Montos nulos cuentan como 0. */
+export function repartoPago(total: number, efectivo: number | null, transferencia: number | null): RepartoPago {
+  const ef = Math.round(efectivo ?? 0)
+  const tr = Math.round(transferencia ?? 0)
+  const pagado = ef + tr
+  const diferencia = pagado - Math.round(total)
+  const sentido = diferencia === 0 ? 'justo' : diferencia > 0 ? 'de_mas' : 'de_menos'
+  const medio: MedioPagoPersonal | null = ef > 0 && tr > 0 ? 'dividido' : ef > 0 ? 'efectivo' : tr > 0 ? 'transferencia' : null
+  return { pagado, diferencia, sentido, medio, valido: pagado > 0 }
+}
+
+/** Nombre del ítem de un adelanto: "Adelanto 24/11 · Transferencia", cortado a 40 letras (límite de la base). */
+export function nombreAdelanto(concepto: string, fecha: string, medio: MedioAdelanto | null): string {
+  const ddmm = `${fecha.slice(8, 10)}/${fecha.slice(5, 7)}`
+  const base = `${concepto} ${ddmm}`
+  return (medio ? `${base} · ${ETIQUETA_MEDIO[medio]}` : base).slice(0, 40)
+}
+
 // ─── Estado y propuesta ──────────────────────────────────────────────
 
 /** Pagos que cuentan: los anulados no cuentan para el estado, el conteo ni el total. */
@@ -218,7 +251,7 @@ export function proponerItems(
     const monto = Math.round(a.monto ?? 0)
     items.push({
       concepto_id: conceptoAdelanto?.id ?? null,
-      nombre: conceptoAdelanto?.nombre ?? 'Adelanto',
+      nombre: nombreAdelanto(conceptoAdelanto?.nombre ?? 'Adelanto', a.fecha, a.medio_pago),
       tipo: 'descuento',
       modo: 'fijo',
       valor: monto,
